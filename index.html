@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (修正版) */
+        /* CSS: 響應式極簡風格 (V1.2) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -18,6 +18,7 @@
             --warning-color: #ff9800;
             --error-color: #ff5722;
             --panel-bg: #112233;
+            --nav-width: 60px; /* 導航列寬度 */
         }
 
         * { box-sizing: border-box; }
@@ -29,45 +30,67 @@
             color: var(--text-color);
             height: 100vh;
             text-align: center;
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: row; /* 改為水平排列以適應左側導航 */
             overflow: hidden;
         }
 
-        .container {
-            width: 100%; flex-grow: 1; padding: 5px;
-            overflow-y: auto; -webkit-overflow-scrolling: touch;
-            padding-top: 70px;
-        }
-
-        .screen { display: none; min-height: 90vh; padding-bottom: 50px; }
-
-        /* 導航列 */
+        /* 導航列 (預設: 左側垂直) */
         .nav-bar {
-            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-            background-color: #081220; display: flex; justify-content: space-between;
-            align-items: center; padding: 0 10px; z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            width: var(--nav-width);
+            height: 100vh;
+            background-color: #050b14;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+            flex-shrink: 0;
         }
-        .nav-title { font-size: 1.4rem; color: var(--primary-color); font-weight: bold; }
-        .nav-icons { display: flex; gap: 10px; }
+
+        .nav-icons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: auto;
+        }
+
         .nav-btn {
             background: none; border: none; cursor: pointer; padding: 10px;
-            color: white; display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; transition: background 0.2s;
+            color: var(--primary-color); display: flex; align-items: center; justify-content: center;
+            border-radius: 10px; transition: background 0.2s, transform 0.1s;
+            touch-action: manipulation;
         }
-        .nav-btn:active { background-color: rgba(255,255,255,0.1); }
+        .nav-btn:active { background-color: rgba(255,255,255,0.1); transform: scale(0.95); }
         .nav-btn svg { width: 32px; height: 32px; fill: currentColor; }
 
-        h1 { font-size: 1.6rem; color: var(--primary-color); margin: 5px 0; }
-        
-        /* 按鈕樣式 */
-        .large-btn {
-            padding: 10px; margin: 4px; font-size: 1.3rem; font-weight: bold;
-            cursor: pointer; border: 2px solid var(--primary-color); border-radius: 8px;
-            background-color: var(--btn-bg); color: white; transition: all 0.2s;
-            line-height: 1.2; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        .version-tag {
+            font-size: 0.7rem; color: #555; margin-bottom: 10px; writing-mode: vertical-lr;
         }
-        .large-btn:active { background-color: var(--btn-active); transform: scale(0.98); }
+
+        .container {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .screen { display: none; min-height: 90vh; padding-bottom: 50px; width: 100%; }
+
+        h1 { font-size: 1.5rem; color: var(--primary-color); margin: 5px 0; }
+        
+        /* 按鈕優化 */
+        .large-btn {
+            padding: 12px; margin: 4px; font-size: 1.3rem; font-weight: bold;
+            cursor: pointer; border: 2px solid var(--primary-color); border-radius: 8px;
+            background-color: var(--btn-bg); color: white; transition: all 0.1s;
+            line-height: 1.2; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            touch-action: manipulation; /* 提升觸控反應 */
+        }
+        .large-btn:active { background-color: var(--btn-active); transform: scale(0.96); }
         .large-btn.disabled { background-color: #555; border-color: #777; cursor: not-allowed; opacity: 0.6; }
 
         .large-select {
@@ -76,15 +99,16 @@
             border-radius: 8px; appearance: none;
         }
 
-        /* 工單列表 (更緊湊) */
+        /* 工單列表 */
         #queue-list-container { display: grid; gap: 8px; padding: 2px; }
         .queue-item {
             text-align: left; border-color: var(--success-color); position: relative;
-            padding: 8px 12px; /* 縮小內距 */
-            min-height: auto; display: flex; flex-direction: column; justify-content: center;
-            border-radius: 6px; border: 1px solid var(--success-color); /* 線條變細 */
+            padding: 8px 12px; min-height: auto; display: flex; flex-direction: column; justify-content: center;
+            border-radius: 6px; border: 1px solid var(--success-color);
             background-color: var(--btn-bg); cursor: pointer;
+            touch-action: manipulation;
         }
+        .queue-item:active { transform: scale(0.98); }
         .queue-item.active-job {
             background-color: #1b5e20; border-color: #66bb6a; border-width: 2px;
             box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
@@ -100,63 +124,97 @@
         .main-lang { font-size: 1.1rem; font-weight: bold; display: inline-block; margin-bottom: 2px; }
         .aux-lang { font-size: 0.85rem; color: #ccc; display: block; }
 
-        .pin-display {
-            font-size: 3rem; letter-spacing: 5px; margin: 15px auto;
-            height: 60px; line-height: 60px; border-bottom: 3px dashed var(--primary-color);
-            color: #ffd700; max-width: 90%;
+        /* 登入畫面緊湊化 */
+        .login-wrapper {
+            display: flex; flex-direction: column; justify-content: center; height: 100%;
         }
-        .error { color: var(--error-color); font-size: 1.2rem; margin-top: 5px; font-weight: bold; }
+        .pin-display {
+            font-size: 3rem; letter-spacing: 5px; margin: 10px auto;
+            height: 50px; line-height: 50px; border-bottom: 3px dashed var(--primary-color);
+            color: #ffd700; max-width: 250px;
+        }
+        .error { color: var(--error-color); font-size: 1.1rem; margin-top: 5px; font-weight: bold; min-height: 1.2em; }
 
         .keypad-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-            width: 100%; max-width: 500px; margin: 5px auto;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+            width: 100%; max-width: 400px; margin: 5px auto;
         }
-        .btn-confirm { background-color: var(--success-color); border-color: var(--success-color); font-size: 1.4rem; }
+        .keypad-grid .large-btn { font-size: 1.5rem; padding: 15px; margin: 0; } /* 鍵盤按鈕調整 */
+
+        .btn-confirm { background-color: var(--success-color); border-color: var(--success-color); font-size: 1.3rem; }
         .btn-back { background-color: #607d8b; border-color: #78909c; }
         .btn-adjust { background-color: #3f51b5; border-color: #5c6bc0; }
 
-        .diagnostic-info { font-size: 0.7rem; color: #7fffd4; margin-top: 10px; }
-        .url-alert { background-color: #581515; border: 2px solid var(--error-color); padding: 10px; margin-bottom: 20px; border-radius: 5px; font-size: 1rem; color: white; text-align: left; font-weight: bold; display: none; }
+        .diagnostic-info { font-size: 0.6rem; color: #555; margin-top: 5px; }
+        .url-alert { background-color: #581515; border: 2px solid var(--error-color); padding: 10px; margin-bottom: 10px; border-radius: 5px; font-size: 0.9rem; color: white; text-align: left; font-weight: bold; display: none; }
 
         /* 生管表格 */
         .admin-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
         .admin-table th, .admin-table td { border: 1px solid #444; padding: 6px; text-align: left; }
         .admin-table th { background-color: var(--primary-color); color: black; }
         .admin-table tr:nth-child(even) { background-color: #1a3449; }
-        .admin-panel { background-color: var(--panel-bg); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: left; }
+        .admin-panel { 
+            background-color: var(--panel-bg); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: left; 
+            max-height: 60vh; overflow-y: auto; /* 允許面板內捲動 */
+        }
         .admin-input { width: 100%; padding: 8px; margin: 5px 0 10px 0; background: #000; border: 1px solid #555; color: white; font-size: 1rem; }
         .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 5px; align-items: center; }
         .btn-delete { background-color: #e91e63; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .btn-add-line { background-color: #4caf50; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+        .btn-add-line { background-color: #4caf50; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 5px; width: 100%; }
         .summary-box { background-color: var(--success-color); color: black; padding: 10px; border-radius: 10px; margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
         .history-section { border-top: 1px solid #444; margin-top: 10px; padding-top: 10px; }
 
-        /* 媒體查詢 */
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); z-index: 2000;
+            display: none; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3; border-top: 8px solid var(--primary-color);
+            border-radius: 50%; width: 60px; height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { color: white; margin-top: 20px; font-size: 1.2rem; font-weight: bold; }
+
+        /* --- 響應式設計 --- */
         @media (min-width: 768px) {
-            body { background-color: #2b2b2b; align-items: center; }
+            body { background-color: #2b2b2b; align-items: center; justify-content: center;}
+            .nav-bar {
+                position: absolute; left: 0; top: 0; height: 100%; width: 70px;
+                border-radius: 20px 0 0 20px;
+            }
             .container {
-                max-width: 600px; background-color: var(--bg-color);
+                max-width: 700px; background-color: var(--bg-color);
                 box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
                 height: calc(100vh - 40px); border-radius: 20px;
-                position: relative; overflow: hidden; display: flex; flex-direction: column;
-                padding-top: 70px;
+                overflow: hidden; padding-left: 70px; /* 留出導航寬度 */
+                width: 100%;
             }
-            .nav-bar { position: absolute; width: 100%; top: 0; left: 0; border-radius: 20px 20px 0 0; }
-            h1 { font-size: 2.2rem; }
-            .large-btn { font-size: 1.5rem; padding: 15px; }
-            .pin-display { font-size: 3.5rem; height: 70px; line-height: 70px; }
-            #queue-list-container { grid-template-columns: repeat(2, 1fr); }
-            .keypad-grid { gap: 12px; max-width: 550px; }
+            h1 { font-size: 2rem; }
+            .keypad-grid { gap: 10px; max-width: 450px; }
             .admin-table { font-size: 1rem; }
         }
+
         @media (max-width: 767px) {
+            body { flex-direction: column; }
+            .nav-bar {
+                width: 100%; height: 50px; flex-direction: row; padding: 0 10px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            }
+            .nav-icons { flex-direction: row; gap: 15px; margin-bottom: 0; }
+            .version-tag { writing-mode: horizontal-tb; margin-bottom: 0; margin-left: auto; }
+            
+            .container { padding: 5px; padding-top: 55px; height: 100vh; margin: 0; border-radius: 0; width: 100%; }
             #queue-list-container { grid-template-columns: 1fr; }
             .sub-item-row { grid-template-columns: 1fr; }
+            .keypad-grid .large-btn { padding: 12px; font-size: 1.4rem; }
         }
     </style>
 </head>
 <body>
-    <!-- 頂部導航列 -->
+    <!-- 導航列 -->
     <div id="nav-bar" class="nav-bar" style="display:none;">
         <div class="nav-icons">
             <button class="nav-btn" onclick="backToQueue()" title="返回列表">
@@ -165,28 +223,35 @@
             <button class="nav-btn" onclick="goHome()" title="回到主畫面">
                 <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             </button>
-        </div>
-        <div class="nav-title" id="nav-title-display">MES Lite</div>
-        <div class="nav-icons">
             <button class="nav-btn" onclick="logout()" title="登出">
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
         </div>
+        <div class="version-tag">V1.2</div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">處理中 / Processing...</div>
     </div>
 
     <div class="container">
-        <!-- 畫面 1: 登入 -->
+        <!-- 畫面 1: 登入 (緊湊版) -->
         <div id="screen-login" class="screen" style="display: block;">
-            <h1>MES LITE 登入 🔒</h1>
-            <div style="font-size: 1.2rem; margin-bottom: 20px;">
-                <span data-i18n="login_prompt">請輸入您的 4 位識別碼 (PIN)</span>
-                <br><span style="font-size: 0.8em; color: #aaa;">(生管: 9999)</span>
+            <div class="login-wrapper">
+                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.2</span></h1>
+                <div style="font-size: 1rem; margin-bottom: 5px;">
+                    <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
+                </div>
+                <div class="pin-display" id="pin-input"></div>
+                <div id="login-error" class="error"></div>
+                
+                <div id="keypad" class="keypad-grid"></div>
+                
+                <div id="url-alert-box" class="url-alert">🚨 請設定 GAS URL</div>
+                <div class="diagnostic-info">GAS: <span id="api-base-url-display">N/A</span></div>
             </div>
-            <div class="pin-display" id="pin-input"></div>
-            <div id="login-error" class="error"></div>
-            <div class="diagnostic-info">GAS Webhook URL: <span id="api-base-url-display">N/A</span></div>
-            <div id="url-alert-box" class="url-alert">🚨 **重要!** 請將程式碼中的 `YOUR_GAS_WEBHOOK_URL` 替換為步驟一獲得的實際 URL。</div>
-             <div id="keypad" class="keypad-grid"></div>
         </div>
 
         <!-- 畫面 1.5: 生管主頁面 -->
@@ -199,24 +264,27 @@
             <!-- Tab 1 -->
             <div id="tab-queue" class="planner-tab-content">
                 <div class="admin-panel">
-                    <h3>➕ 建立總工單 (批次)</h3>
+                    <h3>➕ 建立總工單</h3>
                     <div class="history-section">
-                        <label style="font-size: 0.9rem; color: #aaa;">📂 從歷史記錄載入:</label>
-                        <select id="mwo-history-select" class="large-select" style="font-size:1rem; padding:8px;" onchange="loadMWOFromHistory()">
-                            <option value="">-- 選擇歷史工單 --</option>
-                        </select>
+                        <label style="color: #aaa;">📂 範本:</label>
+                        <div style="display:flex; gap:5px;">
+                            <select id="mwo-history-select" class="large-select" style="font-size:1rem; padding:8px; margin-bottom:5px;" onchange="loadMWOFromHistory()">
+                                <option value="">-- 選擇範本 --</option>
+                            </select>
+                            <button class="btn-delete" style="height:40px;" onclick="deleteTemplate()">🗑️</button>
+                        </div>
                     </div>
                     <label>總工單 ID:</label>
-                    <input type="text" id="batch-mwo" class="admin-input" placeholder="例如: MWO-20251202-A">
+                    <input type="text" id="batch-mwo" class="admin-input" placeholder="例如: MWO-A">
                     <h4>子工單項目</h4>
                     <div id="sub-items-container"></div>
                     <button class="btn-add-line" onclick="addSubItemRow()">+ 新增項目</button>
                     <div style="margin-top: 20px; display: flex; gap: 10px;">
-                        <button class="large-btn" style="width:50%; font-size:1.1rem; background-color:#607d8b; border-color:#78909c;" onclick="saveBatchTemplateOnly()">僅儲存為範本</button>
-                        <button class="large-btn btn-confirm" style="width:50%; font-size:1.1rem;" onclick="saveBatchWorkOrder()">確認並送出</button>
+                        <button class="large-btn" style="width:50%; font-size:1.1rem; background-color:#607d8b; border-color:#78909c;" onclick="saveBatchTemplateOnly()">僅儲存範本</button>
+                        <button class="large-btn btn-confirm" style="width:50%; font-size:1.1rem;" onclick="saveBatchWorkOrder()">確認送出</button>
                     </div>
                 </div>
-                <h3>目前排程清單</h3>
+                <h3>目前排程</h3>
                 <div style="overflow-x:auto;">
                     <table class="admin-table" id="admin-queue-table">
                         <thead><tr><th>總工單</th><th>產品</th><th>工序</th><th>操作</th></tr></thead>
@@ -228,10 +296,10 @@
             <div id="tab-report" class="planner-tab-content" style="display:none;">
                 <div class="admin-panel">
                     <h3>📊 已完成紀錄</h3>
-                    <button class="large-btn" style="width:100%; font-size:1.2rem; background-color:#2196f3;" onclick="calculateReport()">計算選取項目總工時</button>
+                    <button class="large-btn" style="width:100%; font-size:1.2rem; background-color:#2196f3;" onclick="calculateReport()">計算選取總工時</button>
                 </div>
                 <div id="report-summary" class="summary-box" style="display:none;">
-                    總人時: <span id="sum-manhours">0</span> 小時<br>良品: <span id="sum-good">0</span> | 損耗: <span id="sum-reject">0</span> KG
+                    總人時: <span id="sum-manhours">0</span> 小時<br>良品: <span id="sum-good">0</span> | 損耗: <span id="sum-reject">0</span>
                 </div>
                 <div style="overflow-x:auto;">
                     <table class="admin-table" id="admin-report-table">
@@ -239,14 +307,14 @@
                         <tbody id="admin-report-body"></tbody>
                     </table>
                 </div>
-                <button class="large-btn btn-back" style="margin-top:20px;" onclick="clearCompletedLogs()">清除已匯出紀錄</button>
+                <button class="large-btn btn-back" style="margin-top:20px;" onclick="clearCompletedLogs()">清除紀錄</button>
             </div>
         </div>
 
         <!-- 畫面 2: 待辦排隊 -->
         <div id="screen-queue" class="screen">
             <h1 id="queue-title"></h1>
-            <div style="font-size: 1rem; color: #00bcd4; margin-bottom: 10px;" data-i18n="select_job_prompt">👆 請點擊欲開始的工單</div>
+            <div style="font-size: 1rem; color: #00bcd4; margin-bottom: 5px;" data-i18n="select_job_prompt">👆 請點擊欲開始的工單</div>
             <select id="master-wo-select" class="large-select" onchange="filterQueue()">
                 <option value="ALL">全部顯示</option>
             </select>
@@ -277,11 +345,11 @@
             <div style="font-size: 3.5rem; color: #00bcd4;">
                 <span data-i18n="elapsed_time">已耗時</span>: <span id="elapsed-time">00:00:00</span>
             </div>
-            <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center;">
-                <button class="large-btn btn-adjust" style="width: 90%; margin-bottom: 15px;" onclick="adjustManpower()">
+            <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
+                <button class="large-btn btn-adjust" style="width: 90%; margin-bottom: 10px;" onclick="adjustManpower()">
                     <span data-i18n="btn_adjust_manpower">👥 調整人數</span>
                 </button>
-                <button class="large-btn btn-back" style="width: 90%; margin-bottom: 15px;" onclick="backToQueue()">
+                <button class="large-btn btn-back" style="width: 90%; margin-bottom: 10px;" onclick="backToQueue()">
                     <span data-i18n="btn_back_list">⬅ 暫離 / 返回列表</span>
                 </button>
                 <button class="large-btn btn-confirm" style="background-color: orange; width: 90%; font-size: 1.8rem;" onclick="endJob()">
@@ -308,7 +376,8 @@
         // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
-        
+        const VERSION = "V1.2";
+
         let state = {
             currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
             activeSessions: {}, currentViewingWoId: null, currentWoOperationName: null, 
@@ -320,7 +389,6 @@
         let timerInterval = null;
         let appQueue = []; let completedLogs = []; let mwoHistory = [];
 
-        // 預設工單
         const defaultQueue = [{ wo_id: 'WC001-Q1', master_wo_id: 'MWO-A', product_name_zh: '鮭魚分切', product_name_vn: 'Cá hồi lô A', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.2 }];
 
         const i18n = {
@@ -338,11 +406,14 @@
             }
         };
 
-        // --- Helper: Escape HTML to prevent broken UI on quotes ---
         function escapeHtml(text) {
             if (!text) return "";
             return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
+
+        // --- Loading Overlay ---
+        function showLoading() { document.getElementById('loading-overlay').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
 
         // --- Init & Storage ---
         function initApp() {
@@ -355,11 +426,9 @@
             const storedMWOHistory = localStorage.getItem('mes_mwo_history');
             if (storedMWOHistory) mwoHistory = JSON.parse(storedMWOHistory);
 
-            // Restore active state
             const storedSessions = localStorage.getItem('mes_active_sessions');
             if (storedSessions) state.activeSessions = JSON.parse(storedSessions);
 
-            // 🌟 關鍵修正：恢復上次瀏覽的工單 ID，防止刷新後找不到資訊
             const storedAppState = localStorage.getItem('mes_app_state');
             if (storedAppState) {
                 const savedState = JSON.parse(storedAppState);
@@ -380,7 +449,6 @@
             localStorage.setItem('mes_lite_logs', JSON.stringify(completedLogs));
             localStorage.setItem('mes_mwo_history', JSON.stringify(mwoHistory));
             localStorage.setItem('mes_active_sessions', JSON.stringify(state.activeSessions));
-            // Save UI State
             localStorage.setItem('mes_app_state', JSON.stringify({
                 currentViewingWoId: state.currentViewingWoId,
                 currentWoOperationName: state.currentWoOperationName,
@@ -462,7 +530,7 @@
 
         function updateMWOHistoryDropdown() {
             const select = document.getElementById('mwo-history-select');
-            select.innerHTML = '<option value="">-- 選擇歷史工單 --</option>';
+            select.innerHTML = '<option value="">-- 選擇範本 --</option>';
             [...mwoHistory].reverse().forEach(template => {
                 const option = document.createElement('option');
                 option.value = template.mwo_id;
@@ -476,9 +544,23 @@
             if (!selectedMWO) return;
             const template = mwoHistory.find(t => t.mwo_id === selectedMWO);
             if (!template) return;
-            document.getElementById('batch-mwo').value = template.mwo_id + "-" + Math.floor(Math.random()*1000); // 避免重複ID
+            document.getElementById('batch-mwo').value = template.mwo_id + "-" + Math.floor(Math.random()*1000); 
             document.getElementById('sub-items-container').innerHTML = '';
             template.items.forEach(item => addSubItemRow(item.prod, item.op));
+        }
+
+        // 新增：刪除範本功能
+        function deleteTemplate() {
+            const selectedMWO = document.getElementById('mwo-history-select').value;
+            if (!selectedMWO) { alert("請先選擇要刪除的範本"); return; }
+            if (confirm(`確定要刪除範本 ${selectedMWO} 嗎？`)) {
+                mwoHistory = mwoHistory.filter(t => t.mwo_id !== selectedMWO);
+                saveMWOHistoryToStorage();
+                updateMWOHistoryDropdown();
+                document.getElementById('batch-mwo').value = '';
+                document.getElementById('sub-items-container').innerHTML = '';
+                addSubItemRow();
+            }
         }
 
         function saveBatchTemplateOnly() {
@@ -491,12 +573,15 @@
                 if (prod && op) templateItems.push({ prod: prod, op: op });
             });
             if (templateItems.length > 0) {
-                // 檢查是否已存在，若有則覆蓋
                 const existIdx = mwoHistory.findIndex(x => x.mwo_id === mwo);
-                if (existIdx >= 0) mwoHistory[existIdx] = { mwo_id: mwo, items: templateItems };
-                else mwoHistory.push({ mwo_id: mwo, items: templateItems });
-                
-                saveAll(); updateMWOHistoryDropdown(); alert(`範本 ${mwo} 已儲存！`);
+                if (existIdx >= 0) {
+                    if(!confirm(`範本 ${mwo} 已存在，覆蓋？`)) return;
+                    mwoHistory[existIdx] = { mwo_id: mwo, items: templateItems };
+                } else {
+                    mwoHistory.push({ mwo_id: mwo, items: templateItems });
+                }
+                saveMWOHistoryToStorage(); updateMWOHistoryDropdown();
+                alert(`範本 ${mwo} 已儲存！`);
             }
         }
 
@@ -508,7 +593,6 @@
                 const prod = row.querySelector('.prod-input').value;
                 const op = row.querySelector('.op-input').value;
                 if (prod && op) {
-                    // 🌟 唯一 ID 生成策略：時間戳 + 索引
                     const uniqueId = `${mwo}-Q${Date.now()}-${index}`;
                     appQueue.push({
                         wo_id: uniqueId, master_wo_id: mwo, 
@@ -523,7 +607,6 @@
             if (addedCount > 0) {
                 const existIdx = mwoHistory.findIndex(x => x.mwo_id === mwo);
                 if (existIdx < 0) mwoHistory.push({ mwo_id: mwo, items: templateItems });
-                
                 saveAll(); renderPlannerQueue(); updateMWOHistoryDropdown();
                 alert(`成功新增 ${addedCount} 筆工單！`);
                 document.getElementById('batch-mwo').value = '';
@@ -651,7 +734,6 @@
                     const activeClass = isActive ? 'active-job' : '';
                     const badge = isActive ? `<div class="status-badge">${i18n[state.language].running_status}</div>` : '';
                     
-                    // 🌟 關鍵修正：使用 escapeHtml 處理 ID 和名稱
                     const safeWoId = escapeHtml(job.wo_id);
                     const safeOp = escapeHtml(op);
                     
@@ -795,10 +877,12 @@
         async function confirmFinishWithYields() {
             if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') { alert("🚨 錯誤: 請替換 GAS URL!"); return; }
             if (state.isSubmitting) return; 
+            
+            showLoading(); // 顯示轉圈圈
             state.isSubmitting = true;
             
             const session = state.activeSessions[state.currentViewingWoId];
-            if (!session) { alert("錯誤：無工單資訊 (請嘗試重新點選工單)"); state.isSubmitting = false; return; }
+            if (!session) { alert("錯誤：無工單資訊"); hideLoading(); state.isSubmitting = false; return; }
 
             const now = Date.now();
             const totalManHours = (session.accumulatedManHours || 0) + ((now - session.lastUpdateTime) / 3600000.0) * session.manpower;
@@ -812,15 +896,25 @@
             try {
                 const response = await fetch(GAS_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(postData) });
                 const data = await response.json();
+                
+                // 成功後才刪除狀態
                 if (data.success) {
                     completedLogs.push({ ...postData, endTime: new Date().toISOString(), totalManHours: totalManHours });
                     saveLogsToStorage();
-                } else { alert(`提交失敗: ${data.message}`); }
-                delete state.activeSessions[state.currentViewingWoId];
-                saveAll(); // 更新儲存
-                state.currentViewingWoId = null; state.finishData = {}; showScreen('screen-queue');
-            } catch (error) { alert(`${i18n[state.language].api_error}: ${error.message}`); showScreen('screen-queue'); } 
-            finally { state.isSubmitting = false; }
+                    delete state.activeSessions[state.currentViewingWoId];
+                    saveAll();
+                    state.currentViewingWoId = null; state.finishData = {}; 
+                    showScreen('screen-queue');
+                } else { 
+                    alert(`提交失敗: ${data.message}`); 
+                }
+            } catch (error) { 
+                alert(`${i18n[state.language].api_error}: ${error.message}`); 
+                showScreen('screen-queue'); 
+            } finally { 
+                state.isSubmitting = false; 
+                hideLoading(); // 隱藏轉圈圈
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => { initApp(); });
