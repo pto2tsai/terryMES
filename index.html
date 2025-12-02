@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (V2.2 List View) */
+        /* CSS: 響應式極簡風格 (V2.3 Crash Proof) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -75,7 +75,6 @@
 
         h1 { font-size: 1.5rem; color: var(--primary-color); margin: 5px 0; }
         
-        /* 按鈕優化 */
         .large-btn {
             padding: 12px; margin: 4px; font-size: 1.3rem; font-weight: bold;
             cursor: pointer; border: 2px solid var(--primary-color); border-radius: 8px;
@@ -94,84 +93,35 @@
             background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 16px auto;
         }
 
-        /* 工單列表 (列表模式) */
-        #queue-list-container { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 8px; 
-            padding: 2px; 
-        }
-        
+        #queue-list-container { display: grid; gap: 8px; padding: 2px; }
         .queue-item {
-            display: flex; 
-            flex-direction: row; /* 橫向排列 */
-            align-items: center;
-            justify-content: space-between;
-            text-align: left; 
-            border-color: var(--success-color); 
-            position: relative;
+            text-align: left; border-color: var(--success-color); position: relative;
             padding: 12px 15px;
-            border-radius: 8px; 
-            border: 1px solid var(--success-color);
-            background-color: var(--btn-bg); 
-            cursor: pointer;
+            min-height: auto; display: flex; flex-direction: column; justify-content: center;
+            border-radius: 8px; border: 1px solid var(--success-color);
+            background-color: var(--btn-bg); cursor: pointer;
             touch-action: manipulation;
-            min-height: 70px; /* 確保有足夠點擊高度 */
         }
         .queue-item:active { transform: scale(0.98); }
-        
-        /* 進行中樣式 */
         .queue-item.active-job {
-            background-color: #1b5e20; 
-            border-color: #66bb6a; 
-            border-width: 2px;
+            background-color: #1b5e20; border-color: #66bb6a; border-width: 2px;
             box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
         }
         
-        /* 列表左側：編號 */
-        .q-left {
-            flex: 0 0 60px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            text-align: center;
-            border-right: 1px solid #333;
-            margin-right: 10px;
-            padding-right: 10px;
-        }
-
-        /* 列表右側：內容 */
-        .q-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        /* 列表最右：狀態圖示 */
-        .q-right {
-            flex: 0 0 30px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #555;
-        }
-        
         .status-badge {
-            background-color: #00e676;
-            color: #000; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-            font-size: 0.8rem; 
-            font-weight: bold;
-            margin-left: auto;
+            position: absolute; top: 8px; right: 8px; background-color: #00e676;
+            color: #000; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;
+            display: none;
         }
+        .queue-item.active-job .status-badge { display: block; }
 
-        .main-lang { font-size: 1.1rem; font-weight: bold; color: #fff; }
-        .aux-lang { font-size: 0.9rem; color: #b0bec5; }
-        .wo-info { font-size: 0.75rem; color: #607d8b; margin-top: 2px; }
+        .q-num { font-size: 1.3rem; font-weight: bold; color: var(--primary-color); margin-right: 8px; float: left;}
+        .main-lang { font-size: 1.1rem; font-weight: bold; display: block; margin-bottom: 4px; }
+        .aux-lang { font-size: 0.9rem; color: #ccc; display: block; margin-bottom: 4px;}
+        .wo-details { font-size: 0.9rem; color: #b2dfdb; border-top: 1px solid #444; margin-top: 5px; padding-top: 5px; }
 
         .empty-message {
+            grid-column: 1 / -1;
             padding: 40px;
             color: #888;
             font-size: 1.2rem;
@@ -288,6 +238,7 @@
             h1 { font-size: 2rem; }
             .keypad-grid { gap: 10px; max-width: 450px; }
             .admin-table { font-size: 1rem; }
+            #queue-list-container { grid-template-columns: repeat(2, 1fr); }
         }
 
         @media (max-width: 767px) {
@@ -300,6 +251,7 @@
             .version-tag { writing-mode: horizontal-tb; margin-bottom: 0; margin-left: auto; }
             
             .container { padding: 5px; padding-top: 55px; height: 100vh; margin: 0; border-radius: 0; width: 100%; }
+            #queue-list-container { grid-template-columns: 1fr; }
             .sub-item-row { grid-template-columns: 1fr; }
             .keypad-grid .large-btn { padding: 12px; font-size: 1.4rem; }
         }
@@ -319,7 +271,7 @@
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
         </div>
-        <div class="version-tag">V2.2</div>
+        <div class="version-tag">V2.3</div>
     </div>
 
     <!-- Loading Overlay -->
@@ -332,7 +284,7 @@
         <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V2.2</span></h1>
+                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V2.3</span></h1>
                 <div style="font-size: 1rem; margin-bottom: 5px;">
                     <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
                 </div>
@@ -471,7 +423,7 @@
         // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
-        const VERSION = "V2.2";
+        const VERSION = "V2.3";
 
         let state = {
             currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
@@ -1101,16 +1053,26 @@
             const session = state.activeSessions[state.currentViewingWoId];
             if (!session) { alert("錯誤：無工單資訊"); hideLoading(); state.isSubmitting = false; return; }
 
-            const now = Date.now();
-            const totalManHours = (session.accumulatedManHours || 0) + ((now - session.lastUpdateTime) / 3600000.0) * session.manpower;
-            const postData = {
-                token: SECURITY_TOKEN, supervisor_pin: state.currentUser.user_pin, operation_name: session.operationName,
-                manpower_count: session.manpower, wo_id: state.currentViewingWoId,
-                start_time: session.startTimeISO, qty_good: state.finishData.qty_good, qty_reject: state.finishData.qty_reject,
-                actual_collar_qty: state.finishData.actual_collar_qty, actual_tail_qty: state.finishData.actual_tail_qty
-            };
-            
+            // 計算邏輯移到 try 內 (防止 NaN 崩潰)
             try {
+                const now = Date.now();
+                // 防呆：確保數值有效
+                const lastUpdate = session.lastUpdateTime || now;
+                const manpower = session.manpower || 1;
+                
+                const totalManHours = (session.accumulatedManHours || 0) + ((now - lastUpdate) / 3600000.0) * manpower;
+                
+                const effectiveDurationMs = (totalManHours / manpower) * 3600000.0;
+                // 防呆：避免 Invalid Date
+                const effectiveStartTimeISO = !isNaN(effectiveDurationMs) ? new Date(now - effectiveDurationMs).toISOString() : new Date().toISOString();
+    
+                const postData = {
+                    token: SECURITY_TOKEN, supervisor_pin: state.currentUser.user_pin, operation_name: session.operationName,
+                    manpower_count: session.manpower, wo_id: state.currentViewingWoId,
+                    start_time: effectiveStartTimeISO, qty_good: state.finishData.qty_good, qty_reject: state.finishData.qty_reject,
+                    actual_collar_qty: state.finishData.actual_collar_qty, actual_tail_qty: state.finishData.actual_tail_qty
+                };
+
                 const response = await fetch(GAS_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(postData) });
                 const data = await response.json();
                 
