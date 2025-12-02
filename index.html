@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (V1.4 Fixed) */
+        /* CSS: 響應式極簡風格 (V1.6 Fixed) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -149,10 +149,11 @@
         .admin-table th { background-color: var(--primary-color); color: black; }
         .admin-table tr:nth-child(even) { background-color: #1a3449; }
         .admin-panel { 
-            background-color: var(--panel-bg); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: left; 
+            background-color: var(--panel-bg); padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; 
             max-height: 65vh; overflow-y: auto;
+            border: 1px solid #333;
         }
-        .admin-input { width: 100%; padding: 8px; margin: 5px 0 10px 0; background: #000; border: 1px solid #555; color: white; font-size: 1rem; }
+        .admin-input { width: 100%; padding: 10px; margin: 5px 0 10px 0; background: #000; border: 1px solid #555; color: white; font-size: 1rem; border-radius: 5px;}
         .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 5px; align-items: center; }
         .btn-delete { background-color: #e91e63; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .btn-add-line { background-color: #4caf50; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 5px; width: 100%; }
@@ -223,7 +224,7 @@
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
         </div>
-        <div class="version-tag">V1.4</div>
+        <div class="version-tag">V1.6</div>
     </div>
 
     <!-- Loading Overlay -->
@@ -236,7 +237,7 @@
         <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.4</span></h1>
+                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.6</span></h1>
                 <div style="font-size: 1rem; margin-bottom: 5px;">
                     <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
                 </div>
@@ -254,8 +255,8 @@
         <div id="screen-planner" class="screen">
             <h1>📋 生管控制台</h1>
             <div class="planner-tabs">
-                <button class="tab-btn active" onclick="switchPlannerTab('tab-queue')">工單編輯</button>
-                <button class="tab-btn" onclick="switchPlannerTab('tab-report')">報表輸出</button>
+                <button class="tab-btn active" id="btn-tab-queue" onclick="switchPlannerTab('tab-queue')">工單編輯</button>
+                <button class="tab-btn" id="btn-tab-report" onclick="switchPlannerTab('tab-report')">報表輸出</button>
             </div>
             <!-- Tab 1 -->
             <div id="tab-queue" class="planner-tab-content">
@@ -373,7 +374,7 @@
         // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
-        const VERSION = "V1.4";
+        const VERSION = "V1.6";
 
         let state = {
             currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
@@ -413,9 +414,36 @@
         function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
 
         // --- Init & Storage ---
+        function saveQueueToStorage() {
+            localStorage.setItem('mes_lite_queue', JSON.stringify(appQueue));
+        }
+        function saveLogsToStorage() {
+            localStorage.setItem('mes_lite_logs', JSON.stringify(completedLogs));
+        }
+        function saveMWOHistoryToStorage() {
+            localStorage.setItem('mes_mwo_history', JSON.stringify(mwoHistory));
+        }
+        function saveSessionsToStorage() {
+            localStorage.setItem('mes_active_sessions', JSON.stringify(state.activeSessions));
+        }
+        function saveAppStateToStorage() {
+            localStorage.setItem('mes_app_state', JSON.stringify({
+                currentViewingWoId: state.currentViewingWoId,
+                currentWoOperationName: state.currentWoOperationName,
+                currentManpower: state.currentManpower
+            }));
+        }
+
         function initApp() {
             const storedQueue = localStorage.getItem('mes_lite_queue');
-            appQueue = storedQueue ? JSON.parse(storedQueue) : [...defaultQueue];
+            if (storedQueue) { 
+                const parsed = JSON.parse(storedQueue);
+                // 如果儲存的是空陣列，則載入預設值
+                if (parsed.length === 0) { appQueue = [...defaultQueue]; saveQueueToStorage(); } 
+                else { appQueue = parsed; }
+            } else { 
+                appQueue = [...defaultQueue]; saveQueueToStorage(); 
+            }
             
             const storedLogs = localStorage.getItem('mes_lite_logs');
             if (storedLogs) completedLogs = JSON.parse(storedLogs);
@@ -442,15 +470,11 @@
         }
 
         function saveAll() {
-            localStorage.setItem('mes_lite_queue', JSON.stringify(appQueue));
-            localStorage.setItem('mes_lite_logs', JSON.stringify(completedLogs));
-            localStorage.setItem('mes_mwo_history', JSON.stringify(mwoHistory));
-            localStorage.setItem('mes_active_sessions', JSON.stringify(state.activeSessions));
-            localStorage.setItem('mes_app_state', JSON.stringify({
-                currentViewingWoId: state.currentViewingWoId,
-                currentWoOperationName: state.currentWoOperationName,
-                currentManpower: state.currentManpower
-            }));
+            saveQueueToStorage();
+            saveLogsToStorage();
+            saveMWOHistoryToStorage();
+            saveSessionsToStorage();
+            saveAppStateToStorage();
         }
 
         function resetAllData() {
@@ -511,7 +535,10 @@
             document.querySelectorAll('.planner-tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(tabId).style.display = 'block';
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            
+            const activeBtnId = tabId === 'tab-queue' ? 'btn-tab-queue' : 'btn-tab-report';
+            document.getElementById(activeBtnId).classList.add('active');
+
             if (tabId === 'tab-queue') { renderPlannerQueue(); updateMWOHistoryDropdown(); }
             if (tabId === 'tab-report') renderPlannerReport();
         }
