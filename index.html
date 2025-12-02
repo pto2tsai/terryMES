@@ -43,12 +43,61 @@
             padding: 10px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            padding-top: 60px; /* 為頂部導航留空間 */
         }
 
         .screen {
             display: none;
             min-height: 90vh; 
             padding-bottom: 50px;
+        }
+
+        /* 頂部導航列 */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #081220;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .nav-title {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .nav-btn:active {
+            opacity: 0.7;
+        }
+
+        .nav-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
         }
 
         h1 {
@@ -59,19 +108,19 @@
         
         /* 通用大按鈕樣式 */
         .large-btn {
-            padding: 15px;
-            margin: 8px;
-            font-size: 1.5rem;
+            padding: 12px;
+            margin: 5px;
+            font-size: 1.3rem;
             font-weight: bold;
             cursor: pointer;
             border: 2px solid var(--primary-color);
-            border-radius: 12px;
+            border-radius: 8px;
             background-color: var(--btn-bg);
             color: white;
             transition: all 0.2s;
             line-height: 1.3;
             user-select: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         
         .large-btn:active {
@@ -90,54 +139,59 @@
         /* 下拉選單樣式 */
         .large-select {
             width: 95%;
-            font-size: 1.5rem;
-            padding: 15px;
-            margin-bottom: 20px;
+            font-size: 1.2rem;
+            padding: 10px;
+            margin-bottom: 15px;
             background-color: var(--btn-bg);
             color: white;
             border: 2px solid var(--primary-color);
-            border-radius: 12px;
-            appearance: none; /* 移除預設箭頭 */
+            border-radius: 8px;
+            appearance: none;
             background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300bcd4%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
             background-repeat: no-repeat;
             background-position: right 15px top 50%;
-            background-size: 20px auto;
+            background-size: 16px auto;
         }
 
         /* 工單列表容器 - 網格佈局 */
         #queue-list-container {
             display: grid;
-            gap: 15px;
+            gap: 10px;
             padding: 5px;
         }
 
+        /* 工單圖框縮小優化 */
         .queue-item {
             text-align: left;
             border-color: var(--success-color);
             position: relative;
-            padding: 20px;
-            min-height: 120px;
+            padding: 10px 15px; /* 縮小內距 */
+            min-height: auto;   /* 自動高度 */
             display: flex;
             flex-direction: column;
             justify-content: center;
+            border-radius: 8px;
+            border: 2px solid var(--success-color);
+            background-color: var(--btn-bg);
+            cursor: pointer;
         }
 
         .queue-item.active-job {
             background-color: #1b5e20;
             border-color: #66bb6a;
             border-width: 3px;
-            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
         }
 
         .status-badge {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 5px;
+            right: 5px;
             background-color: #00e676;
             color: #000;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
             font-weight: bold;
             display: none;
         }
@@ -146,15 +200,22 @@
             display: block;
         }
 
-        .main-lang {
+        .q-num {
             font-size: 1.4rem;
+            font-weight: bold; 
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
+
+        .main-lang {
+            font-size: 1.2rem;
             font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
+            display: inline-block;
+            margin-bottom: 2px;
         }
         
         .aux-lang {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: #ccc;
             display: block;
         }
@@ -180,8 +241,8 @@
         /* 數字鍵盤佈局 */
         .keypad-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 手機預設 3欄 */
-            gap: 10px;
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px;
             width: 100%;
             max-width: 500px;
             margin: 10px auto;
@@ -197,6 +258,11 @@
             border-color: #78909c;
         }
         
+        .btn-adjust {
+            background-color: #3f51b5;
+            border-color: #5c6bc0;
+        }
+
         .diagnostic-info {
             font-size: 0.7rem;
             color: #7fffd4; 
@@ -219,14 +285,14 @@
         .planner-tabs {
             display: flex;
             justify-content: space-around;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .tab-btn {
             background-color: transparent;
             border: 2px solid var(--primary-color);
             color: var(--primary-color);
-            padding: 10px 20px;
-            font-size: 1.2rem;
+            padding: 8px 15px;
+            font-size: 1.1rem;
             border-radius: 20px;
             cursor: pointer;
         }
@@ -243,7 +309,7 @@
         }
         .admin-table th, .admin-table td {
             border: 1px solid #444;
-            padding: 10px;
+            padding: 8px;
             text-align: left;
         }
         .admin-table th {
@@ -263,12 +329,19 @@
         }
         .admin-input {
             width: 100%;
-            padding: 10px;
-            margin: 5px 0 15px 0;
+            padding: 8px;
+            margin: 5px 0 10px 0;
             background: #000;
             border: 1px solid #555;
             color: white;
             font-size: 1rem;
+        }
+        .sub-item-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 40px;
+            gap: 5px;
+            margin-bottom: 5px;
+            align-items: center;
         }
         .btn-delete {
             background-color: #e91e63;
@@ -277,6 +350,15 @@
             padding: 5px 10px;
             border-radius: 5px;
             cursor: pointer;
+        }
+        .btn-add-line {
+            background-color: #4caf50;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 5px;
         }
         .summary-box {
             background-color: var(--success-color);
@@ -293,7 +375,7 @@
         /* 平板與桌面 (寬度大於 768px) */
         @media (min-width: 768px) {
             h1 { font-size: 2.5rem; }
-            .large-btn { font-size: 1.8rem; padding: 25px; }
+            .large-btn { font-size: 1.6rem; padding: 20px; }
             .pin-display { font-size: 4rem; height: 80px; line-height: 80px; }
             
             /* 平板模式下，工單列表顯示為 2 欄 */
@@ -301,19 +383,17 @@
                 grid-template-columns: repeat(2, 1fr); 
             }
             
-            /* 鍵盤在平板上改為 4 欄 (更寬) 或保持 3 欄但更大 */
             .keypad-grid {
                 gap: 15px;
                 max-width: 600px;
             }
             
-            /* 生管畫面在平板上更好看 */
             .admin-table { font-size: 1.1rem; }
         }
 
         /* 手機直向 (寬度小於 768px) */
         @media (max-width: 767px) {
-            .container { padding: 5px; }
+            .container { padding: 5px; padding-top: 60px; }
             h1 { font-size: 1.5rem; }
             
             /* 手機模式下，工單列表為單欄 */
@@ -322,22 +402,44 @@
             }
             
             .large-btn {
-                padding: 15px;
+                padding: 12px;
                 font-size: 1.2rem;
                 margin: 5px;
-            }
-            .queue-item {
-                min-height: 100px; /* 稍微縮小高度 */
             }
             .pin-display {
                 font-size: 2.5rem;
                 letter-spacing: 5px;
             }
             .admin-table th, .admin-table td { padding: 5px; font-size: 0.8rem; }
+            
+            .sub-item-row {
+                grid-template-columns: 1fr; /* 手機上讓輸入框垂直排列 */
+            }
         }
     </style>
 </head>
 <body>
+    <!-- 頂部導航列 (預設隱藏，登入後顯示) -->
+    <div id="nav-bar" class="nav-bar" style="display:none;">
+        <div class="nav-icons">
+            <button class="nav-btn" onclick="backToQueue()" title="返回列表">
+                <!-- 返回圖示 -->
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <button class="nav-btn" onclick="goHome()" title="回到主畫面">
+                <!-- 首頁圖示 -->
+                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            </button>
+        </div>
+        <div class="nav-title" id="nav-title-display">MES Lite</div>
+        <div class="nav-icons">
+            <button class="nav-btn" onclick="logout()" title="登出">
+                <!-- 登出圖示 -->
+                <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+            </button>
+        </div>
+    </div>
+
     <div class="container">
 
         <!-- 畫面 1: 登入 -->
@@ -370,20 +472,25 @@
                 <button class="tab-btn" onclick="switchPlannerTab('tab-report')">報表輸出</button>
             </div>
 
-            <!-- Tab 1: 工單編輯 -->
+            <!-- Tab 1: 工單編輯 (批次建立) -->
             <div id="tab-queue" class="planner-tab-content">
                 <div class="admin-panel">
-                    <h3>➕ 新增工單</h3>
+                    <h3>➕ 建立總工單 (批次)</h3>
                     <label>總工單 ID (Master WO):</label>
-                    <input type="text" id="new-mwo" class="admin-input" placeholder="例如: MWO-A">
-                    <label>產品名稱:</label>
-                    <input type="text" id="new-prod" class="admin-input" placeholder="例如: 鮭魚切片">
-                    <label>工序名稱:</label>
-                    <input type="text" id="new-op" class="admin-input" placeholder="例如: 真空包裝">
-                    <button class="large-btn btn-confirm" style="width:100%; font-size:1.2rem;" onclick="addWorkOrder()">新增至清單</button>
+                    <input type="text" id="batch-mwo" class="admin-input" placeholder="例如: MWO-20251202-A">
+                    
+                    <h4>子工單項目 (品項 & 工序)</h4>
+                    <div id="sub-items-container">
+                        <!-- 動態生成輸入列 -->
+                    </div>
+                    <button class="btn-add-line" onclick="addSubItemRow()">+ 新增項目</button>
+                    
+                    <div style="margin-top: 20px;">
+                        <button class="large-btn btn-confirm" style="width:100%; font-size:1.2rem;" onclick="saveBatchWorkOrder()">確認並送出總工單</button>
+                    </div>
                 </div>
 
-                <h3>目前清單 (本機儲存)</h3>
+                <h3>目前排程清單</h3>
                 <div style="overflow-x:auto;">
                     <table class="admin-table" id="admin-queue-table">
                         <thead>
@@ -433,8 +540,6 @@
                 </div>
                 <button class="large-btn btn-back" style="margin-top:20px;" onclick="clearCompletedLogs()">清除已匯出紀錄</button>
             </div>
-
-            <button class="large-btn btn-back" style="margin-top:30px;" onclick="logout()">登出</button>
         </div>
 
         <!-- 畫面 2: 待辦排隊 -->
@@ -483,10 +588,6 @@
             <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center;">
                 <button class="large-btn btn-adjust" style="width: 90%; margin-bottom: 15px;" onclick="adjustManpower()">
                     <span data-i18n="btn_adjust_manpower">👥 調整人數 / Change Manpower</span>
-                </button>
-
-                <button class="large-btn btn-back" style="width: 90%; margin-bottom: 15px;" onclick="backToQueue()">
-                    <span data-i18n="btn_back_list">⬅ 暫離 / 返回列表</span> (Quay lại)
                 </button>
 
                 <button class="large-btn btn-confirm" style="background-color: orange; width: 90%; font-size: 1.8rem;" onclick="endJob()">
@@ -607,13 +708,27 @@
             document.getElementById(screenId).style.display = 'block';
             state.currentScreen = screenId.replace('screen-', '');
             
+            // 處理導航列顯示
+            const navBar = document.getElementById('nav-bar');
             if (state.currentScreen === 'login') {
+                navBar.style.display = 'none';
                 renderKeypad('keypad', 'PIN');
                 state.currentPIN = '';
-            } else if (state.currentScreen === 'queue') {
+            } else {
+                navBar.style.display = 'flex';
+                // 更新導航標題
+                let title = "MES Lite";
+                if(state.currentScreen === 'queue') title = "待辦排程";
+                if(state.currentScreen === 'planner') title = "生管控制台";
+                if(state.currentScreen === 'working') title = "計時中";
+                document.getElementById('nav-title-display').textContent = title;
+            }
+
+            if (state.currentScreen === 'queue') {
                 loadQueue();
             } else if (state.currentScreen === 'planner') {
                 renderPlannerQueue();
+                addSubItemRow(); // 預設加一行
             }
         }
 
@@ -627,6 +742,17 @@
             if (state.currentUser && state.currentUser.name_zh) {
                 const greeting = currentLang === 'vn' ? `Chào Ông ${state.currentUser.name_vn}!` : `您好，${state.currentUser.name_zh}主管!`;
                 document.getElementById('queue-title').textContent = greeting;
+            }
+        }
+
+        // --- 導航列功能 ---
+        function goHome() {
+            // 如果是生管，回生管首頁，否則回排隊列表
+            if (state.currentUser && state.currentUser.user_pin === '9999') {
+                showScreen('screen-planner');
+                switchPlannerTab('tab-queue');
+            } else {
+                backToQueue();
             }
         }
 
@@ -657,35 +783,60 @@
             });
         }
 
-        function addWorkOrder() {
-            const mwo = document.getElementById('new-mwo').value;
-            const prod = document.getElementById('new-prod').value;
-            const op = document.getElementById('new-op').value;
+        // 動態新增子項目輸入列
+        function addSubItemRow() {
+            const container = document.getElementById('sub-items-container');
+            const div = document.createElement('div');
+            div.className = 'sub-item-row';
+            div.innerHTML = `
+                <input type="text" class="admin-input prod-input" placeholder="產品名稱 (如: 中段厚切)">
+                <input type="text" class="admin-input op-input" placeholder="工序名稱 (如: 真空包裝)">
+                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function saveBatchWorkOrder() {
+            const mwo = document.getElementById('batch-mwo').value;
+            const rows = document.querySelectorAll('.sub-item-row');
             
-            if (!mwo || !prod || !op) {
-                alert("請填寫所有欄位");
+            if (!mwo) {
+                alert("請輸入總工單 ID");
                 return;
             }
 
-            const newJob = {
-                wo_id: mwo + '-Q' + (appQueue.length + 1), // 簡單生成 ID
-                master_wo_id: mwo,
-                product_name_zh: prod,
-                product_name_vn: prod, // 暫用中文代替
-                operation_name_zh: op,
-                operation_name_vn: op,
-                queue_rank: appQueue.length + 1,
-                standard_time_hr: 1.0 // 預設
-            };
+            let addedCount = 0;
+            rows.forEach((row, index) => {
+                const prod = row.querySelector('.prod-input').value;
+                const op = row.querySelector('.op-input').value;
+                
+                if (prod && op) {
+                    const newJob = {
+                        wo_id: `${mwo}-Q${appQueue.length + 1 + index}`, 
+                        master_wo_id: mwo,
+                        product_name_zh: prod,
+                        product_name_vn: prod, 
+                        operation_name_zh: op,
+                        operation_name_vn: op,
+                        queue_rank: appQueue.length + 1 + index,
+                        standard_time_hr: 1.0
+                    };
+                    appQueue.push(newJob);
+                    addedCount++;
+                }
+            });
 
-            appQueue.push(newJob);
-            saveQueueToStorage();
-            renderPlannerQueue();
-            
-            // 清空輸入
-            document.getElementById('new-mwo').value = '';
-            document.getElementById('new-prod').value = '';
-            document.getElementById('new-op').value = '';
+            if (addedCount > 0) {
+                saveQueueToStorage();
+                renderPlannerQueue();
+                alert(`成功新增 ${addedCount} 筆工單！`);
+                // 清空輸入
+                document.getElementById('batch-mwo').value = '';
+                document.getElementById('sub-items-container').innerHTML = '';
+                addSubItemRow(); // 加回預設一行
+            } else {
+                alert("請至少輸入一個完整的子項目");
+            }
         }
 
         function deleteWorkOrder(index) {
@@ -897,11 +1048,13 @@
                     const badge = isActive ? `<div class="status-badge">${i18n[state.language].running_status}</div>` : '';
 
                     const html = `
-                        <div class="large-btn queue-item ${activeClass}" onclick="selectJob('${job.wo_id}', '${opName}')">
-                            <div style="font-size: 0.8em; color: #aaa; margin-bottom: 5px;">${job.master_wo_id}</div>
+                        <div class="queue-item ${activeClass}" onclick="selectJob('${job.wo_id}', '${opName}')">
                             <span class="q-num">Q${job.queue_rank}</span>
-                            <span class="main-lang">${prodName}</span>
-                            <span class="aux-lang">${opName}</span>
+                            <div style="flex-grow:1;">
+                                <span class="main-lang">${prodName}</span>
+                                <span class="aux-lang">${opName}</span>
+                            </div>
+                            <div style="font-size: 0.8em; color: #aaa;">${job.master_wo_id}</div>
                             ${badge}
                         </div>
                     `;
