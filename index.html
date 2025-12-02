@@ -43,7 +43,7 @@
             padding: 10px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding-top: 60px; /* 為頂部導航留空間 */
+            padding-top: 70px; /* 增加頂部空間給加大的導航列 */
         }
 
         .screen {
@@ -52,51 +52,54 @@
             padding-bottom: 50px;
         }
 
-        /* 頂部導航列 */
+        /* 頂部導航列 (加大版) */
         .nav-bar {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 50px;
+            height: 60px; /* 高度增加 */
             background-color: #081220;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 15px;
+            padding: 0 10px;
             z-index: 1000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
         .nav-title {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             color: var(--primary-color);
             font-weight: bold;
         }
 
         .nav-icons {
             display: flex;
-            gap: 15px;
+            gap: 10px;
         }
 
         .nav-btn {
             background: none;
             border: none;
             cursor: pointer;
-            padding: 5px;
+            padding: 10px; /* 增加點擊範圍 */
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
         }
         
         .nav-btn:active {
-            opacity: 0.7;
+            background-color: rgba(255,255,255,0.1);
         }
 
+        /* 圖示加大 */
         .nav-btn svg {
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             fill: currentColor;
         }
 
@@ -165,8 +168,8 @@
             text-align: left;
             border-color: var(--success-color);
             position: relative;
-            padding: 10px 15px; /* 縮小內距 */
-            min-height: auto;   /* 自動高度 */
+            padding: 10px 15px; 
+            min-height: auto;   
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -369,6 +372,13 @@
             font-weight: bold;
             font-size: 1.2rem;
         }
+        
+        /* 歷史記錄選擇區 */
+        .history-section {
+            border-top: 1px solid #444;
+            margin-top: 15px;
+            padding-top: 15px;
+        }
 
         /* --- 響應式設計 (Media Queries) --- */
 
@@ -393,7 +403,7 @@
 
         /* 手機直向 (寬度小於 768px) */
         @media (max-width: 767px) {
-            .container { padding: 5px; padding-top: 60px; }
+            .container { padding: 5px; } /* 已經有 padding-top: 70px */
             h1 { font-size: 1.5rem; }
             
             /* 手機模式下，工單列表為單欄 */
@@ -422,18 +432,18 @@
     <!-- 頂部導航列 (預設隱藏，登入後顯示) -->
     <div id="nav-bar" class="nav-bar" style="display:none;">
         <div class="nav-icons">
-            <button class="nav-btn" onclick="backToQueue()" title="返回列表">
+            <button class="nav-btn" onclick="backToQueue()" title="返回列表 (Back)">
                 <!-- 返回圖示 -->
                 <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
             </button>
-            <button class="nav-btn" onclick="goHome()" title="回到主畫面">
+            <button class="nav-btn" onclick="goHome()" title="回到主畫面 (Home)">
                 <!-- 首頁圖示 -->
                 <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             </button>
         </div>
         <div class="nav-title" id="nav-title-display">MES Lite</div>
         <div class="nav-icons">
-            <button class="nav-btn" onclick="logout()" title="登出">
+            <button class="nav-btn" onclick="logout()" title="登出 (Logout)">
                 <!-- 登出圖示 -->
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
@@ -476,6 +486,15 @@
             <div id="tab-queue" class="planner-tab-content">
                 <div class="admin-panel">
                     <h3>➕ 建立總工單 (批次)</h3>
+                    
+                    <!-- 歷史記錄讀取功能 -->
+                    <div class="history-section">
+                        <label style="font-size: 0.9rem; color: #aaa;">📂 從歷史記錄載入:</label>
+                        <select id="mwo-history-select" class="large-select" style="font-size:1rem; padding:8px;" onchange="loadMWOFromHistory()">
+                            <option value="">-- 選擇歷史工單 --</option>
+                        </select>
+                    </div>
+
                     <label>總工單 ID (Master WO):</label>
                     <input type="text" id="batch-mwo" class="admin-input" placeholder="例如: MWO-20251202-A">
                     
@@ -590,6 +609,10 @@
                     <span data-i18n="btn_adjust_manpower">👥 調整人數 / Change Manpower</span>
                 </button>
 
+                <button class="large-btn btn-back" style="width: 90%; margin-bottom: 15px;" onclick="backToQueue()">
+                    <span data-i18n="btn_back_list">⬅ 暫離 / 返回列表</span> (Quay lại)
+                </button>
+
                 <button class="large-btn btn-confirm" style="background-color: orange; width: 90%; font-size: 1.8rem;" onclick="endJob()">
                     <span data-i18n="btn_finish">完成工單</span> (HOÀN THÀNH)
                 </button>
@@ -604,7 +627,7 @@
             </div>
 
             <div style="margin: 10px auto; max-width: 400px;">
-                <div id="finish-instruction" style="font-size: 1.5rem; color: #00bcd4; margin-bottom: 10px; min-height: 40px;">
+                <div id="finish-instruction" style="font-size: 1.5rem; color: #00bcd4; margin-bottom: 10px; min-height: 40px; white-space: pre-line;">
                     <!-- 這裡是動態指令 -->
                 </div>
                 
@@ -642,17 +665,18 @@
 
         let timerInterval = null;
 
-        // 預設工單資料 (如果 LocalStorage 是空的)
+        // 預設工單資料
         const defaultQueue = [
             { wo_id: 'WC001-Q1', master_wo_id: 'MWO-A', product_name_zh: '鮭魚分切批次', product_name_vn: 'Cá hồi lô A', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.2 },
-            { wo_id: 'WC001-Q3', master_wo_id: 'MWO-A', product_name_zh: '中段厚切', product_name_vn: 'Lát giữa dày', operation_name_zh: '重量選別', operation_name_vn: 'Phân loại', queue_rank: 3, standard_time_hr: 0.3 },
-            { wo_id: 'WC002-Q1', master_wo_id: 'MWO-B', product_name_zh: '鮪魚分塊', product_name_vn: 'Cá ngừ cắt khối', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 5, standard_time_hr: 0.8 }
+            { wo_id: 'WC001-Q3', master_wo_id: 'MWO-A', product_name_zh: '中段厚切', product_name_vn: 'Lát giữa dày', operation_name_zh: '重量選別', operation_name_vn: 'Phân loại', queue_rank: 3, standard_time_hr: 0.3 }
         ];
 
-        // 實際使用的工單列表 (會從 Storage 讀取)
+        // 實際使用的工單列表
         let appQueue = [];
-        // 已完成的紀錄 (用於生管報表)
+        // 已完成的紀錄
         let completedLogs = [];
+        // 總工單歷史記錄 (MWO History)
+        let mwoHistory = [];
 
         // 雙語字典
         const i18n = {
@@ -660,13 +684,17 @@
                 login_prompt: '請輸入 4 位識別碼 (PIN)', pin_error: 'PIN 碼錯誤！', select_job_prompt: '👆 請點擊欲開始的工單', job_start_error: '工單啟動失敗!', working_wo: '工單', manpower_count: '人數', elapsed_time: '已耗時', working_in_progress: '正在進行中', 
                 manpower_input_title: '步驟 2: 輸入人數', manpower_error: '人數必須大於 0',
                 finish_prompt: '步驟 4: 輸入數量', finish_wo: '工單', finish_step1: '❌ 不良品/損耗重量 (KG)', finish_step2: '下巴重量 (KG)', finish_step3: '尾段重量 (KG)', finish_step4: '✅ 中後段總重 (KG)', finish_step5_good: '✅ 良品數量 (PCS/KG)', finish_step5_reject: '❌ 不良品數量 (PCS/KG)', btn_finish: '完成工單', btn_confirm_submit: '確認提交', missing_data: '數據不完整', api_error: '連線錯誤', no_job_in_queue: '目前沒有待辦工單', btn_back_list: '⬅ 暫離 / 返回列表', running_status: '進行中',
-                btn_adjust_manpower: '👥 調整人數 / Change Manpower'
+                btn_adjust_manpower: '👥 調整人數 / Change Manpower',
+                confirm_summary_title: '📋 請確認資料 (Please Confirm):',
+                confirm_btn_text: 'OK 鍵確認送出'
             },
             vn: {
                 login_prompt: 'NHẬP MÃ ĐỊNH DANH (PIN)', pin_error: 'Mã PIN sai!', select_job_prompt: '👆 CHỌN CÔNG VIỆC', job_start_error: 'Lỗi bắt đầu!', working_wo: 'Đơn hàng', manpower_count: 'Số người', elapsed_time: 'Đã chạy giờ', working_in_progress: 'ĐANG THỰC HIỆN', 
                 manpower_input_title: 'BƯỚC 2: NHẬP SỐ NGƯỜI', manpower_error: 'Số người > 0',
                 finish_prompt: 'BƯỚC 4: NHẬP SỐ LƯỢNG', finish_wo: 'Đơn hàng', finish_step1: '❌ SỐ CÂN NẶNG HỎNG (KG)', finish_step2: 'SỐ CÂN NẶNG CẰM (KG)', finish_step3: 'SỐ CÂN NẶNG ĐUÔI (KG)', finish_step4: '✅ TỔNG CÂN NẶNG GIỮA/SAU (KG)', finish_step5_good: '✅ Số lượng tốt (PCS/KG)', finish_step5_reject: '❌ Số lượng hỏng (PCS/KG)', btn_finish: 'Hoàn thành', btn_confirm_submit: 'XÁC NHẬN GỬI', missing_data: 'Thiếu dữ liệu', api_error: 'Lỗi kết nối', no_job_in_queue: 'Không có đơn hàng', btn_back_list: '⬅ Quay lại', running_status: 'Running',
-                btn_adjust_manpower: '👥 Thay đổi nhân lực'
+                btn_adjust_manpower: '👥 Thay đổi nhân lực',
+                confirm_summary_title: '📋 Xác nhận dữ liệu:',
+                confirm_btn_text: 'Nhấn OK để gửi'
             }
         };
 
@@ -677,13 +705,18 @@
             if (storedQueue) {
                 appQueue = JSON.parse(storedQueue);
             } else {
-                appQueue = [...defaultQueue]; // 使用預設
+                appQueue = [...defaultQueue]; 
                 saveQueueToStorage();
             }
 
             const storedLogs = localStorage.getItem('mes_lite_logs');
             if (storedLogs) {
                 completedLogs = JSON.parse(storedLogs);
+            }
+
+            const storedMWOHistory = localStorage.getItem('mes_mwo_history');
+            if (storedMWOHistory) {
+                mwoHistory = JSON.parse(storedMWOHistory);
             }
 
             document.getElementById('api-base-url-display').textContent = GAS_WEBHOOK_URL; 
@@ -699,6 +732,9 @@
         }
         function saveLogsToStorage() {
             localStorage.setItem('mes_lite_logs', JSON.stringify(completedLogs));
+        }
+        function saveMWOHistoryToStorage() {
+            localStorage.setItem('mes_mwo_history', JSON.stringify(mwoHistory));
         }
 
         // --- UI Functions ---
@@ -716,7 +752,6 @@
                 state.currentPIN = '';
             } else {
                 navBar.style.display = 'flex';
-                // 更新導航標題
                 let title = "MES Lite";
                 if(state.currentScreen === 'queue') title = "待辦排程";
                 if(state.currentScreen === 'planner') title = "生管控制台";
@@ -728,7 +763,11 @@
                 loadQueue();
             } else if (state.currentScreen === 'planner') {
                 renderPlannerQueue();
-                addSubItemRow(); // 預設加一行
+                updateMWOHistoryDropdown(); // 更新歷史記錄下拉選單
+                // 如果沒有行，加一行預設
+                if (document.getElementById('sub-items-container').children.length === 0) {
+                    addSubItemRow();
+                }
             }
         }
 
@@ -747,7 +786,6 @@
 
         // --- 導航列功能 ---
         function goHome() {
-            // 如果是生管，回生管首頁，否則回排隊列表
             if (state.currentUser && state.currentUser.user_pin === '9999') {
                 showScreen('screen-planner');
                 switchPlannerTab('tab-queue');
@@ -765,7 +803,10 @@
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
 
-            if (tabId === 'tab-queue') renderPlannerQueue();
+            if (tabId === 'tab-queue') {
+                renderPlannerQueue();
+                updateMWOHistoryDropdown();
+            }
             if (tabId === 'tab-report') renderPlannerReport();
         }
 
@@ -784,16 +825,48 @@
         }
 
         // 動態新增子項目輸入列
-        function addSubItemRow() {
+        function addSubItemRow(prod = '', op = '') {
             const container = document.getElementById('sub-items-container');
             const div = document.createElement('div');
             div.className = 'sub-item-row';
             div.innerHTML = `
-                <input type="text" class="admin-input prod-input" placeholder="產品名稱 (如: 中段厚切)">
-                <input type="text" class="admin-input op-input" placeholder="工序名稱 (如: 真空包裝)">
+                <input type="text" class="admin-input prod-input" placeholder="產品名稱 (如: 中段厚切)" value="${prod}">
+                <input type="text" class="admin-input op-input" placeholder="工序名稱 (如: 真空包裝)" value="${op}">
                 <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
+        }
+
+        // 歷史工單功能
+        function updateMWOHistoryDropdown() {
+            const select = document.getElementById('mwo-history-select');
+            select.innerHTML = '<option value="">-- 選擇歷史工單 --</option>';
+            // 反轉顯示，最新的在上面
+            [...mwoHistory].reverse().forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.mwo_id;
+                // 顯示 MWO ID 和第一個產品名稱作為提示
+                const desc = `${template.mwo_id} (${template.items.length} 項)`;
+                option.textContent = desc;
+                select.appendChild(option);
+            });
+        }
+
+        function loadMWOFromHistory() {
+            const selectedMWO = document.getElementById('mwo-history-select').value;
+            if (!selectedMWO) return;
+
+            const template = mwoHistory.find(t => t.mwo_id === selectedMWO);
+            if (!template) return;
+
+            // 填充資料到編輯區
+            document.getElementById('batch-mwo').value = template.mwo_id + "-COPY"; // 自動加後綴避免重複
+            const container = document.getElementById('sub-items-container');
+            container.innerHTML = ''; // 清空現有
+            
+            template.items.forEach(item => {
+                addSubItemRow(item.prod, item.op);
+            });
         }
 
         function saveBatchWorkOrder() {
@@ -806,6 +879,8 @@
             }
 
             let addedCount = 0;
+            const templateItems = [];
+
             rows.forEach((row, index) => {
                 const prod = row.querySelector('.prod-input').value;
                 const op = row.querySelector('.op-input').value;
@@ -822,18 +897,29 @@
                         standard_time_hr: 1.0
                     };
                     appQueue.push(newJob);
+                    templateItems.push({ prod: prod, op: op });
                     addedCount++;
                 }
             });
 
             if (addedCount > 0) {
                 saveQueueToStorage();
+                
+                // 儲存到歷史記錄 (如果 ID 不重複)
+                const exists = mwoHistory.some(t => t.mwo_id === mwo);
+                if (!exists) {
+                    mwoHistory.push({ mwo_id: mwo, items: templateItems });
+                    saveMWOHistoryToStorage();
+                }
+
                 renderPlannerQueue();
-                alert(`成功新增 ${addedCount} 筆工單！`);
+                updateMWOHistoryDropdown();
+                alert(`成功新增 ${addedCount} 筆工單！並已儲存至歷史記錄。`);
+                
                 // 清空輸入
                 document.getElementById('batch-mwo').value = '';
                 document.getElementById('sub-items-container').innerHTML = '';
-                addSubItemRow(); // 加回預設一行
+                addSubItemRow(); 
             } else {
                 alert("請至少輸入一個完整的子項目");
             }
@@ -853,7 +939,6 @@
             // 反向顯示，最新的在上面
             [...completedLogs].reverse().forEach((log, index) => {
                 const time = new Date(log.endTime).toLocaleString();
-                // 原始索引 (因為反向了)
                 const realIndex = completedLogs.length - 1 - index;
                 
                 const row = `<tr>
@@ -978,7 +1063,6 @@
         // --- Logic ---
 
         function validateLogin(pin) {
-            // 特殊: 生管登入
             if (pin === '9999') {
                 showScreen('screen-planner');
                 switchPlannerTab('tab-queue');
@@ -1005,7 +1089,6 @@
         }
 
         function loadQueue() {
-            // 1. 提取所有總工單 ID 製作下拉選單
             const masterWOs = [...new Set(appQueue.map(item => item.master_wo_id))];
             const select = document.getElementById('master-wo-select');
             
@@ -1031,7 +1114,6 @@
             const listContainer = document.getElementById('queue-list-container');
             listContainer.innerHTML = '';
 
-            // 使用 appQueue 而不是 mockQueue
             const filteredQueue = appQueue.filter(job => {
                 return selectedMasterWO === 'ALL' || job.master_wo_id === selectedMasterWO;
             });
@@ -1201,6 +1283,7 @@
             const instruction = document.getElementById('finish-instruction');
             const lang = state.language;
 
+            // 處理四步驟 (分切/分料)
             if (state.finishStep >= 1 && state.finishStep <= 4) {
                 if (state.finishStep === 1) { 
                     state.finishData.qty_reject = value;
@@ -1216,21 +1299,59 @@
                     instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step4}</span>`;
                 } else if (state.finishStep === 4) { 
                     state.finishData.qty_good = value;
-                    confirmFinishWithYields();
+                    
+                    // 新增：進入第 7 步 (確認畫面)
+                    state.finishStep = 7;
+                    showSummary();
                     return;
                 }
-            } else if (state.finishStep === 5) { 
+            } else if (state.finishStep === 5) { // 處理標準兩步驟
                 state.finishData.qty_good = value;
                 state.finishStep = 6;
                 instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step5_reject}</span>`;
             } else if (state.finishStep === 6) { 
                  state.finishData.qty_reject = value;
-                 confirmFinishWithYields(); 
+                 // 新增：進入第 7 步 (確認畫面)
+                 state.finishStep = 7;
+                 showSummary();
                  return;
             }
             
-            state.currentTypedValue = '0';
-            document.getElementById('qty-input-display').textContent = '0';
+            // 如果不是確認步驟，才重置輸入框
+            if (state.finishStep !== 7) {
+                state.currentTypedValue = '0';
+                document.getElementById('qty-input-display').textContent = '0';
+            }
+        }
+
+        // 新增：顯示總結畫面
+        function showSummary() {
+            const instruction = document.getElementById('finish-instruction');
+            const lang = state.language;
+            
+            // 構建確認訊息
+            let summaryHTML = `<div style="font-size:0.8em; text-align:left; line-height:1.4;">
+                ${i18n[lang].confirm_summary_title}<br>
+                ----------------<br>
+                ${i18n[lang].finish_step5_good}: <b>${state.finishData.qty_good}</b><br>
+                ${i18n[lang].finish_step5_reject}: <b>${state.finishData.qty_reject}</b><br>`;
+                
+            if (state.finishData.actual_collar_qty > 0) {
+                summaryHTML += `下巴: <b>${state.finishData.actual_collar_qty}</b> | 尾段: <b>${state.finishData.actual_tail_qty}</b><br>`;
+            }
+            summaryHTML += `----------------<br><span style="color:#00e676">${i18n[lang].confirm_btn_text}</span></div>`;
+
+            instruction.innerHTML = summaryHTML;
+            // 清空數字輸入顯示，以免混淆
+            document.getElementById('qty-input-display').textContent = '---';
+        }
+
+        // 處理確認鍵邏輯
+        function handleConfirmKey() {
+            // 如果已經在確認步驟 (Step 7)，按下 OK 則送出
+            if (state.finishStep === 7) {
+                confirmFinishWithYields();
+            }
         }
 
         async function confirmFinishWithYields() {
@@ -1280,7 +1401,8 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert(`${i18n[state.language].btn_confirm_submit} 成功! ${data.message}`);
+                    // 移除成功提示框，直接跳轉
+                    // alert(`${i18n[state.language].btn_confirm_submit} 成功! ${data.message}`);
                     
                     // 保存完成紀錄到 LocalStorage 供生管查詢
                     completedLogs.push({
@@ -1304,6 +1426,58 @@
                 showScreen('screen-queue'); 
             } finally {
                 state.isSubmitting = false; 
+            }
+        }
+
+        // 修改 Keypad Handler 以支援確認步驟
+        function handleKeypadInput(key) {
+            if (state.isSubmitting && key === 'OK') return;
+
+            // 特殊處理：如果在確認步驟，只有 OK 鍵有效
+            if (state.finishStep === 7) {
+                if (key === 'OK') handleConfirmKey();
+                return;
+            }
+
+            let displayElementId;
+            let currentInput;
+
+            if (state.currentScreen === 'login') {
+                displayElementId = 'pin-input';
+                currentInput = state.currentPIN;
+            } else if (state.currentScreen === 'manpower') { 
+                displayElementId = 'manpower-input-display';
+                currentInput = state.currentTypedValue;
+            } else { 
+                displayElementId = 'qty-input-display';
+                currentInput = state.currentTypedValue;
+            }
+            
+            document.getElementById('login-error').textContent = ''; 
+
+            if (key >= '0' && key <= '9') {
+                if (currentInput.length < 8) {
+                    currentInput = (currentInput === '0' || currentInput === '') ? key : currentInput + key;
+                }
+            } else if (key === 'C') {
+                currentInput = '0';
+            } else if (key === 'OK') {
+                if (state.currentScreen === 'login') {
+                    validateLogin(currentInput);
+                } else if (state.currentScreen === 'manpower') { 
+                    confirmManpower(parseInt(currentInput));
+                } else if (state.currentScreen === 'finish') {
+                    processFinishStep(parseFloat(currentInput));
+                }
+                return;
+            }
+            
+            if (state.currentScreen === 'login') {
+                state.currentPIN = currentInput;
+                document.getElementById(displayElementId).textContent = currentInput.padEnd(4, '*').replace(/./g, '*').substring(0, 4);
+            } else {
+                state.currentTypedValue = currentInput;
+                document.getElementById(displayElementId).textContent = currentInput;
             }
         }
 
