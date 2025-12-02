@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (V2.3 Crash Proof) */
+        /* CSS: 響應式極簡風格 (V2.4 Stability Fix) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -60,6 +60,12 @@
         }
         .nav-btn:active { background-color: rgba(255,255,255,0.1); transform: scale(0.95); }
         .nav-btn svg { width: 36px; height: 36px; fill: currentColor; }
+
+        /* 導航標題 (預設在側邊欄隱藏，避免過擠) */
+        .nav-title {
+            font-size: 1.2rem; color: var(--primary-color); font-weight: bold;
+            display: none; 
+        }
 
         .version-tag {
             font-size: 0.7rem; color: #555; margin-bottom: 10px; writing-mode: vertical-lr;
@@ -249,6 +255,7 @@
             }
             .nav-icons { flex-direction: row; gap: 15px; margin-bottom: 0; }
             .version-tag { writing-mode: horizontal-tb; margin-bottom: 0; margin-left: auto; }
+            .nav-title { display: block; } /* 手機版顯示標題 */
             
             .container { padding: 5px; padding-top: 55px; height: 100vh; margin: 0; border-radius: 0; width: 100%; }
             #queue-list-container { grid-template-columns: 1fr; }
@@ -271,7 +278,9 @@
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
         </div>
-        <div class="version-tag">V2.3</div>
+        <!-- V2.4 新增：補回標題元素，但在 CSS 中設定電腦版隱藏，手機版顯示 -->
+        <div class="nav-title" id="nav-title-display">MES Lite</div>
+        <div class="version-tag">V2.4</div>
     </div>
 
     <!-- Loading Overlay -->
@@ -284,7 +293,7 @@
         <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V2.3</span></h1>
+                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V2.4</span></h1>
                 <div style="font-size: 1rem; margin-bottom: 5px;">
                     <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
                 </div>
@@ -423,7 +432,7 @@
         // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
-        const VERSION = "V2.3";
+        const VERSION = "V2.4";
 
         let state = {
             currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
@@ -493,7 +502,6 @@
             if (storedQueue) { 
                 try {
                     const parsed = JSON.parse(storedQueue);
-                    // 嚴格檢查：如果陣列為空或格式錯誤，強制使用預設
                     if (!Array.isArray(parsed) || parsed.length === 0) { 
                         appQueue = [...defaultQueue]; 
                         saveQueueToStorage(); 
@@ -603,7 +611,10 @@
                 if(state.currentScreen === 'queue') title = "待辦排程";
                 if(state.currentScreen === 'planner') title = "生管控制台";
                 if(state.currentScreen === 'working') title = "計時中";
-                document.getElementById('nav-title-display').textContent = title;
+                
+                // V2.4 FIX: 安全檢查 nav-title-display 是否存在
+                const titleEl = document.getElementById('nav-title-display');
+                if(titleEl) titleEl.textContent = title;
             }
 
             if (state.currentScreen === 'queue') loadQueue();
