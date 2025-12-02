@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (V1.3 Optimized) */
+        /* CSS: 響應式極簡風格 (V1.4 Fixed) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -34,7 +34,7 @@
             overflow: hidden;
         }
 
-        /* 導航列 (加大圖示) */
+        /* 導航列 */
         .nav-bar {
             width: var(--nav-width);
             height: 100vh;
@@ -59,7 +59,7 @@
             touch-action: manipulation;
         }
         .nav-btn:active { background-color: rgba(255,255,255,0.1); transform: scale(0.95); }
-        .nav-btn svg { width: 36px; height: 36px; fill: currentColor; } /* 圖示加大 */
+        .nav-btn svg { width: 36px; height: 36px; fill: currentColor; }
 
         .version-tag {
             font-size: 0.7rem; color: #555; margin-bottom: 10px; writing-mode: vertical-lr;
@@ -75,8 +75,9 @@
 
         h1 { font-size: 1.5rem; color: var(--primary-color); margin: 5px 0; }
         
+        /* 按鈕優化 */
         .large-btn {
-            padding: 10px; margin: 4px; font-size: 1.2rem; font-weight: bold;
+            padding: 12px; margin: 4px; font-size: 1.3rem; font-weight: bold;
             cursor: pointer; border: 2px solid var(--primary-color); border-radius: 8px;
             background-color: var(--btn-bg); color: white; transition: all 0.1s;
             line-height: 1.2; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -89,15 +90,17 @@
             width: 98%; font-size: 1.1rem; padding: 10px; margin-bottom: 10px;
             background-color: var(--btn-bg); color: white; border: 2px solid var(--primary-color);
             border-radius: 8px; appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300bcd4%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 16px auto;
         }
 
-        /* 工單列表 (更緊湊) */
-        #queue-list-container { display: grid; gap: 6px; padding: 2px; }
+        /* 工單列表 */
+        #queue-list-container { display: grid; gap: 8px; padding: 2px; }
         .queue-item {
             text-align: left; border-color: var(--success-color); position: relative;
-            padding: 8px 10px; /* 縮小內距 */
+            padding: 12px 15px; /* 稍微增加內距以容納明細 */
             min-height: auto; display: flex; flex-direction: column; justify-content: center;
-            border-radius: 6px; border: 1px solid var(--success-color); /* 線條變細 */
+            border-radius: 8px; border: 1px solid var(--success-color);
             background-color: var(--btn-bg); cursor: pointer;
             touch-action: manipulation;
         }
@@ -107,15 +110,17 @@
             box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
         }
         .status-badge {
-            position: absolute; top: 5px; right: 5px; background-color: #00e676;
-            color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;
+            position: absolute; top: 8px; right: 8px; background-color: #00e676;
+            color: #000; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;
             display: none;
         }
         .queue-item.active-job .status-badge { display: block; }
 
-        .q-num { font-size: 1.1rem; font-weight: bold; color: var(--primary-color); margin-right: 8px; }
-        .main-lang { font-size: 1rem; font-weight: bold; display: inline-block; margin-bottom: 2px; }
-        .aux-lang { font-size: 0.8rem; color: #ccc; display: block; }
+        .q-num { font-size: 1.3rem; font-weight: bold; color: var(--primary-color); margin-right: 8px; float: left;}
+        .main-lang { font-size: 1.1rem; font-weight: bold; display: block; margin-bottom: 4px; }
+        .aux-lang { font-size: 0.9rem; color: #ccc; display: block; margin-bottom: 4px;}
+        /* 新增：明細樣式 */
+        .wo-details { font-size: 0.85rem; color: #8bc34a; border-top: 1px solid #333; margin-top: 5px; padding-top: 5px; }
 
         .pin-display {
             font-size: 3rem; letter-spacing: 5px; margin: 10px auto;
@@ -133,6 +138,7 @@
         .btn-confirm { background-color: var(--success-color); border-color: var(--success-color); font-size: 1.3rem; }
         .btn-back { background-color: #607d8b; border-color: #78909c; }
         .btn-adjust { background-color: #3f51b5; border-color: #5c6bc0; }
+        .btn-reset { background-color: #d32f2f; border-color: #b71c1c; font-size: 1rem; width: 100%; margin-top: 10px;}
 
         .diagnostic-info { font-size: 0.6rem; color: #555; margin-top: 5px; }
         .url-alert { background-color: #581515; border: 2px solid var(--error-color); padding: 10px; margin-bottom: 10px; border-radius: 5px; font-size: 0.9rem; color: white; text-align: left; font-weight: bold; display: none; }
@@ -144,7 +150,7 @@
         .admin-table tr:nth-child(even) { background-color: #1a3449; }
         .admin-panel { 
             background-color: var(--panel-bg); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: left; 
-            max-height: 65vh; overflow-y: auto; /* 確保內容過長時可捲動 */
+            max-height: 65vh; overflow-y: auto;
         }
         .admin-input { width: 100%; padding: 8px; margin: 5px 0 10px 0; background: #000; border: 1px solid #555; color: white; font-size: 1rem; }
         .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 5px; align-items: center; }
@@ -167,19 +173,18 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .loading-text { color: white; margin-top: 20px; font-size: 1.2rem; font-weight: bold; }
 
-        /* --- 響應式設計 (電腦版置中視窗) --- */
+        /* --- 響應式設計 --- */
         @media (min-width: 768px) {
             body { background-color: #2b2b2b; align-items: center; justify-content: center;}
             .nav-bar {
-                position: absolute; left: 0; top: 0; height: 100%; width: 80px; /* 增加導航寬度 */
+                position: absolute; left: 0; top: 0; height: 100%; width: 80px;
                 border-radius: 20px 0 0 20px;
             }
             .container {
-                max-width: 750px; /* 視窗寬度 */
-                background-color: var(--bg-color);
+                max-width: 750px; background-color: var(--bg-color);
                 box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
                 height: calc(100vh - 40px); border-radius: 20px;
-                overflow: hidden; padding-left: 80px; /* 避開導航 */
+                overflow: hidden; padding-left: 80px;
                 width: 100%;
             }
             h1 { font-size: 2rem; }
@@ -218,7 +223,7 @@
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
         </div>
-        <div class="version-tag">V1.3</div>
+        <div class="version-tag">V1.4</div>
     </div>
 
     <!-- Loading Overlay -->
@@ -231,7 +236,7 @@
         <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.3</span></h1>
+                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.4</span></h1>
                 <div style="font-size: 1rem; margin-bottom: 5px;">
                     <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
                 </div>
@@ -274,6 +279,7 @@
                         <button class="large-btn" style="width:50%; font-size:1.1rem; background-color:#607d8b; border-color:#78909c;" onclick="saveBatchTemplateOnly()">僅儲存範本</button>
                         <button class="large-btn btn-confirm" style="width:50%; font-size:1.1rem;" onclick="saveBatchWorkOrder()">確認送出</button>
                     </div>
+                    <button class="large-btn btn-reset" onclick="resetAllData()">⚠️ 重置所有資料 (修復空白問題)</button>
                 </div>
                 <h3>目前排程</h3>
                 <div style="overflow-x:auto;">
@@ -367,7 +373,7 @@
         // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
-        const VERSION = "V1.3";
+        const VERSION = "V1.4";
 
         let state = {
             currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
@@ -445,6 +451,13 @@
                 currentWoOperationName: state.currentWoOperationName,
                 currentManpower: state.currentManpower
             }));
+        }
+
+        function resetAllData() {
+            if(confirm("確定要重置所有資料？這會刪除本機所有工單、紀錄和設定。")) {
+                localStorage.clear();
+                location.reload();
+            }
         }
 
         // --- UI ---
@@ -540,7 +553,6 @@
             template.items.forEach(item => addSubItemRow(item.prod, item.op));
         }
 
-        // 修改：新增刪除範本功能
         function deleteTemplate() {
             const selectedMWO = document.getElementById('mwo-history-select').value;
             if (!selectedMWO) { alert("請先選擇要刪除的範本"); return; }
@@ -548,7 +560,6 @@
                 mwoHistory = mwoHistory.filter(t => t.mwo_id !== selectedMWO);
                 saveMWOHistoryToStorage();
                 updateMWOHistoryDropdown();
-                // 清空當前選擇
                 document.getElementById('mwo-history-select').value = "";
             }
         }
@@ -727,11 +738,18 @@
                     const safeWoId = escapeHtml(job.wo_id);
                     const safeOp = escapeHtml(op);
                     
+                    // 顯示更多明細：加入 master_wo_id
                     list.innerHTML += `<div class="queue-item ${activeClass}" onclick="selectJob('${safeWoId}', '${safeOp}')">
-                        <span class="q-num">Q${job.queue_rank}</span><div style="flex-grow:1;"><span class="main-lang">${escapeHtml(prod)}</span><span class="aux-lang">${safeOp}</span></div>
-                        <div style="font-size: 0.8rem; color: #aaa;">${escapeHtml(job.master_wo_id)}</div>${badge}</div>`;
+                        <span class="q-num">Q${job.queue_rank}</span>
+                        <div style="flex-grow:1;">
+                            <span class="main-lang">${escapeHtml(prod)}</span>
+                            <span class="aux-lang">${safeOp}</span>
+                        </div>
+                        <div class="wo-details">單號: ${escapeHtml(job.master_wo_id)}</div>
+                        <div class="wo-details" style="color:#aaa;">工時: ${job.standard_time_hr} Hr</div>
+                        ${badge}</div>`;
                 });
-            } else { list.innerHTML = `<p style="font-size:1.2rem; color: #ccc;">${i18n[state.language].no_job_in_queue}</p>`; }
+            } else { list.innerHTML = `<p style="font-size:1.2rem; color: #ccc; grid-column: 1 / -1;">${i18n[state.language].no_job_in_queue}</p>`; }
         }
 
         function selectJob(woId, operationName) {
