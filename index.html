@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V3.5</title>
+    <title>MES Lite V3.6</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V3.5 (含工時統計表) */
+        /* CSS: V3.6 總工單匯總版 */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
@@ -181,7 +181,7 @@
         <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.5</span></div>
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.6</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
                 
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
@@ -250,7 +250,7 @@
             <div id="finish-keypad"></div>
         </div>
 
-        <!-- 6. 生管後台 (V3.5) -->
+        <!-- 6. 生管後台 (V3.6) -->
         <div id="screen-admin" class="screen">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="margin:0;">🛠️ 生管控制台</h2>
@@ -293,11 +293,17 @@
                 </div>
             </div>
 
-            <!-- 匯出報表 Tab (新增: 人工時數總計表) -->
+            <!-- 匯出報表 Tab (新增: 統計模式切換) -->
             <div id="admin-tab-history" style="display:none;">
                 <div class="admin-panel">
-                    <h3>📊 人工時數總計表</h3>
-                    <p style="color:#888; font-size:0.8rem;">依工序統計 (本機歷史資料)</p>
+                    <h3>📊 工時統計</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="color:#888; font-size:0.8rem;">統計維度:</span>
+                        <select id="report-group-by" onchange="renderSummaryTable()" style="background:#222; color:white; border:1px solid #555; padding:5px; border-radius:4px;">
+                            <option value="by-op">依工序 (By Operation)</option>
+                            <option value="by-master">依總工單 (By Master WO)</option>
+                        </select>
+                    </div>
                     
                     <div id="summary-table-container" style="margin-top:15px;">
                         <!-- JS 生成總計表 -->
@@ -328,7 +334,7 @@
                 <span>登出</span>
             </button>
         </div>
-        <div class="version-tag">V3.5</div>
+        <div class="version-tag">V3.6</div>
     </div>
 
     <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">處理中...</div></div>
@@ -385,8 +391,7 @@
                 if(uiState.pin === '9999') { uiState.user = { name: 'Admin', role: 'admin' }; showScreen('admin'); } 
                 else if(['1234', '5678'].includes(uiState.pin)) {
                     uiState.lang = (uiState.pin === '1234') ? 'vn' : 'zh';
-                    // 1. 修改稱謂
-                    uiState.user = { name: uiState.lang==='vn'?'Nguyễn':'主管', role: 'op' };
+                    uiState.user = { name: uiState.lang==='vn'?'Nguyễn':'主管', role: 'op' }; // 修正稱謂
                     document.getElementById('user-name').textContent = uiState.user.name;
                     showScreen('queue');
                 } else { document.getElementById('login-msg').textContent = "密碼錯誤"; uiState.pin = ''; }
@@ -515,13 +520,13 @@
             const payload = {
                 token: TOKEN, action: 'LOG_WORK', wo_id: uiState.targetWoId, operation_name: job.op_zh,
                 supervisor_pin: uiState.pin, manpower_count: session.manpower, start_time: effectiveStart,
+                master_wo_id: job.master, // 新增：紀錄總工單號
                 qty_good: 0, qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0
             };
             try {
                 await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(payload) });
                 delete appData.activeJobs[uiState.targetWoId];
                 appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
-                // 記錄本地歷史，方便統計
                 appData.history.push({ ...payload, end_time: new Date().toISOString() });
                 saveStorage();
                 document.getElementById('loading-mask').style.display = 'none';
@@ -613,9 +618,10 @@
         }
         function adminReset() { if(confirm("重置所有資料？")) { localStorage.clear(); location.reload(); } }
 
-        // --- 2. 新增：人工時數總計表邏輯 ---
+        // --- 2. 人工時數總計表邏輯 (V3.6) ---
         function renderSummaryTable() {
             const container = document.getElementById('summary-table-container');
+            const groupBy = document.getElementById('report-group-by').value; // by-op or by-master
             container.innerHTML = '';
 
             if (!appData.history || appData.history.length === 0) {
@@ -623,31 +629,26 @@
                 return;
             }
 
-            // 聚合計算 (Group by Operation Name)
             const summary = {};
             appData.history.forEach(log => {
-                const opName = log.operation_name || '未知工序';
-                if (!summary[opName]) {
-                    summary[opName] = { count: 0, totalHours: 0 };
-                }
-                summary[opName].count++;
+                // 決定分組鍵值
+                let key = (groupBy === 'by-master') ? (log.master_wo_id || '未知工單') : (log.operation_name || '未知工序');
                 
-                // 計算工時: (End - EffectiveStart) * Manpower
-                // 注意：payload 中的 start_time 是 Effective Start Time
+                if (!summary[key]) { summary[key] = { count: 0, totalHours: 0 }; }
+                summary[key].count++;
+                
                 const start = new Date(log.start_time);
-                const end = new Date(log.end_time || new Date()); // 如果沒有 end_time (異常)，用當前時間
+                const end = new Date(log.end_time || new Date());
                 const durationMs = end - start;
                 const hours = (durationMs / 3600000) * log.manpower_count;
-                
-                summary[opName].totalHours += hours;
+                summary[key].totalHours += hours;
             });
 
-            // 生成 HTML 表格
             let html = `
                 <table class="report-table">
                     <thead>
                         <tr>
-                            <th>工序名稱</th>
+                            <th>${groupBy === 'by-master' ? '總工單號' : '工序名稱'}</th>
                             <th>次數</th>
                             <th style="text-align:right;">總人時 (Hr)</th>
                         </tr>
@@ -656,26 +657,11 @@
             `;
             
             let grandTotal = 0;
-
-            for (const [op, data] of Object.entries(summary)) {
-                html += `
-                    <tr>
-                        <td>${op}</td>
-                        <td>${data.count}</td>
-                        <td style="text-align:right; color:#4caf50;">${data.totalHours.toFixed(2)}</td>
-                    </tr>
-                `;
+            for (const [key, data] of Object.entries(summary)) {
+                html += `<tr><td>${key}</td><td>${data.count}</td><td style="text-align:right; color:#4caf50;">${data.totalHours.toFixed(2)}</td></tr>`;
                 grandTotal += data.totalHours;
             }
-
-            html += `
-                    <tr style="border-top: 2px solid #555;">
-                        <td colspan="2" style="text-align:right; font-weight:bold;">總計 (Total):</td>
-                        <td style="text-align:right; font-weight:bold; color:#00bcd4; font-size:1.1rem;">${grandTotal.toFixed(2)}</td>
-                    </tr>
-                </tbody>
-            </table>`;
-
+            html += `<tr style="border-top: 2px solid #555;"><td colspan="2" style="text-align:right; font-weight:bold;">總計:</td><td style="text-align:right; font-weight:bold; color:#00bcd4; font-size:1.1rem;">${grandTotal.toFixed(2)}</td></tr></tbody></table>`;
             container.innerHTML = html;
         }
 
@@ -686,16 +672,13 @@
             } else {
                 document.getElementById('admin-tab-create').style.display = 'none';
                 document.getElementById('admin-tab-history').style.display = 'block';
-                // 載入歷史列表
                 const histList = document.getElementById('history-list');
                 histList.innerHTML = appData.history.slice().reverse().map(h => {
                     const time = new Date(h.end_time).toLocaleString();
-                    return `<div style="border-bottom:1px solid #333; padding:5px;">${time} - ${h.operation_name} (${h.manpower_count}人)</div>`;
+                    return `<div style="border-bottom:1px solid #333; padding:5px;">${time} | ${h.master_wo_id || '?'} - ${h.operation_name}</div>`;
                 }).join('');
-                // 載入統計表
                 renderSummaryTable();
             }
-            // Tab 樣式切換
             document.querySelectorAll('.admin-tab').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
         }
