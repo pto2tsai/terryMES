@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V3.4 (Admin Templates)</title>
+    <title>MES Lite V3.5</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V3.4 生管範本管理增強版 */
+        /* CSS: V3.5 (含工時統計表) */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
@@ -143,6 +143,12 @@
         .btn-row-delete { background: #444; border: 1px solid #666; color: #ccc; border-radius: 4px; cursor: pointer; }
         .template-area { background: #222; padding: 10px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 15px; }
 
+        /* 報表表格 */
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        .report-table th { background: #333; color: var(--primary); padding: 8px; text-align: left; }
+        .report-table td { border-bottom: 1px solid #444; padding: 8px; }
+        .report-total { font-weight: bold; color: var(--success); }
+
         /* --- Loading --- */
         #loading-mask {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -175,11 +181,14 @@
         <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.4</span></div>
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.5</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
+                
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
                 <div id="login-msg" style="color: var(--danger); height: 20px; margin-bottom:10px;"></div>
+
                 <div id="login-keypad"></div>
+
                 <div style="margin-top:20px; font-size:0.8rem; color:#444;">GAS: <span id="gas-status">Checking...</span></div>
             </div>
         </div>
@@ -241,46 +250,68 @@
             <div id="finish-keypad"></div>
         </div>
 
-        <!-- 6. 生管後台 (V3.4 增強版) -->
+        <!-- 6. 生管後台 (V3.5) -->
         <div id="screen-admin" class="screen">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="margin:0;">🛠️ 生管控制台</h2>
                 <button onclick="logout()" style="background:#333; color:#ccc; border:none; padding:5px 10px; border-radius:4px;">退出</button>
             </div>
+
+            <div class="admin-header">
+                <button class="admin-tab active" onclick="showAdminTab('create')">建立工單</button>
+                <button class="admin-tab" onclick="showAdminTab('history')">工時報表</button>
+            </div>
             
-            <div class="admin-panel">
-                <!-- 範本管理區 -->
-                <div class="template-area">
-                    <label style="color:#aaa; font-size:0.8rem;">📂 範本管理 (Templates)</label>
-                    <div style="display:flex; gap:10px; margin-top:5px;">
-                        <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()">
-                            <option value="">-- 載入範本 --</option>
-                        </select>
-                        <button class="btn-danger" style="padding:0 15px; border-radius:4px; border:none; cursor:pointer;" onclick="deleteTemplate()">🗑️</button>
+            <!-- 建立工單 Tab -->
+            <div id="admin-tab-create">
+                <div class="admin-panel">
+                    <div class="template-area">
+                        <label style="color:#aaa; font-size:0.8rem;">📂 範本管理</label>
+                        <div style="display:flex; gap:10px; margin-top:5px;">
+                            <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()">
+                                <option value="">-- 載入範本 --</option>
+                            </select>
+                            <button class="btn-danger" style="padding:0 15px; border-radius:4px; border:none; cursor:pointer;" onclick="deleteTemplate()">🗑️</button>
+                        </div>
                     </div>
+                    <h3>新增工單 (Batch)</h3>
+                    <input id="admin-mwo" class="admin-input" placeholder="總工單號 (例: MWO-2025-A)">
+                    <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px;">
+                        <label style="color:#888; font-size:0.9rem;">工序清單</label>
+                        <div id="admin-sub-items"></div>
+                        <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; border:1px dashed #555; color:#ccc; margin-top:10px; cursor:pointer;">+ 新增一行</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
+                        <button class="large-btn btn-secondary" style="font-size:1rem;" onclick="saveTemplate()">💾 存為範本</button>
+                        <button class="large-btn btn-confirm" style="font-size:1rem;" onclick="publishWorkOrders()">🚀 發布工單</button>
+                    </div>
+                    <button class="large-btn btn-danger" style="margin-top:20px; font-size:1rem; background:#300; border-color:#500;" onclick="adminReset()">⚠️ 重置所有資料</button>
                 </div>
-
-                <h3>新增工單 (Batch)</h3>
-                <input id="admin-mwo" class="admin-input" placeholder="總工單號 (例: MWO-2025-A)">
-                
-                <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px;">
-                    <label style="color:#888; font-size:0.9rem;">工序清單 (Items)</label>
-                    <div id="admin-sub-items"></div>
-                    <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; border:1px dashed #555; color:#ccc; margin-top:10px; cursor:pointer;">+ 新增一行</button>
+                <div style="margin-top:20px;">
+                    <h3>目前排程</h3>
+                    <div id="admin-list"></div>
                 </div>
-
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
-                    <button class="large-btn btn-secondary" style="font-size:1rem;" onclick="saveTemplate()">💾 存為範本</button>
-                    <button class="large-btn btn-confirm" style="font-size:1rem;" onclick="publishWorkOrders()">🚀 發布工單</button>
-                </div>
-
-                <button class="large-btn btn-danger" style="margin-top:20px; font-size:1rem; background:#300; border-color:#500;" onclick="adminReset()">⚠️ 重置所有資料</button>
             </div>
-            
-            <div style="margin-top:20px;">
-                <h3>目前排程 (Queue)</h3>
-                <div id="admin-list"></div>
+
+            <!-- 匯出報表 Tab (新增: 人工時數總計表) -->
+            <div id="admin-tab-history" style="display:none;">
+                <div class="admin-panel">
+                    <h3>📊 人工時數總計表</h3>
+                    <p style="color:#888; font-size:0.8rem;">依工序統計 (本機歷史資料)</p>
+                    
+                    <div id="summary-table-container" style="margin-top:15px;">
+                        <!-- JS 生成總計表 -->
+                    </div>
+                    
+                    <button class="large-btn btn-secondary" style="margin-top:20px;" onclick="renderSummaryTable()">🔄 刷新統計</button>
+                </div>
+
+                <div style="margin-top:20px;">
+                    <h3>📜 詳細紀錄列表</h3>
+                    <div id="history-list" style="font-size:0.8rem; color:#aaa;"></div>
+                </div>
             </div>
+
         </div>
 
     </div>
@@ -297,16 +328,17 @@
                 <span>登出</span>
             </button>
         </div>
-        <div class="version-tag">V3.4</div>
+        <div class="version-tag">V3.5</div>
     </div>
 
     <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">處理中...</div></div>
 
     <script>
+        // ================= CONFIG =================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec";
         const TOKEN = "MES_LITE_2025";
 
-        let appData = { queue: [], activeJobs: {}, history: [], templates: [] }; // Added templates
+        let appData = { queue: [], activeJobs: {}, history: [], templates: [] }; 
         let uiState = { screen: 'login', pin: '', user: null, lang: 'zh', targetWoId: null, tempVal: '0', finishStep: 0, finishCache: {}, isAdjusting: false };
         let timerInterval = null;
 
@@ -329,7 +361,7 @@
             try {
                 const raw = localStorage.getItem('mes_v3_data');
                 if (raw) appData = JSON.parse(raw);
-                if (!appData.templates) appData.templates = []; // Ensure templates exist
+                if (!appData.templates) appData.templates = []; 
             } catch(e) { console.error(e); }
         }
 
@@ -340,7 +372,7 @@
             document.getElementById('screen-' + id).style.display = 'block';
             uiState.screen = id;
             if (id === 'queue') renderQueue();
-            if (id === 'admin') renderAdminCreate(); // Render Admin
+            if (id === 'admin') { renderAdminCreate(); renderSummaryTable(); }
             const nav = document.querySelector('.nav-bar');
             if (id === 'login') nav.style.display = 'none'; else nav.style.display = 'flex';
         }
@@ -353,7 +385,8 @@
                 if(uiState.pin === '9999') { uiState.user = { name: 'Admin', role: 'admin' }; showScreen('admin'); } 
                 else if(['1234', '5678'].includes(uiState.pin)) {
                     uiState.lang = (uiState.pin === '1234') ? 'vn' : 'zh';
-                    uiState.user = { name: uiState.lang==='vn'?'Nguyễn':'陳主管', role: 'op' };
+                    // 1. 修改稱謂
+                    uiState.user = { name: uiState.lang==='vn'?'Nguyễn':'主管', role: 'op' };
                     document.getElementById('user-name').textContent = uiState.user.name;
                     showScreen('queue');
                 } else { document.getElementById('login-msg').textContent = "密碼錯誤"; uiState.pin = ''; }
@@ -488,6 +521,8 @@
                 await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(payload) });
                 delete appData.activeJobs[uiState.targetWoId];
                 appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
+                // 記錄本地歷史，方便統計
+                appData.history.push({ ...payload, end_time: new Date().toISOString() });
                 saveStorage();
                 document.getElementById('loading-mask').style.display = 'none';
                 showScreen('queue');
@@ -498,14 +533,13 @@
             }
         }
 
-        // ================= ADMIN LOGIC (V3.4 Added) =================
+        // ================= ADMIN LOGIC =================
         function renderAdminCreate() {
             const container = document.getElementById('admin-sub-items');
             if (!container.innerHTML) addAdminRow();
-            updateTemplateDropdown(); // 渲染範本下拉
+            updateTemplateDropdown();
             renderAdminList();
         }
-
         function updateTemplateDropdown() {
             const sel = document.getElementById('admin-template');
             sel.innerHTML = '<option value="">-- 選擇載入 --</option>';
@@ -515,7 +549,6 @@
                 sel.appendChild(opt);
             });
         }
-
         function addAdminRow(prod='', op='') {
             const container = document.getElementById('admin-sub-items');
             const div = document.createElement('div');
@@ -523,7 +556,6 @@
             div.innerHTML = `<input class="admin-input prod" placeholder="產品" value="${prod}"><input class="admin-input op" placeholder="工序" value="${op}"><button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>`;
             container.appendChild(div);
         }
-
         function saveTemplate() {
             const mwo = document.getElementById('admin-mwo').value;
             if(!mwo) return alert("需輸入總工單號做為範本名");
@@ -533,17 +565,13 @@
                 if(prod && op) items.push({prod, op});
             });
             if(items.length === 0) return alert("至少需一項工序");
-
             const existIdx = appData.templates.findIndex(t => t.name === mwo);
             if(existIdx >= 0) {
                 if(!confirm(`範本 ${mwo} 已存在，覆蓋？`)) return;
                 appData.templates[existIdx] = { name: mwo, items: items };
-            } else {
-                appData.templates.push({ name: mwo, items: items });
-            }
+            } else { appData.templates.push({ name: mwo, items: items }); }
             saveStorage(); updateTemplateDropdown(); alert("範本已儲存");
         }
-
         function loadTemplate() {
             const idx = document.getElementById('admin-template').value;
             if(idx === "") return;
@@ -552,17 +580,14 @@
             document.getElementById('admin-sub-items').innerHTML = '';
             tmpl.items.forEach(i => addAdminRow(i.prod, i.op));
         }
-
         function deleteTemplate() {
             const idx = document.getElementById('admin-template').value;
             if(idx === "") return alert("請選擇要刪除的範本");
             if(confirm("確定刪除此範本？")) {
-                appData.templates.splice(idx, 1);
-                saveStorage(); updateTemplateDropdown();
+                appData.templates.splice(idx, 1); saveStorage(); updateTemplateDropdown();
                 document.getElementById('admin-template').value = "";
             }
         }
-
         function publishWorkOrders() {
             const mwo = document.getElementById('admin-mwo').value;
             if(!mwo) return alert("缺單號");
@@ -582,13 +607,98 @@
             document.getElementById('admin-sub-items').innerHTML = '';
             addAdminRow();
         }
-
         function renderAdminList() {
             const div = document.getElementById('admin-list');
             div.innerHTML = appData.queue.map(q => `<div style="border-bottom:1px solid #333; padding:5px;">${q.master} - ${q.prod_zh} - ${q.op_zh}</div>`).join('');
         }
-
         function adminReset() { if(confirm("重置所有資料？")) { localStorage.clear(); location.reload(); } }
+
+        // --- 2. 新增：人工時數總計表邏輯 ---
+        function renderSummaryTable() {
+            const container = document.getElementById('summary-table-container');
+            container.innerHTML = '';
+
+            if (!appData.history || appData.history.length === 0) {
+                container.innerHTML = '<div style="color:#666; text-align:center;">尚無歷史資料</div>';
+                return;
+            }
+
+            // 聚合計算 (Group by Operation Name)
+            const summary = {};
+            appData.history.forEach(log => {
+                const opName = log.operation_name || '未知工序';
+                if (!summary[opName]) {
+                    summary[opName] = { count: 0, totalHours: 0 };
+                }
+                summary[opName].count++;
+                
+                // 計算工時: (End - EffectiveStart) * Manpower
+                // 注意：payload 中的 start_time 是 Effective Start Time
+                const start = new Date(log.start_time);
+                const end = new Date(log.end_time || new Date()); // 如果沒有 end_time (異常)，用當前時間
+                const durationMs = end - start;
+                const hours = (durationMs / 3600000) * log.manpower_count;
+                
+                summary[opName].totalHours += hours;
+            });
+
+            // 生成 HTML 表格
+            let html = `
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>工序名稱</th>
+                            <th>次數</th>
+                            <th style="text-align:right;">總人時 (Hr)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            let grandTotal = 0;
+
+            for (const [op, data] of Object.entries(summary)) {
+                html += `
+                    <tr>
+                        <td>${op}</td>
+                        <td>${data.count}</td>
+                        <td style="text-align:right; color:#4caf50;">${data.totalHours.toFixed(2)}</td>
+                    </tr>
+                `;
+                grandTotal += data.totalHours;
+            }
+
+            html += `
+                    <tr style="border-top: 2px solid #555;">
+                        <td colspan="2" style="text-align:right; font-weight:bold;">總計 (Total):</td>
+                        <td style="text-align:right; font-weight:bold; color:#00bcd4; font-size:1.1rem;">${grandTotal.toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            </table>`;
+
+            container.innerHTML = html;
+        }
+
+        function showAdminTab(tab) {
+            if(tab === 'create') {
+                document.getElementById('admin-tab-create').style.display = 'block';
+                document.getElementById('admin-tab-history').style.display = 'none';
+            } else {
+                document.getElementById('admin-tab-create').style.display = 'none';
+                document.getElementById('admin-tab-history').style.display = 'block';
+                // 載入歷史列表
+                const histList = document.getElementById('history-list');
+                histList.innerHTML = appData.history.slice().reverse().map(h => {
+                    const time = new Date(h.end_time).toLocaleString();
+                    return `<div style="border-bottom:1px solid #333; padding:5px;">${time} - ${h.operation_name} (${h.manpower_count}人)</div>`;
+                }).join('');
+                // 載入統計表
+                renderSummaryTable();
+            }
+            // Tab 樣式切換
+            document.querySelectorAll('.admin-tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
 
         function renderATMKeypad(elementId, callback) {
             const el = document.getElementById(elementId);
