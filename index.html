@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (V1.7 Stable) */
+        /* CSS: 響應式極簡風格 (V1.8 Robust) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -75,7 +75,6 @@
 
         h1 { font-size: 1.5rem; color: var(--primary-color); margin: 5px 0; }
         
-        /* 按鈕優化 */
         .large-btn {
             padding: 12px; margin: 4px; font-size: 1.3rem; font-weight: bold;
             cursor: pointer; border: 2px solid var(--primary-color); border-radius: 8px;
@@ -96,7 +95,6 @@
 
         /* 工單列表 */
         #queue-list-container { display: grid; gap: 8px; padding: 2px; }
-        
         .queue-item {
             text-align: left; border-color: var(--success-color); position: relative;
             padding: 12px 15px;
@@ -121,11 +119,8 @@
         .q-num { font-size: 1.3rem; font-weight: bold; color: var(--primary-color); margin-right: 8px; float: left;}
         .main-lang { font-size: 1.1rem; font-weight: bold; display: block; margin-bottom: 4px; }
         .aux-lang { font-size: 0.9rem; color: #ccc; display: block; margin-bottom: 4px;}
-        
-        /* 工單明細樣式 (調亮顏色) */
         .wo-details { font-size: 0.9rem; color: #b2dfdb; border-top: 1px solid #444; margin-top: 5px; padding-top: 5px; }
 
-        /* 空資料提示 */
         .empty-message {
             grid-column: 1 / -1;
             padding: 40px;
@@ -268,7 +263,7 @@
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
         </div>
-        <div class="version-tag">V1.7</div>
+        <div class="version-tag">V1.8</div>
     </div>
 
     <!-- Loading Overlay -->
@@ -281,7 +276,7 @@
         <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.7</span></h1>
+                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.8</span></h1>
                 <div style="font-size: 1rem; margin-bottom: 5px;">
                     <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
                 </div>
@@ -324,7 +319,7 @@
                         <button class="large-btn" style="width:50%; font-size:1.1rem; background-color:#607d8b; border-color:#78909c;" onclick="saveBatchTemplateOnly()">僅儲存範本</button>
                         <button class="large-btn btn-confirm" style="width:50%; font-size:1.1rem;" onclick="saveBatchWorkOrder()">確認送出</button>
                     </div>
-                    <button class="large-btn btn-reset" onclick="resetAllData()">⚠️ 重置所有資料 (修復空白問題)</button>
+                    <button class="large-btn btn-reset" onclick="resetAllData()">⚠️ 重置並恢復預設資料 (修復空白)</button>
                 </div>
                 <h3>目前排程 (<span id="queue-count">0</span> 筆)</h3>
                 <div style="overflow-x:auto;">
@@ -418,7 +413,7 @@
         // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
-        const VERSION = "V1.7";
+        const VERSION = "V1.8";
 
         let state = {
             currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
@@ -431,7 +426,7 @@
         let timerInterval = null;
         let appQueue = []; let completedLogs = []; let mwoHistory = [];
 
-        // 預設資料，確保初次使用不空白
+        // 預設資料，確保初次使用不空白 (修復空列表問題)
         const defaultQueue = [
             { wo_id: 'WC-TEST-Q1', master_wo_id: 'MWO-TEST', product_name_zh: '測試-鮭魚分切', product_name_vn: 'Test-Cá hồi', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.0 },
             { wo_id: 'WC-TEST-Q2', master_wo_id: 'MWO-TEST', product_name_zh: '測試-真空包裝', product_name_vn: 'Test-Đóng gói', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 2, standard_time_hr: 0.5 }
@@ -485,11 +480,22 @@
         function initApp() {
             const storedQueue = localStorage.getItem('mes_lite_queue');
             if (storedQueue) { 
-                const parsed = JSON.parse(storedQueue);
-                if (parsed.length === 0) { appQueue = [...defaultQueue]; saveQueueToStorage(); } 
-                else { appQueue = parsed; }
+                try {
+                    const parsed = JSON.parse(storedQueue);
+                    // 嚴格檢查：如果陣列為空或格式錯誤，強制使用預設
+                    if (!Array.isArray(parsed) || parsed.length === 0) { 
+                        appQueue = [...defaultQueue]; 
+                        saveQueueToStorage(); 
+                    } else { 
+                        appQueue = parsed; 
+                    }
+                } catch (e) {
+                    appQueue = [...defaultQueue];
+                    saveQueueToStorage();
+                }
             } else { 
-                appQueue = [...defaultQueue]; saveQueueToStorage(); 
+                appQueue = [...defaultQueue]; 
+                saveQueueToStorage(); 
             }
             
             const storedLogs = localStorage.getItem('mes_lite_logs');
@@ -818,13 +824,11 @@
             const list = document.getElementById('queue-list-container');
             list.innerHTML = '';
             
-            // 顯示邏輯優化：確保列表容器可見
             list.style.display = 'grid';
 
             const filtered = appQueue.filter(job => selected === 'ALL' || job.master_wo_id === selected);
             
             if (filtered.length > 0) {
-                // 批量構建 HTML
                 const html = filtered.map(job => {
                     const prod = state.language === 'vn' ? job.product_name_vn : job.product_name_zh;
                     const op = state.language === 'vn' ? job.operation_name_vn : job.operation_name_zh;
@@ -848,9 +852,7 @@
                 
                 list.innerHTML = html;
             } else { 
-                // 明確的空資料提示
                 list.innerHTML = `<div class="empty-message">${i18n[state.language].no_job_in_queue}</div>`;
-                // 確保提示可見
                 list.style.display = 'block';
             }
         }
