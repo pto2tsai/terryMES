@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V3.3</title>
+    <title>MES Lite V3.4 (Admin Templates)</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V3.3 調整人數介面優化版 */
+        /* CSS: V3.4 生管範本管理增強版 */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
@@ -89,7 +89,7 @@
             border: 2px solid #444;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; user-select: none;
-            margin: 0 auto; /* 水平置中 */
+            margin: 0 auto;
         }
         .circle-btn:active { background-color: #555; border-color: #888; transform: translateY(2px); }
         .circle-btn.clear { color: var(--danger); border-color: var(--danger); font-size: 1.2rem; }
@@ -138,6 +138,10 @@
         /* --- 生管後台 --- */
         .admin-panel { width: 100%; background: #111; padding: 15px; border-radius: 10px; }
         .admin-input { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; margin-bottom: 10px; font-size: 1rem; border-radius: 5px;}
+        
+        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 8px; }
+        .btn-row-delete { background: #444; border: 1px solid #666; color: #ccc; border-radius: 4px; cursor: pointer; }
+        .template-area { background: #222; padding: 10px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 15px; }
 
         /* --- Loading --- */
         #loading-mask {
@@ -159,6 +163,8 @@
             .nav-btn { margin-bottom: 0; flex-direction: column; padding: 5px; }
             .nav-icons { flex-direction: row; justify-content: space-around; width: 100%; gap: 0; }
             .version-tag { display: none; }
+            .sub-item-row { grid-template-columns: 1fr; gap: 5px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+            .btn-row-delete { grid-column: 1 / -1; padding: 8px; margin-top: 2px; }
         }
     </style>
 </head>
@@ -169,17 +175,12 @@
         <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.3</span></div>
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.4</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
-                
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
                 <div id="login-msg" style="color: var(--danger); height: 20px; margin-bottom:10px;"></div>
-
-                <div id="login-keypad"></div> <!-- JS 生成 -->
-
-                <div style="margin-top:20px; font-size:0.8rem; color:#444;">
-                    GAS: <span id="gas-status">Checking...</span>
-                </div>
+                <div id="login-keypad"></div>
+                <div style="margin-top:20px; font-size:0.8rem; color:#444;">GAS: <span id="gas-status">Checking...</span></div>
             </div>
         </div>
 
@@ -191,36 +192,27 @@
                     <span id="user-name">User</span>
                 </div>
             </div>
-
-            <!-- 進行中區域 -->
             <div id="active-section" style="margin-bottom: 20px; display: none;">
                 <div style="font-size:0.9rem; color:var(--success); margin-bottom:5px; font-weight:bold;">🔥 進行中 (RUNNING)</div>
                 <div id="active-list"></div>
             </div>
-
-            <!-- 待辦區域 -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <div style="font-size:0.9rem; color:#888;">待辦事項 (To Do)</div>
                 <button onclick="syncQueue()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 刷新</button>
             </div>
-            
             <div id="queue-list"></div>
         </div>
 
-        <!-- 3. 人數輸入 (統一使用 ATM 鍵盤) -->
+        <!-- 3. 人數輸入 -->
         <div id="screen-manpower" class="screen">
             <h2 id="manpower-title" style="text-align:center; color:var(--accent);">👥 開工設定</h2>
             <p id="manpower-desc" style="text-align:center; color:#aaa;">本次投入多少人力？</p>
-            
             <div id="manpower-display" class="pin-display">0</div>
-            
-            <div id="manpower-keypad"></div> <!-- JS 生成 -->
-            
-            <!-- V3.3: 修改取消按鈕行為 -->
+            <div id="manpower-keypad"></div>
             <button class="large-btn btn-secondary" onclick="cancelManpower()">取消 (Cancel)</button>
         </div>
 
-        <!-- 4. 計時畫面 (Working) -->
+        <!-- 4. 計時畫面 -->
         <div id="screen-working" class="screen" style="display: flex; flex-direction: column;">
             <div class="job-card-large">
                 <div style="color:#4caf50; font-size:0.9rem; font-weight:bold; letter-spacing:1px;">● 正在執行 (RUNNING)</div>
@@ -228,51 +220,65 @@
                 <div id="work-op" style="color:var(--accent); font-size:1.4rem; font-weight:bold;">工序名稱</div>
                 <div id="work-id" style="color:#555; font-size:0.8rem; margin-top:10px;">ID</div>
             </div>
-
             <div class="timer-box">
                 <div class="timer-val" id="timer">00:00:00</div>
                 <div style="color:#888; margin-top:10px;">目前人數: <span id="work-man" style="color:white; font-weight:bold; font-size:1.2rem;">4</span></div>
             </div>
-
             <div style="margin-top:auto;">
                 <button class="large-btn btn-confirm" style="height: 80px; font-size: 1.8rem;" onclick="endJob()">🏁 完成 (Finish)</button>
-                
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                    <!-- V3.3: 調整人數按鈕 -->
                     <button class="large-btn btn-secondary" onclick="adjustManpower()">👥 調整人數</button>
                     <button class="large-btn btn-secondary" onclick="showScreen('queue')">⬅ 暫離</button>
                 </div>
             </div>
         </div>
 
-        <!-- 5. 數量輸入/確認 (統一 ATM 鍵盤) -->
+        <!-- 5. 數量輸入/確認 -->
         <div id="screen-finish" class="screen">
-            <div id="finish-instruction" style="font-size: 1.5rem; text-align: center; margin-bottom: 10px; color: var(--accent); font-weight: bold;">
-                <!-- JS 動態填入 -->
-            </div>
-            
+            <div id="finish-instruction" style="font-size: 1.5rem; text-align: center; margin-bottom: 10px; color: var(--accent); font-weight: bold;"></div>
             <div id="qty-display" class="pin-display">0</div>
-            
-            <div id="finish-summary" style="text-align: left; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
-                <!-- 總結確認清單 -->
-            </div>
-
-            <div id="finish-keypad"></div> <!-- JS 生成 -->
+            <div id="finish-summary" style="text-align: left; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;"></div>
+            <div id="finish-keypad"></div>
         </div>
 
-        <!-- 6. 生管後台 -->
+        <!-- 6. 生管後台 (V3.4 增強版) -->
         <div id="screen-admin" class="screen">
-            <h2>🛠️ 生管控制台</h2>
-            <div class="admin-panel">
-                <h3>新增工單</h3>
-                <input id="admin-mwo" class="admin-input" placeholder="總工單號 (MWO-xxx)">
-                <input id="admin-prod" class="admin-input" placeholder="產品名稱">
-                <input id="admin-op" class="admin-input" placeholder="工序名稱">
-                <button class="large-btn btn-confirm" onclick="adminAddJob()">發布工單</button>
-                <button class="large-btn btn-danger" style="margin-top:20px;" onclick="adminReset()">⚠️ 重置所有資料</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="margin:0;">🛠️ 生管控制台</h2>
+                <button onclick="logout()" style="background:#333; color:#ccc; border:none; padding:5px 10px; border-radius:4px;">退出</button>
             </div>
+            
+            <div class="admin-panel">
+                <!-- 範本管理區 -->
+                <div class="template-area">
+                    <label style="color:#aaa; font-size:0.8rem;">📂 範本管理 (Templates)</label>
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()">
+                            <option value="">-- 載入範本 --</option>
+                        </select>
+                        <button class="btn-danger" style="padding:0 15px; border-radius:4px; border:none; cursor:pointer;" onclick="deleteTemplate()">🗑️</button>
+                    </div>
+                </div>
+
+                <h3>新增工單 (Batch)</h3>
+                <input id="admin-mwo" class="admin-input" placeholder="總工單號 (例: MWO-2025-A)">
+                
+                <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px;">
+                    <label style="color:#888; font-size:0.9rem;">工序清單 (Items)</label>
+                    <div id="admin-sub-items"></div>
+                    <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; border:1px dashed #555; color:#ccc; margin-top:10px; cursor:pointer;">+ 新增一行</button>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
+                    <button class="large-btn btn-secondary" style="font-size:1rem;" onclick="saveTemplate()">💾 存為範本</button>
+                    <button class="large-btn btn-confirm" style="font-size:1rem;" onclick="publishWorkOrders()">🚀 發布工單</button>
+                </div>
+
+                <button class="large-btn btn-danger" style="margin-top:20px; font-size:1rem; background:#300; border-color:#500;" onclick="adminReset()">⚠️ 重置所有資料</button>
+            </div>
+            
             <div style="margin-top:20px;">
-                <h3>目前排程</h3>
+                <h3>目前排程 (Queue)</h3>
                 <div id="admin-list"></div>
             </div>
         </div>
@@ -291,51 +297,30 @@
                 <span>登出</span>
             </button>
         </div>
-        <div class="version-tag">V3.3</div>
+        <div class="version-tag">V3.4</div>
     </div>
 
     <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">處理中...</div></div>
 
     <script>
-        // ================= CONFIG =================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec";
         const TOKEN = "MES_LITE_2025";
 
-        // ================= STATE =================
-        let appData = { queue: [], activeJobs: {}, history: [] };
-        let uiState = { 
-            screen: 'login', pin: '', user: null, lang: 'zh', 
-            targetWoId: null, tempVal: '0', 
-            finishStep: 0, finishCache: {},
-            isAdjusting: false // V3.3 新增：判斷是否為調整人數模式
-        };
-        
-        const DEMO_QUEUE = [
-            { wo_id: 'DEMO-001', master: 'TEST-A', prod_zh: '鮭魚分切', prod_vn: 'Cá hồi', op_zh: '分切', op_vn: 'Cắt lát', rank: 1 },
-            { wo_id: 'DEMO-002', master: 'TEST-A', prod_zh: '中段厚切', prod_vn: 'Lát dày', op_zh: '真空', op_vn: 'Hút chân không', rank: 2 }
-        ];
+        let appData = { queue: [], activeJobs: {}, history: [], templates: [] }; // Added templates
+        let uiState = { screen: 'login', pin: '', user: null, lang: 'zh', targetWoId: null, tempVal: '0', finishStep: 0, finishCache: {}, isAdjusting: false };
+        let timerInterval = null;
 
-        const I18N = {
-            zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' },
-            vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' }
-        };
+        const DEMO_QUEUE = [{ wo_id: 'DEMO-1', master: 'SAMPLE', prod_zh: '測試品A', prod_vn: 'Test A', op_zh: '包裝', op_vn: 'Packing', rank: 1 }];
+        const I18N = { zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' }, vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' } };
 
-        // ================= INIT =================
         function init() {
             loadStorage();
-            if (!appData.queue || appData.queue.length === 0) {
-                appData.queue = JSON.parse(JSON.stringify(DEMO_QUEUE));
-                saveStorage();
-            }
-
-            // 生成所有鍵盤
+            if (!appData.queue || appData.queue.length === 0) { appData.queue = JSON.parse(JSON.stringify(DEMO_QUEUE)); saveStorage(); }
             renderATMKeypad('login-keypad', handleLoginInput);
-            renderATMKeypad('manpower-keypad', handleManpowerInput); // V3.3 復用此鍵盤
+            renderATMKeypad('manpower-keypad', handleManpowerInput);
             renderATMKeypad('finish-keypad', handleFinishInput);
-
             if (GAS_URL.includes("YOUR")) document.getElementById('gas-status').textContent = "URL 未設定";
             else document.getElementById('gas-status').textContent = "Ready";
-
             showScreen('login');
             setInterval(() => { if(uiState.screen === 'working') updateTimerDisplay(); }, 1000);
         }
@@ -344,208 +329,120 @@
             try {
                 const raw = localStorage.getItem('mes_v3_data');
                 if (raw) appData = JSON.parse(raw);
+                if (!appData.templates) appData.templates = []; // Ensure templates exist
             } catch(e) { console.error(e); }
         }
 
-        function saveStorage() {
-            localStorage.setItem('mes_v3_data', JSON.stringify(appData));
-        }
+        function saveStorage() { localStorage.setItem('mes_v3_data', JSON.stringify(appData)); }
 
-        // ================= NAVIGATION =================
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(el => el.style.display = 'none');
             document.getElementById('screen-' + id).style.display = 'block';
             uiState.screen = id;
-
-            if (id === 'login') {
-                uiState.pin = '';
-                document.getElementById('pin-display').textContent = '_ _ _ _';
-            }
             if (id === 'queue') renderQueue();
-            if (id === 'admin') renderAdmin();
+            if (id === 'admin') renderAdminCreate(); // Render Admin
+            const nav = document.querySelector('.nav-bar');
+            if (id === 'login') nav.style.display = 'none'; else nav.style.display = 'flex';
         }
 
-        function logout() {
-            if(confirm("確定登出？")) { uiState.user = null; showScreen('login'); }
-        }
+        function logout() { if(confirm("確定登出？")) { uiState.user = null; showScreen('login'); } }
 
-        // ================= LOGIN =================
         function handleLoginInput(key) {
             if(key === 'C') uiState.pin = '';
             else if(key === 'OK') {
-                if(uiState.pin === '9999') {
-                    uiState.user = { name: 'Admin', role: 'admin' };
-                    showScreen('admin');
-                } else if(uiState.pin === '1234' || uiState.pin === '5678') {
+                if(uiState.pin === '9999') { uiState.user = { name: 'Admin', role: 'admin' }; showScreen('admin'); } 
+                else if(['1234', '5678'].includes(uiState.pin)) {
                     uiState.lang = (uiState.pin === '1234') ? 'vn' : 'zh';
                     uiState.user = { name: uiState.lang==='vn'?'Nguyễn':'陳主管', role: 'op' };
                     document.getElementById('user-name').textContent = uiState.user.name;
                     showScreen('queue');
-                } else {
-                    document.getElementById('login-msg').textContent = "密碼錯誤";
-                    uiState.pin = '';
-                }
-            } else {
-                if(uiState.pin.length < 4) uiState.pin += key;
-            }
-            const dots = uiState.pin.length > 0 ? '● '.repeat(uiState.pin.length) : '_ _ _ _';
-            document.getElementById('pin-display').textContent = dots;
+                } else { document.getElementById('login-msg').textContent = "密碼錯誤"; uiState.pin = ''; }
+            } else { if(uiState.pin.length < 4) uiState.pin += key; }
+            document.getElementById('pin-display').textContent = uiState.pin.length > 0 ? '● '.repeat(uiState.pin.length) : '_ _ _ _';
         }
 
-        // ================= QUEUE =================
         function renderQueue() {
             const list = document.getElementById('queue-list');
             const activeList = document.getElementById('active-list');
             const activeSec = document.getElementById('active-section');
-            
-            list.innerHTML = ''; activeList.innerHTML = '';
-            let hasActive = false;
-
+            list.innerHTML = ''; activeList.innerHTML = ''; let hasActive = false;
             Object.keys(appData.activeJobs).forEach(id => {
                 const job = appData.queue.find(q => q.wo_id === id);
                 if(job) {
                     const session = appData.activeJobs[id];
                     const div = document.createElement('div');
                     div.className = 'queue-item active-job';
-                    div.innerHTML = `
-                        <div class="q-info"><h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3><p>👥 ${session.manpower} | ${job.master}</p></div>
-                        <div style="font-size:1.5rem;">▶️</div>
-                    `;
-                    div.onclick = function() { openWorkingScreen(id); };
-                    activeList.appendChild(div);
-                    hasActive = true;
+                    div.innerHTML = `<div class="q-info"><h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3><p>👥 ${session.manpower} | ${job.master}</p></div><div style="font-size:1.5rem;">▶️</div>`;
+                    div.onclick = () => openWorkingScreen(id);
+                    activeList.appendChild(div); hasActive = true;
                 }
             });
             activeSec.style.display = hasActive ? 'block' : 'none';
-
             const todo = appData.queue.filter(q => !appData.activeJobs[q.wo_id]);
             if(todo.length === 0) list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">無待辦工單</div>';
-            
             todo.forEach(job => {
                 const div = document.createElement('div');
                 div.className = 'queue-item';
-                div.innerHTML = `
-                    <div class="q-info"><h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3><p>${job.master}</p></div>
-                `;
-                div.onclick = function() { prepareJob(job.wo_id); };
+                div.innerHTML = `<div class="q-info"><h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3><p>${job.master}</p></div>`;
+                div.onclick = () => prepareJob(job.wo_id);
                 list.appendChild(div);
             });
         }
-        
-        function syncQueue() {
-            loadStorage();
-            renderQueue();
-            alert("列表已刷新");
-        }
+        function syncQueue() { loadStorage(); renderQueue(); alert("列表已刷新"); }
 
-        // ================= WORKING & MANPOWER =================
         function prepareJob(id) {
-            uiState.targetWoId = id;
-            uiState.isAdjusting = false; // 標記為新任務
-            uiState.tempVal = '0';
-            
-            // 更新標題
+            uiState.targetWoId = id; uiState.isAdjusting = false; uiState.tempVal = '0';
             document.querySelector('#screen-manpower h2').textContent = "👥 開工設定";
-            document.querySelector('#screen-manpower p').textContent = "本次投入多少人力？";
             document.getElementById('manpower-display').textContent = '0';
-            
             showScreen('manpower');
         }
-
-        // V3.3 新增：調整人數功能
         function adjustManpower() {
-            uiState.isAdjusting = true; // 標記為調整模式
-            uiState.tempVal = '0';
-            document.getElementById('manpower-display').textContent = '0';
-            
-            // 更新標題以區分
+            uiState.isAdjusting = true; uiState.tempVal = '0';
             document.querySelector('#screen-manpower h2').textContent = "👥 調整人數";
-            document.querySelector('#screen-manpower p').textContent = "變更目前投入人力";
-            
+            document.getElementById('manpower-display').textContent = '0';
             showScreen('manpower');
         }
-
-        // V3.3 新增：取消按鈕邏輯
-        function cancelManpower() {
-            if(uiState.isAdjusting) {
-                showScreen('working'); // 如果是調整中取消，回到計時畫面
-            } else {
-                showScreen('queue'); // 如果是開工前取消，回到列表
-            }
-        }
-
-        // V3.3 修改：共用的人數輸入處理
+        function cancelManpower() { if(uiState.isAdjusting) showScreen('working'); else showScreen('queue'); }
         function handleManpowerInput(key) {
             if(key === 'C') uiState.tempVal = '0';
             else if(key === 'OK') {
                 const val = parseInt(uiState.tempVal);
-                if(val > 0) {
-                    if(uiState.isAdjusting) {
-                        updateManpowerSession(val); // 更新現有
-                    } else {
-                        startSession(uiState.targetWoId, val); // 開始新任務
-                    }
-                } else {
-                    alert("人數需大於 0");
-                }
-            } else {
-                uiState.tempVal = (uiState.tempVal === '0' ? key : uiState.tempVal + key);
-            }
+                if(val > 0) { if(uiState.isAdjusting) updateManpowerSession(val); else startSession(uiState.targetWoId, val); }
+                else alert("人數需大於 0");
+            } else { uiState.tempVal = (uiState.tempVal === '0' ? key : uiState.tempVal + key); }
             document.getElementById('manpower-display').textContent = uiState.tempVal;
         }
 
         function startSession(woId, manpower) {
             const now = Date.now();
-            appData.activeJobs[woId] = {
-                startISO: new Date().toISOString(),
-                lastUpdate: now,
-                accTime: 0,
-                manpower: manpower
-            };
-            saveStorage();
-            openWorkingScreen(woId);
+            appData.activeJobs[woId] = { startISO: new Date().toISOString(), lastUpdate: now, accTime: 0, manpower: manpower };
+            saveStorage(); openWorkingScreen(woId);
         }
-
-        // V3.3 新增：更新現有 Session 的人數
         function updateManpowerSession(newVal) {
             const now = Date.now();
             const session = appData.activeJobs[uiState.targetWoId];
-            
-            // 結算舊工時
             const duration = now - session.lastUpdate;
             session.accTime += duration * session.manpower;
-            
-            // 更新狀態
-            session.lastUpdate = now;
-            session.manpower = newVal;
+            session.lastUpdate = now; session.manpower = newVal;
             saveStorage();
-            
-            // 更新 UI 並返回
-            document.getElementById('work-man').textContent = session.manpower;
-            showScreen('working');
+            document.getElementById('work-man').textContent = session.manpower; showScreen('working');
         }
 
         function openWorkingScreen(woId) {
             uiState.targetWoId = woId;
             const job = appData.queue.find(j => j.wo_id === woId);
             const session = appData.activeJobs[woId];
-            
             if(!job || !session) { showScreen('queue'); return; }
-
             document.getElementById('work-prod').textContent = uiState.lang==='vn' ? job.prod_vn : job.prod_zh;
             document.getElementById('work-op').textContent = uiState.lang==='vn' ? job.op_vn : job.op_zh;
             document.getElementById('work-id').textContent = woId;
             document.getElementById('work-man').textContent = session.manpower;
-            
-            updateTimerDisplay();
-            showScreen('working');
+            updateTimerDisplay(); showScreen('working');
         }
-
         function updateTimerDisplay() {
             if(uiState.screen !== 'working' || !uiState.targetWoId) return;
             const session = appData.activeJobs[uiState.targetWoId];
             if(!session) return;
-
             const diff = Date.now() - session.lastUpdate; 
             const sec = Math.floor(diff / 1000);
             const h = String(Math.floor(sec/3600)).padStart(2,'0');
@@ -553,87 +450,47 @@
             const s = String(sec%60).padStart(2,'0');
             document.getElementById('timer').textContent = `${h}:${m}:${s}`;
         }
-
         function backToQueue() { showScreen('queue'); }
 
-        // ================= FINISH =================
         function endJob() {
-            uiState.finishStep = 99; // 純工時模式，直接確認
-            uiState.finishCache = { reject:0, collar:0, tail:0, good:0 };
-            uiState.tempVal = '0';
-            updateFinishUI();
-            showScreen('finish');
+            uiState.finishStep = 99; uiState.finishCache = { reject:0, collar:0, tail:0, good:0 }; uiState.tempVal = '0';
+            updateFinishUI(); showScreen('finish');
         }
-
         function updateFinishUI() {
             const step = uiState.finishStep;
             const instr = document.getElementById('finish-instruction');
             const display = document.getElementById('qty-display');
             const summary = document.getElementById('finish-summary');
             const keypad = document.getElementById('finish-keypad');
-
-            summary.style.display = 'none';
-            keypad.style.display = 'grid'; 
-            display.style.display = 'none';
-
+            summary.style.display = 'none'; keypad.style.display = 'grid'; display.style.display = 'none';
             if (step === 99) {
                 instr.textContent = I18N[uiState.lang].summary;
                 summary.style.display = 'block';
-                summary.innerHTML = `
-                    <div style="text-align:center; padding:20px;">
-                        <div style="font-size:1.2rem; color:var(--success); margin-bottom:10px;">確認結束工單？</div>
-                        <div style="color:#888;">(本次紀錄僅包含工時)</div>
-                    </div>
-                    <div style="text-align:center; margin-top:10px; color:var(--accent);">按 OK 送出</div>
-                `;
+                summary.innerHTML = `<div style="text-align:center; padding:20px;"><div style="font-size:1.2rem; color:var(--success); margin-bottom:10px;">確認結束工單？</div><div style="color:#888;">(本次紀錄僅包含工時)</div></div><div style="text-align:center; margin-top:10px; color:var(--accent);">按 OK 送出</div>`;
             }
         }
-
-        function handleFinishInput(key) {
-            if (key === 'OK') {
-                if (uiState.finishStep === 99) { submitData(); return; }
-            }
-        }
+        function handleFinishInput(key) { if (key === 'OK' && uiState.finishStep === 99) submitData(); }
 
         async function submitData() {
             document.getElementById('loading-mask').style.display = 'flex';
-            
             const session = appData.activeJobs[uiState.targetWoId];
             const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
-            
             const now = Date.now();
-            const lastDuration = now - session.lastUpdate;
-            const totalMs = session.accTime + (lastDuration * session.manpower);
-            
-            // 反推 Effective Start Time (後端相容)
+            const totalMs = session.accTime + ((now - session.lastUpdate) * session.manpower);
             const effectiveDuration = totalMs / session.manpower;
             const effectiveStart = new Date(now - effectiveDuration).toISOString();
-
             const payload = {
-                token: TOKEN,
-                action: 'LOG_WORK',
-                wo_id: uiState.targetWoId,
-                operation_name: job.op_zh,
-                supervisor_pin: uiState.pin,
-                manpower_count: session.manpower,
-                start_time: effectiveStart,
+                token: TOKEN, action: 'LOG_WORK', wo_id: uiState.targetWoId, operation_name: job.op_zh,
+                supervisor_pin: uiState.pin, manpower_count: session.manpower, start_time: effectiveStart,
                 qty_good: 0, qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0
             };
-
             try {
-                await fetch(GAS_URL, {
-                    method: 'POST', mode: 'no-cors',
-                    headers: {'Content-Type': 'text/plain'},
-                    body: JSON.stringify(payload)
-                });
-                
+                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(payload) });
                 delete appData.activeJobs[uiState.targetWoId];
                 appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
                 saveStorage();
-                
                 document.getElementById('loading-mask').style.display = 'none';
                 showScreen('queue');
-
             } catch(e) {
                 alert("連線失敗 (已存本地)");
                 document.getElementById('loading-mask').style.display = 'none';
@@ -641,63 +498,111 @@
             }
         }
 
-        // ================= ADMIN =================
-        function adminAddJob() {
+        // ================= ADMIN LOGIC (V3.4 Added) =================
+        function renderAdminCreate() {
+            const container = document.getElementById('admin-sub-items');
+            if (!container.innerHTML) addAdminRow();
+            updateTemplateDropdown(); // 渲染範本下拉
+            renderAdminList();
+        }
+
+        function updateTemplateDropdown() {
+            const sel = document.getElementById('admin-template');
+            sel.innerHTML = '<option value="">-- 選擇載入 --</option>';
+            appData.templates.forEach((t, i) => {
+                const opt = document.createElement('option');
+                opt.value = i; opt.textContent = t.name;
+                sel.appendChild(opt);
+            });
+        }
+
+        function addAdminRow(prod='', op='') {
+            const container = document.getElementById('admin-sub-items');
+            const div = document.createElement('div');
+            div.className = 'sub-item-row';
+            div.innerHTML = `<input class="admin-input prod" placeholder="產品" value="${prod}"><input class="admin-input op" placeholder="工序" value="${op}"><button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>`;
+            container.appendChild(div);
+        }
+
+        function saveTemplate() {
             const mwo = document.getElementById('admin-mwo').value;
-            const prod = document.getElementById('admin-prod').value;
-            const op = document.getElementById('admin-op').value;
-            
-            if(mwo && prod && op) {
-                appData.queue.push({
-                    wo_id: `${mwo}-Q${Date.now()}`,
-                    master: mwo, prod_zh: prod, prod_vn: prod,
-                    op_zh: op, op_vn: op, rank: appData.queue.length+1
-                });
-                saveStorage();
-                renderAdmin();
-                alert("已新增");
+            if(!mwo) return alert("需輸入總工單號做為範本名");
+            const items = [];
+            document.querySelectorAll('#admin-sub-items .sub-item-row').forEach(row => {
+                const prod = row.querySelector('.prod').value; const op = row.querySelector('.op').value;
+                if(prod && op) items.push({prod, op});
+            });
+            if(items.length === 0) return alert("至少需一項工序");
+
+            const existIdx = appData.templates.findIndex(t => t.name === mwo);
+            if(existIdx >= 0) {
+                if(!confirm(`範本 ${mwo} 已存在，覆蓋？`)) return;
+                appData.templates[existIdx] = { name: mwo, items: items };
+            } else {
+                appData.templates.push({ name: mwo, items: items });
+            }
+            saveStorage(); updateTemplateDropdown(); alert("範本已儲存");
+        }
+
+        function loadTemplate() {
+            const idx = document.getElementById('admin-template').value;
+            if(idx === "") return;
+            const tmpl = appData.templates[idx];
+            document.getElementById('admin-mwo').value = tmpl.name;
+            document.getElementById('admin-sub-items').innerHTML = '';
+            tmpl.items.forEach(i => addAdminRow(i.prod, i.op));
+        }
+
+        function deleteTemplate() {
+            const idx = document.getElementById('admin-template').value;
+            if(idx === "") return alert("請選擇要刪除的範本");
+            if(confirm("確定刪除此範本？")) {
+                appData.templates.splice(idx, 1);
+                saveStorage(); updateTemplateDropdown();
+                document.getElementById('admin-template').value = "";
             }
         }
 
-        function renderAdmin() {
+        function publishWorkOrders() {
+            const mwo = document.getElementById('admin-mwo').value;
+            if(!mwo) return alert("缺單號");
+            let count = 0;
+            document.querySelectorAll('#admin-sub-items .sub-item-row').forEach(row => {
+                const prod = row.querySelector('.prod').value; const op = row.querySelector('.op').value;
+                if(prod && op) {
+                    count++;
+                    appData.queue.push({
+                        wo_id: `${mwo}-Q${Date.now()}-${count}`,
+                        master: mwo, prod_zh: prod, prod_vn: prod, op_zh: op, op_vn: op, rank: appData.queue.length+1
+                    });
+                }
+            });
+            saveStorage(); renderAdminList(); alert(`已發布 ${count} 張工單`);
+            document.getElementById('admin-mwo').value = '';
+            document.getElementById('admin-sub-items').innerHTML = '';
+            addAdminRow();
+        }
+
+        function renderAdminList() {
             const div = document.getElementById('admin-list');
-            div.innerHTML = appData.queue.map(q => `
-                <div style="border-bottom:1px solid #333; padding:10px;">${q.master} - ${q.prod_zh} - ${q.op_zh}</div>
-            `).join('');
+            div.innerHTML = appData.queue.map(q => `<div style="border-bottom:1px solid #333; padding:5px;">${q.master} - ${q.prod_zh} - ${q.op_zh}</div>`).join('');
         }
 
-        function adminReset() {
-            if(confirm("重置所有資料？")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
+        function adminReset() { if(confirm("重置所有資料？")) { localStorage.clear(); location.reload(); } }
 
-        // ================= HELPERS =================
         function renderATMKeypad(elementId, callback) {
             const el = document.getElementById(elementId);
-            el.innerHTML = '';
-            el.className = 'circle-keypad';
-
-            const keys = ['1','2','3','4','5','6','7','8','9','C','0','OK'];
-            keys.forEach(k => {
+            el.innerHTML = ''; el.className = 'circle-keypad';
+            ['1','2','3','4','5','6','7','8','9','C','0','OK'].forEach(k => {
                 const btn = document.createElement('div');
                 btn.textContent = k;
-                if(k === 'C') btn.className = 'circle-btn clear';
-                else if(k === 'OK') btn.className = 'circle-btn ok';
-                else btn.className = 'circle-btn';
-                
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    callback(k);
-                });
+                if(k === 'C') btn.className = 'circle-btn clear'; else if(k === 'OK') btn.className = 'circle-btn ok'; else btn.className = 'circle-btn';
+                btn.addEventListener('click', (e) => { e.preventDefault(); callback(k); });
                 el.appendChild(btn);
             });
         }
 
-        // Start
         document.addEventListener('DOMContentLoaded', init);
-
     </script>
 </body>
 </html>
