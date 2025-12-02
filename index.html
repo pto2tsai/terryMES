@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (V1.2) */
+        /* CSS: 響應式極簡風格 (V1.3 Optimized) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -18,7 +18,7 @@
             --warning-color: #ff9800;
             --error-color: #ff5722;
             --panel-bg: #112233;
-            --nav-width: 60px; /* 導航列寬度 */
+            --nav-width: 70px;
         }
 
         * { box-sizing: border-box; }
@@ -30,11 +30,11 @@
             color: var(--text-color);
             height: 100vh;
             text-align: center;
-            display: flex; flex-direction: row; /* 改為水平排列以適應左側導航 */
+            display: flex; flex-direction: row;
             overflow: hidden;
         }
 
-        /* 導航列 (預設: 左側垂直) */
+        /* 導航列 (加大圖示) */
         .nav-bar {
             width: var(--nav-width);
             height: 100vh;
@@ -49,62 +49,55 @@
         }
 
         .nav-icons {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: auto;
+            display: flex; flex-direction: column; gap: 25px; margin-bottom: auto;
         }
 
         .nav-btn {
-            background: none; border: none; cursor: pointer; padding: 10px;
+            background: none; border: none; cursor: pointer; padding: 12px;
             color: var(--primary-color); display: flex; align-items: center; justify-content: center;
-            border-radius: 10px; transition: background 0.2s, transform 0.1s;
+            border-radius: 12px; transition: background 0.2s, transform 0.1s;
             touch-action: manipulation;
         }
         .nav-btn:active { background-color: rgba(255,255,255,0.1); transform: scale(0.95); }
-        .nav-btn svg { width: 32px; height: 32px; fill: currentColor; }
+        .nav-btn svg { width: 36px; height: 36px; fill: currentColor; } /* 圖示加大 */
 
         .version-tag {
             font-size: 0.7rem; color: #555; margin-bottom: 10px; writing-mode: vertical-lr;
         }
 
         .container {
-            flex-grow: 1;
-            padding: 10px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            position: relative;
-            display: flex;
-            flex-direction: column;
+            flex-grow: 1; padding: 10px;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            position: relative; display: flex; flex-direction: column;
         }
 
         .screen { display: none; min-height: 90vh; padding-bottom: 50px; width: 100%; }
 
         h1 { font-size: 1.5rem; color: var(--primary-color); margin: 5px 0; }
         
-        /* 按鈕優化 */
         .large-btn {
-            padding: 12px; margin: 4px; font-size: 1.3rem; font-weight: bold;
+            padding: 10px; margin: 4px; font-size: 1.2rem; font-weight: bold;
             cursor: pointer; border: 2px solid var(--primary-color); border-radius: 8px;
             background-color: var(--btn-bg); color: white; transition: all 0.1s;
             line-height: 1.2; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            touch-action: manipulation; /* 提升觸控反應 */
+            touch-action: manipulation;
         }
         .large-btn:active { background-color: var(--btn-active); transform: scale(0.96); }
         .large-btn.disabled { background-color: #555; border-color: #777; cursor: not-allowed; opacity: 0.6; }
 
         .large-select {
-            width: 98%; font-size: 1.2rem; padding: 10px; margin-bottom: 10px;
+            width: 98%; font-size: 1.1rem; padding: 10px; margin-bottom: 10px;
             background-color: var(--btn-bg); color: white; border: 2px solid var(--primary-color);
             border-radius: 8px; appearance: none;
         }
 
-        /* 工單列表 */
-        #queue-list-container { display: grid; gap: 8px; padding: 2px; }
+        /* 工單列表 (更緊湊) */
+        #queue-list-container { display: grid; gap: 6px; padding: 2px; }
         .queue-item {
             text-align: left; border-color: var(--success-color); position: relative;
-            padding: 8px 12px; min-height: auto; display: flex; flex-direction: column; justify-content: center;
-            border-radius: 6px; border: 1px solid var(--success-color);
+            padding: 8px 10px; /* 縮小內距 */
+            min-height: auto; display: flex; flex-direction: column; justify-content: center;
+            border-radius: 6px; border: 1px solid var(--success-color); /* 線條變細 */
             background-color: var(--btn-bg); cursor: pointer;
             touch-action: manipulation;
         }
@@ -120,14 +113,10 @@
         }
         .queue-item.active-job .status-badge { display: block; }
 
-        .q-num { font-size: 1.2rem; font-weight: bold; color: var(--primary-color); margin-right: 8px; }
-        .main-lang { font-size: 1.1rem; font-weight: bold; display: inline-block; margin-bottom: 2px; }
-        .aux-lang { font-size: 0.85rem; color: #ccc; display: block; }
+        .q-num { font-size: 1.1rem; font-weight: bold; color: var(--primary-color); margin-right: 8px; }
+        .main-lang { font-size: 1rem; font-weight: bold; display: inline-block; margin-bottom: 2px; }
+        .aux-lang { font-size: 0.8rem; color: #ccc; display: block; }
 
-        /* 登入畫面緊湊化 */
-        .login-wrapper {
-            display: flex; flex-direction: column; justify-content: center; height: 100%;
-        }
         .pin-display {
             font-size: 3rem; letter-spacing: 5px; margin: 10px auto;
             height: 50px; line-height: 50px; border-bottom: 3px dashed var(--primary-color);
@@ -139,7 +128,7 @@
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
             width: 100%; max-width: 400px; margin: 5px auto;
         }
-        .keypad-grid .large-btn { font-size: 1.5rem; padding: 15px; margin: 0; } /* 鍵盤按鈕調整 */
+        .keypad-grid .large-btn { font-size: 1.5rem; padding: 15px; margin: 0; }
 
         .btn-confirm { background-color: var(--success-color); border-color: var(--success-color); font-size: 1.3rem; }
         .btn-back { background-color: #607d8b; border-color: #78909c; }
@@ -155,7 +144,7 @@
         .admin-table tr:nth-child(even) { background-color: #1a3449; }
         .admin-panel { 
             background-color: var(--panel-bg); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: left; 
-            max-height: 60vh; overflow-y: auto; /* 允許面板內捲動 */
+            max-height: 65vh; overflow-y: auto; /* 確保內容過長時可捲動 */
         }
         .admin-input { width: 100%; padding: 8px; margin: 5px 0 10px 0; background: #000; border: 1px solid #555; color: white; font-size: 1rem; }
         .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 5px; align-items: center; }
@@ -164,7 +153,7 @@
         .summary-box { background-color: var(--success-color); color: black; padding: 10px; border-radius: 10px; margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
         .history-section { border-top: 1px solid #444; margin-top: 10px; padding-top: 10px; }
 
-        /* Loading Overlay */
+        /* Loading */
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.7); z-index: 2000;
@@ -178,23 +167,25 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .loading-text { color: white; margin-top: 20px; font-size: 1.2rem; font-weight: bold; }
 
-        /* --- 響應式設計 --- */
+        /* --- 響應式設計 (電腦版置中視窗) --- */
         @media (min-width: 768px) {
             body { background-color: #2b2b2b; align-items: center; justify-content: center;}
             .nav-bar {
-                position: absolute; left: 0; top: 0; height: 100%; width: 70px;
+                position: absolute; left: 0; top: 0; height: 100%; width: 80px; /* 增加導航寬度 */
                 border-radius: 20px 0 0 20px;
             }
             .container {
-                max-width: 700px; background-color: var(--bg-color);
+                max-width: 750px; /* 視窗寬度 */
+                background-color: var(--bg-color);
                 box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
                 height: calc(100vh - 40px); border-radius: 20px;
-                overflow: hidden; padding-left: 70px; /* 留出導航寬度 */
+                overflow: hidden; padding-left: 80px; /* 避開導航 */
                 width: 100%;
             }
             h1 { font-size: 2rem; }
             .keypad-grid { gap: 10px; max-width: 450px; }
             .admin-table { font-size: 1rem; }
+            #queue-list-container { grid-template-columns: repeat(2, 1fr); }
         }
 
         @media (max-width: 767px) {
@@ -227,7 +218,7 @@
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
         </div>
-        <div class="version-tag">V1.2</div>
+        <div class="version-tag">V1.3</div>
     </div>
 
     <!-- Loading Overlay -->
@@ -237,10 +228,10 @@
     </div>
 
     <div class="container">
-        <!-- 畫面 1: 登入 (緊湊版) -->
+        <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.2</span></h1>
+                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.3</span></h1>
                 <div style="font-size: 1rem; margin-bottom: 5px;">
                     <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
                 </div>
@@ -266,12 +257,12 @@
                 <div class="admin-panel">
                     <h3>➕ 建立總工單</h3>
                     <div class="history-section">
-                        <label style="color: #aaa;">📂 範本:</label>
+                        <label style="color: #aaa;">📂 範本 (Templates):</label>
                         <div style="display:flex; gap:5px;">
                             <select id="mwo-history-select" class="large-select" style="font-size:1rem; padding:8px; margin-bottom:5px;" onchange="loadMWOFromHistory()">
                                 <option value="">-- 選擇範本 --</option>
                             </select>
-                            <button class="btn-delete" style="height:40px;" onclick="deleteTemplate()">🗑️</button>
+                            <button class="btn-delete" style="height:40px;" onclick="deleteTemplate()" title="刪除範本">🗑️</button>
                         </div>
                     </div>
                     <label>總工單 ID:</label>
@@ -376,7 +367,7 @@
         // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
-        const VERSION = "V1.2";
+        const VERSION = "V1.3";
 
         let state = {
             currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
@@ -549,7 +540,7 @@
             template.items.forEach(item => addSubItemRow(item.prod, item.op));
         }
 
-        // 新增：刪除範本功能
+        // 修改：新增刪除範本功能
         function deleteTemplate() {
             const selectedMWO = document.getElementById('mwo-history-select').value;
             if (!selectedMWO) { alert("請先選擇要刪除的範本"); return; }
@@ -557,9 +548,8 @@
                 mwoHistory = mwoHistory.filter(t => t.mwo_id !== selectedMWO);
                 saveMWOHistoryToStorage();
                 updateMWOHistoryDropdown();
-                document.getElementById('batch-mwo').value = '';
-                document.getElementById('sub-items-container').innerHTML = '';
-                addSubItemRow();
+                // 清空當前選擇
+                document.getElementById('mwo-history-select').value = "";
             }
         }
 
@@ -754,7 +744,7 @@
                 timerInterval = setInterval(updateTimer, 1000);
                 document.getElementById('working-woid').textContent = woId;
                 document.getElementById('manpower-display').textContent = session.manpower;
-                saveAll(); // 儲存狀態
+                saveAll(); 
                 showScreen('screen-working'); updateTimer();
             } else {
                 state.currentTypedValue = '0';
@@ -897,7 +887,6 @@
                 const response = await fetch(GAS_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(postData) });
                 const data = await response.json();
                 
-                // 成功後才刪除狀態
                 if (data.success) {
                     completedLogs.push({ ...postData, endTime: new Date().toISOString(), totalManHours: totalManHours });
                     saveLogsToStorage();
@@ -913,7 +902,7 @@
                 showScreen('screen-queue'); 
             } finally { 
                 state.isSubmitting = false; 
-                hideLoading(); // 隱藏轉圈圈
+                hideLoading(); 
             }
         }
 
