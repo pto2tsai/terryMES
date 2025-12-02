@@ -17,6 +17,7 @@
             --success-color: #4caf50;
             --warning-color: #ff9800;
             --error-color: #ff5722;
+            --panel-bg: #112233;
         }
 
         * {
@@ -196,11 +197,6 @@
             border-color: #78909c;
         }
         
-        .btn-adjust {
-            background-color: #3f51b5;
-            border-color: #5c6bc0;
-        }
-
         .diagnostic-info {
             font-size: 0.7rem;
             color: #7fffd4; 
@@ -217,6 +213,79 @@
             text-align: left; 
             font-weight: bold; 
             display: none;
+        }
+
+        /* --- 生管畫面專用樣式 --- */
+        .planner-tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            background-color: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: #000;
+        }
+        
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        .admin-table th, .admin-table td {
+            border: 1px solid #444;
+            padding: 10px;
+            text-align: left;
+        }
+        .admin-table th {
+            background-color: var(--primary-color);
+            color: black;
+        }
+        .admin-table tr:nth-child(even) {
+            background-color: #1a3449;
+        }
+        
+        .admin-panel {
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .admin-input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 15px 0;
+            background: #000;
+            border: 1px solid #555;
+            color: white;
+            font-size: 1rem;
+        }
+        .btn-delete {
+            background-color: #e91e63;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .summary-box {
+            background-color: var(--success-color);
+            color: black;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
         }
 
         /* --- 響應式設計 (Media Queries) --- */
@@ -237,6 +306,9 @@
                 gap: 15px;
                 max-width: 600px;
             }
+            
+            /* 生管畫面在平板上更好看 */
+            .admin-table { font-size: 1.1rem; }
         }
 
         /* 手機直向 (寬度小於 768px) */
@@ -261,6 +333,7 @@
                 font-size: 2.5rem;
                 letter-spacing: 5px;
             }
+            .admin-table th, .admin-table td { padding: 5px; font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -272,6 +345,7 @@
             <h1>MES LITE 登入 🔒</h1>
             <div style="font-size: 1.2rem; margin-bottom: 20px;">
                 <span data-i18n="login_prompt">請輸入您的 4 位識別碼 (PIN)</span>
+                <br><span style="font-size: 0.8em; color: #aaa;">(生管: 9999)</span>
             </div>
             
             <div class="pin-display" id="pin-input">****</div>
@@ -288,6 +362,81 @@
              <div id="keypad" class="keypad-grid"></div>
         </div>
 
+        <!-- 畫面 1.5: 生管主頁面 (Planner Dashboard) -->
+        <div id="screen-planner" class="screen">
+            <h1>📋 生管控制台</h1>
+            <div class="planner-tabs">
+                <button class="tab-btn active" onclick="switchPlannerTab('tab-queue')">工單編輯</button>
+                <button class="tab-btn" onclick="switchPlannerTab('tab-report')">報表輸出</button>
+            </div>
+
+            <!-- Tab 1: 工單編輯 -->
+            <div id="tab-queue" class="planner-tab-content">
+                <div class="admin-panel">
+                    <h3>➕ 新增工單</h3>
+                    <label>總工單 ID (Master WO):</label>
+                    <input type="text" id="new-mwo" class="admin-input" placeholder="例如: MWO-A">
+                    <label>產品名稱:</label>
+                    <input type="text" id="new-prod" class="admin-input" placeholder="例如: 鮭魚切片">
+                    <label>工序名稱:</label>
+                    <input type="text" id="new-op" class="admin-input" placeholder="例如: 真空包裝">
+                    <button class="large-btn btn-confirm" style="width:100%; font-size:1.2rem;" onclick="addWorkOrder()">新增至清單</button>
+                </div>
+
+                <h3>目前清單 (本機儲存)</h3>
+                <div style="overflow-x:auto;">
+                    <table class="admin-table" id="admin-queue-table">
+                        <thead>
+                            <tr>
+                                <th>總工單</th>
+                                <th>產品</th>
+                                <th>工序</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-queue-body">
+                            <!-- JS 生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 2: 報表輸出 -->
+            <div id="tab-report" class="planner-tab-content" style="display:none;">
+                <div class="admin-panel">
+                    <h3>📊 已完成紀錄 (本機暫存)</h3>
+                    <p style="font-size:0.8rem; color:#aaa;">勾選項目以計算總合</p>
+                    <button class="large-btn" style="width:100%; font-size:1.2rem; background-color:#2196f3;" onclick="calculateReport()">計算選取項目總工時</button>
+                </div>
+
+                <div id="report-summary" class="summary-box" style="display:none;">
+                    總人時: <span id="sum-manhours">0</span> 小時<br>
+                    良品總重: <span id="sum-good">0</span> KG<br>
+                    損耗總重: <span id="sum-reject">0</span> KG
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="admin-table" id="admin-report-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" onclick="toggleAllReports(this)"></th>
+                                <th>時間</th>
+                                <th>工單</th>
+                                <th>工序</th>
+                                <th>人時</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-report-body">
+                            <!-- JS 生成 -->
+                        </tbody>
+                    </table>
+                </div>
+                <button class="large-btn btn-back" style="margin-top:20px;" onclick="clearCompletedLogs()">清除已匯出紀錄</button>
+            </div>
+
+            <button class="large-btn btn-back" style="margin-top:30px;" onclick="logout()">登出</button>
+        </div>
+
         <!-- 畫面 2: 待辦排隊 -->
         <div id="screen-queue" class="screen">
             <h1 id="queue-title"></h1>
@@ -295,10 +444,9 @@
                 👆 請點擊欲開始的工單 (CHỌN CÔNG VIỆC)
             </div>
 
-            <!-- 新增：總工單選擇 (下拉選單) -->
+            <!-- 總工單選擇 (下拉選單) -->
             <select id="master-wo-select" class="large-select" onchange="filterQueue()">
                 <option value="ALL">全部顯示 (Hiển thị tất cả)</option>
-                <!-- 選項將由 JS 動態生成 -->
             </select>
             
             <div id="queue-list-container">
@@ -333,7 +481,6 @@
                 <span data-i18n="elapsed_time">已耗時</span>: <span id="elapsed-time">00:00:00</span>
             </div>
             <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center;">
-                <!-- 調整人數按鈕 -->
                 <button class="large-btn btn-adjust" style="width: 90%; margin-bottom: 15px;" onclick="adjustManpower()">
                     <span data-i18n="btn_adjust_manpower">👥 調整人數 / Change Manpower</span>
                 </button>
@@ -394,13 +541,17 @@
 
         let timerInterval = null;
 
-        // 模擬的工單數據 (包含總工單 ID 以供篩選)
-        const mockQueue = [
+        // 預設工單資料 (如果 LocalStorage 是空的)
+        const defaultQueue = [
             { wo_id: 'WC001-Q1', master_wo_id: 'MWO-A', product_name_zh: '鮭魚分切批次', product_name_vn: 'Cá hồi lô A', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.2 },
             { wo_id: 'WC001-Q3', master_wo_id: 'MWO-A', product_name_zh: '中段厚切', product_name_vn: 'Lát giữa dày', operation_name_zh: '重量選別', operation_name_vn: 'Phân loại', queue_rank: 3, standard_time_hr: 0.3 },
-            { wo_id: 'WC002-Q1', master_wo_id: 'MWO-B', product_name_zh: '鮪魚分塊', product_name_vn: 'Cá ngừ cắt khối', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 5, standard_time_hr: 0.8 },
-            { wo_id: 'WC003-Q2', master_wo_id: 'MWO-C', product_name_zh: '蝦仁加工', product_name_vn: 'Tôm chế biến', operation_name_zh: '剝殼', operation_name_vn: 'Bóc vỏ', queue_rank: 2, standard_time_hr: 0.5 }
+            { wo_id: 'WC002-Q1', master_wo_id: 'MWO-B', product_name_zh: '鮪魚分塊', product_name_vn: 'Cá ngừ cắt khối', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 5, standard_time_hr: 0.8 }
         ];
+
+        // 實際使用的工單列表 (會從 Storage 讀取)
+        let appQueue = [];
+        // 已完成的紀錄 (用於生管報表)
+        let completedLogs = [];
 
         // 雙語字典
         const i18n = {
@@ -418,6 +569,37 @@
             }
         };
 
+        // --- 初始化與 Storage ---
+        function initApp() {
+            // 讀取 LocalStorage
+            const storedQueue = localStorage.getItem('mes_lite_queue');
+            if (storedQueue) {
+                appQueue = JSON.parse(storedQueue);
+            } else {
+                appQueue = [...defaultQueue]; // 使用預設
+                saveQueueToStorage();
+            }
+
+            const storedLogs = localStorage.getItem('mes_lite_logs');
+            if (storedLogs) {
+                completedLogs = JSON.parse(storedLogs);
+            }
+
+            document.getElementById('api-base-url-display').textContent = GAS_WEBHOOK_URL; 
+            if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') {
+                document.getElementById('url-alert-box').style.display = 'block';
+            }
+            renderKeypad('keypad', 'PIN'); 
+            updateUI();
+        }
+
+        function saveQueueToStorage() {
+            localStorage.setItem('mes_lite_queue', JSON.stringify(appQueue));
+        }
+        function saveLogsToStorage() {
+            localStorage.setItem('mes_lite_logs', JSON.stringify(completedLogs));
+        }
+
         // --- UI Functions ---
 
         function showScreen(screenId) {
@@ -430,6 +612,8 @@
                 state.currentPIN = '';
             } else if (state.currentScreen === 'queue') {
                 loadQueue();
+            } else if (state.currentScreen === 'planner') {
+                renderPlannerQueue();
             }
         }
 
@@ -440,16 +624,147 @@
                 if (i18n[currentLang] && i18n[currentLang][key]) el.textContent = i18n[currentLang][key];
             });
 
-            if (state.currentUser) {
+            if (state.currentUser && state.currentUser.name_zh) {
                 const greeting = currentLang === 'vn' ? `Chào Ông ${state.currentUser.name_vn}!` : `您好，${state.currentUser.name_zh}主管!`;
                 document.getElementById('queue-title').textContent = greeting;
             }
         }
 
+        // --- 生管 (Planner) 功能 ---
+
+        function switchPlannerTab(tabId) {
+            document.querySelectorAll('.planner-tab-content').forEach(el => el.style.display = 'none');
+            document.getElementById(tabId).style.display = 'block';
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (tabId === 'tab-queue') renderPlannerQueue();
+            if (tabId === 'tab-report') renderPlannerReport();
+        }
+
+        function renderPlannerQueue() {
+            const tbody = document.getElementById('admin-queue-body');
+            tbody.innerHTML = '';
+            appQueue.forEach((job, index) => {
+                const row = `<tr>
+                    <td>${job.master_wo_id}</td>
+                    <td>${job.product_name_zh}</td>
+                    <td>${job.operation_name_zh}</td>
+                    <td><button class="btn-delete" onclick="deleteWorkOrder(${index})">刪除</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function addWorkOrder() {
+            const mwo = document.getElementById('new-mwo').value;
+            const prod = document.getElementById('new-prod').value;
+            const op = document.getElementById('new-op').value;
+            
+            if (!mwo || !prod || !op) {
+                alert("請填寫所有欄位");
+                return;
+            }
+
+            const newJob = {
+                wo_id: mwo + '-Q' + (appQueue.length + 1), // 簡單生成 ID
+                master_wo_id: mwo,
+                product_name_zh: prod,
+                product_name_vn: prod, // 暫用中文代替
+                operation_name_zh: op,
+                operation_name_vn: op,
+                queue_rank: appQueue.length + 1,
+                standard_time_hr: 1.0 // 預設
+            };
+
+            appQueue.push(newJob);
+            saveQueueToStorage();
+            renderPlannerQueue();
+            
+            // 清空輸入
+            document.getElementById('new-mwo').value = '';
+            document.getElementById('new-prod').value = '';
+            document.getElementById('new-op').value = '';
+        }
+
+        function deleteWorkOrder(index) {
+            if (confirm("確定要刪除此工單嗎？")) {
+                appQueue.splice(index, 1);
+                saveQueueToStorage();
+                renderPlannerQueue();
+            }
+        }
+
+        function renderPlannerReport() {
+            const tbody = document.getElementById('admin-report-body');
+            tbody.innerHTML = '';
+            // 反向顯示，最新的在上面
+            [...completedLogs].reverse().forEach((log, index) => {
+                const time = new Date(log.endTime).toLocaleString();
+                // 原始索引 (因為反向了)
+                const realIndex = completedLogs.length - 1 - index;
+                
+                const row = `<tr>
+                    <td><input type="checkbox" class="report-checkbox" data-index="${realIndex}"></td>
+                    <td>${time}</td>
+                    <td>${log.wo_id}</td>
+                    <td>${log.operation_name}</td>
+                    <td>${parseFloat(log.totalManHours).toFixed(2)}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function toggleAllReports(source) {
+            const checkboxes = document.querySelectorAll('.report-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function calculateReport() {
+            const checkboxes = document.querySelectorAll('.report-checkbox:checked');
+            let totalHours = 0;
+            let totalGood = 0;
+            let totalReject = 0;
+
+            if (checkboxes.length === 0) {
+                alert("請先勾選項目");
+                return;
+            }
+
+            checkboxes.forEach(cb => {
+                const index = cb.getAttribute('data-index');
+                const log = completedLogs[index];
+                totalHours += parseFloat(log.totalManHours || 0);
+                totalGood += parseFloat(log.qty_good || 0);
+                totalReject += parseFloat(log.qty_reject || 0);
+            });
+
+            document.getElementById('sum-manhours').textContent = totalHours.toFixed(2);
+            document.getElementById('sum-good').textContent = totalGood.toFixed(2);
+            document.getElementById('sum-reject').textContent = totalReject.toFixed(2);
+            document.getElementById('report-summary').style.display = 'block';
+        }
+
+        function clearCompletedLogs() {
+            if (confirm("這將清除本機所有已完成紀錄 (無法復原)，確定嗎？")) {
+                completedLogs = [];
+                saveLogsToStorage();
+                renderPlannerReport();
+                document.getElementById('report-summary').style.display = 'none';
+            }
+        }
+
+        function logout() {
+            state.currentUser = null;
+            showScreen('screen-login');
+        }
+
         // --- Keypad Functions ---
         function renderKeypad(targetElementId, targetInputType) {
             state.inputTarget = targetInputType;
-            const layout = ['7', '8', '9', 'C', '4', '5', '6', '0', '1', '2', '3', 'OK'];
+            // 修正：標準計算機/電話排列
+            const layout = ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', 'OK'];
             const keypadDiv = document.getElementById(targetElementId);
             keypadDiv.innerHTML = '';
             
@@ -512,6 +827,13 @@
         // --- Logic ---
 
         function validateLogin(pin) {
+            // 特殊: 生管登入
+            if (pin === '9999') {
+                showScreen('screen-planner');
+                switchPlannerTab('tab-queue');
+                return;
+            }
+
             if (pin.length !== 4) {
                  document.getElementById('login-error').textContent = i18n[state.language].pin_error;
                  return;
@@ -533,7 +855,7 @@
 
         function loadQueue() {
             // 1. 提取所有總工單 ID 製作下拉選單
-            const masterWOs = [...new Set(mockQueue.map(item => item.master_wo_id))];
+            const masterWOs = [...new Set(appQueue.map(item => item.master_wo_id))];
             const select = document.getElementById('master-wo-select');
             
             const currentSelection = select.value;
@@ -558,7 +880,8 @@
             const listContainer = document.getElementById('queue-list-container');
             listContainer.innerHTML = '';
 
-            const filteredQueue = mockQueue.filter(job => {
+            // 使用 appQueue 而不是 mockQueue
+            const filteredQueue = appQueue.filter(job => {
                 return selectedMasterWO === 'ALL' || job.master_wo_id === selectedMasterWO;
             });
             
@@ -615,9 +938,7 @@
             }
         }
 
-        // 按下「調整人數」按鈕
         function adjustManpower() {
-            // 先暫停當前畫面，進入人數輸入模式
             state.currentTypedValue = '0';
             document.getElementById('manpower-woid').textContent = state.currentViewingWoId;
             document.getElementById('manpower-input-display').textContent = '0';
@@ -632,24 +953,19 @@
                 return;
             }
             
-            // 判斷是新工單還是調整現有工單
             if (state.activeSessions[state.currentViewingWoId]) {
-                // 更新邏輯 (累積工時)
                 const session = state.activeSessions[state.currentViewingWoId];
                 const now = Date.now();
                 
-                // 1. 結算上一段時間的工時
                 const segmentMs = now - session.lastUpdateTime;
                 const segmentHours = (segmentMs / 3600000.0) * session.manpower;
                 session.accumulatedManHours = (session.accumulatedManHours || 0) + segmentHours;
                 
-                // 2. 更新狀態
-                session.lastUpdateTime = now; // 重置這一段的開始時間
-                session.manpower = value;     // 更新人數
+                session.lastUpdateTime = now; 
+                session.manpower = value;     
                 
                 state.currentManpower = value;
                 
-                // 回到計時畫面
                 if (timerInterval) clearInterval(timerInterval);
                 timerInterval = setInterval(updateTimer, 1000);
                 
@@ -658,7 +974,6 @@
                 showScreen('screen-working');
                 
             } else {
-                // 新工單
                 state.currentManpower = value;
                 startJobSession();
             }
@@ -667,12 +982,12 @@
         function startJobSession() {
             const now = Date.now();
             state.activeSessions[state.currentViewingWoId] = {
-                startTime: now,      // 最初開始時間 (僅供顯示參考)
-                lastUpdateTime: now, // 用於計算分段工時
+                startTime: now,      
+                lastUpdateTime: now, 
                 startTimeISO: new Date(now).toISOString(),
                 manpower: state.currentManpower,
                 operationName: state.currentWoOperationName,
-                accumulatedManHours: 0 // 初始累積工時
+                accumulatedManHours: 0 
             };
 
             if (timerInterval) clearInterval(timerInterval);
@@ -694,7 +1009,6 @@
             const session = state.activeSessions[state.currentViewingWoId];
             if (!session) return;
 
-            // 顯示的是「從最初開始到現在」的總時間，不代表總工時
             const elapsed = Date.now() - session.startTime;
             const seconds = Math.floor(elapsed / 1000);
             const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
@@ -782,21 +1096,12 @@
                 return;
             }
 
-            // --- 核心：反推等效開始時間 ---
             const now = Date.now();
-            
-            // 1. 計算最後一段的工時
             const lastSegmentMs = now - session.lastUpdateTime;
             const lastSegmentHours = (lastSegmentMs / 3600000.0) * session.manpower;
-            
-            // 2. 加總所有工時
             const totalManHours = (session.accumulatedManHours || 0) + lastSegmentHours;
             
-            // 3. 反推一個假的 Start Time 傳給後端
-            // 後端公式: (End - Start) * Manpower = TotalManHours
-            // 所以: Start = End - (TotalManHours / Manpower)
-            // 注意：我們傳送目前的 session.manpower 給後端，所以反推時也要除以這個數值
-            
+            // 反推邏輯
             const effectiveDurationMs = (totalManHours / session.manpower) * 3600000.0;
             const effectiveStartTimeISO = new Date(now - effectiveDurationMs).toISOString();
 
@@ -806,7 +1111,7 @@
                 operation_name: session.operationName,
                 manpower_count: session.manpower,
                 wo_id: state.currentViewingWoId,
-                start_time: effectiveStartTimeISO, // 使用反推的時間
+                start_time: effectiveStartTimeISO, 
                 qty_good: state.finishData.qty_good,
                 qty_reject: state.finishData.qty_reject,
                 actual_collar_qty: state.finishData.actual_collar_qty, 
@@ -823,6 +1128,14 @@
                 
                 if (data.success) {
                     alert(`${i18n[state.language].btn_confirm_submit} 成功! ${data.message}`);
+                    
+                    // 保存完成紀錄到 LocalStorage 供生管查詢
+                    completedLogs.push({
+                        ...postData,
+                        endTime: new Date().toISOString(),
+                        totalManHours: totalManHours
+                    });
+                    saveLogsToStorage();
                 } else {
                     alert(`提交失敗: ${data.message}`);
                 }
@@ -842,12 +1155,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('api-base-url-display').textContent = GAS_WEBHOOK_URL; 
-            if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') {
-                document.getElementById('url-alert-box').style.display = 'block';
-            }
-            renderKeypad('keypad', 'PIN'); 
-            updateUI();
+            initApp();
         });
     </script>
 </body>
