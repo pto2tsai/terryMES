@@ -2,11 +2,11 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MES Lite V3.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MES Lite V3.3</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V3.1 穩定與清晰導航版 */
+        /* CSS: V3.3 調整人數介面優化版 */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
@@ -18,12 +18,12 @@
             --accent: #00bcd4;  
             --success: #4caf50; 
             --warning: #ff9800; 
-            --danger: #ef5350;  
+            --danger: #f44336;  
             
-            --nav-width: 80px; /* 加寬導航列以容納文字 */
+            --nav-height: 60px;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -35,102 +35,76 @@
             overflow: hidden;
         }
 
-        /* --- 導航列 (改良版：圖示+文字) --- */
+        /* --- 導航列 --- */
         .nav-bar {
-            width: var(--nav-width);
+            width: 80px;
             height: 100vh;
             background-color: #000;
             display: flex; flex-direction: column; align-items: center;
-            padding-top: 20px; z-index: 2000; /* 最高層級 */
-            box-shadow: 2px 0 5px rgba(0,0,0,0.5); flex-shrink: 0;
+            padding-top: 20px; z-index: 1000;
             border-right: 1px solid #333;
+            flex-shrink: 0;
         }
         
-        .nav-group {
-            display: flex; flex-direction: column; gap: 30px; margin-bottom: auto; width: 100%; align-items: center;
-        }
-
         .nav-btn {
             background: none; border: none; cursor: pointer; 
-            padding: 10px 5px;
+            padding: 15px 5px; margin-bottom: 20px;
             color: var(--text-sub); 
             display: flex; flex-direction: column; align-items: center; gap: 5px;
             width: 100%;
-            transition: all 0.1s;
         }
         
-        .nav-btn svg { width: 28px; height: 28px; fill: currentColor; }
+        .nav-btn svg { width: 32px; height: 32px; fill: currentColor; }
         .nav-btn span { font-size: 0.75rem; font-weight: bold; }
+        .nav-btn:active { color: var(--accent); background: #222; }
 
-        .nav-btn:active { color: var(--accent); transform: scale(0.95); background: #222; }
-        .nav-btn.active { color: var(--primary); border-right: 3px solid var(--primary); }
-
-        .version-tag { font-size: 0.6rem; color: #444; margin-bottom: 10px; writing-mode: vertical-lr; }
+        .version-tag { font-size: 0.6rem; color: #444; margin-top: auto; margin-bottom: 10px; writing-mode: vertical-lr; }
 
         /* --- 主容器 --- */
         .container {
-            flex: 1; padding: 15px; overflow-y: auto;
+            flex: 1; padding: 10px; overflow-y: auto;
             display: flex; flex-direction: column; align-items: center;
             position: relative;
         }
         
         .screen { 
             display: none; width: 100%; max-width: 600px; 
-            /* 移除動畫以增加穩定性 */
         }
 
-        /* --- 登入畫面 --- */
-        .login-wrapper {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 90vh; width: 100%;
+        /* --- 統一 ATM 圓形鍵盤 --- */
+        .pin-display {
+            font-size: 3rem; letter-spacing: 10px; color: var(--accent);
+            margin-bottom: 20px; height: 60px; line-height: 60px;
+            text-align: center; border-bottom: 2px solid #333; width: 100%;
         }
-        .login-title { font-size: 1.8rem; margin-bottom: 10px; color: var(--accent); letter-spacing: 2px; font-weight: bold; }
         
-        .pin-dots {
-            font-size: 3rem; letter-spacing: 15px; color: white;
-            margin-bottom: 20px; height: 50px; line-height: 50px;
-            text-align: center; min-width: 200px;
-            text-shadow: 0 0 10px var(--primary);
-        }
-
-        /* --- 圓形鍵盤 (優化點擊) --- */
         .circle-keypad {
             display: grid; grid-template-columns: repeat(3, 1fr); 
-            gap: 15px; margin-bottom: 20px;
+            gap: 15px; margin: 0 auto 20px auto; width: 100%; max-width: 350px;
         }
         .circle-btn {
-            width: 75px; height: 75px; border-radius: 50%;
+            width: 80px; height: 80px; border-radius: 50%;
             background-color: #2a2a2a; color: white;
             font-size: 2rem; font-weight: bold;
             border: 2px solid #444;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; user-select: none;
-            box-shadow: 0 4px 0 #000;
-            transition: transform 0.1s, box-shadow 0.1s;
+            margin: 0 auto; /* 水平置中 */
         }
-        .circle-btn:active { 
-            transform: translateY(4px); 
-            box-shadow: 0 0 0 #000; 
-            background-color: #444;
-            border-color: #888;
-        }
+        .circle-btn:active { background-color: #555; border-color: #888; transform: translateY(2px); }
         .circle-btn.clear { color: var(--danger); border-color: var(--danger); font-size: 1.2rem; }
-        .circle-btn.ok { background-color: var(--success); color: black; border-color: var(--success); font-size: 1.2rem; }
+        .circle-btn.ok { background-color: var(--success); color: #000; border-color: var(--success); font-size: 1.2rem; }
 
         /* --- 一般按鈕 --- */
         .large-btn {
-            width: 100%; padding: 18px; margin: 8px 0;
+            width: 100%; padding: 15px; margin: 8px 0;
             font-size: 1.3rem; font-weight: bold;
-            border-radius: 12px; border: none; cursor: pointer;
+            border-radius: 10px; border: none; cursor: pointer;
             color: white; background-color: var(--btn-bg);
             box-shadow: 0 4px 0 rgba(0,0,0,0.5);
-            transition: transform 0.1s, box-shadow 0.1s;
-            position: relative; z-index: 10; /* 確保可點擊 */
+            position: relative;
         }
-        .large-btn:active { 
-            transform: translateY(4px); 
-            box-shadow: 0 0 0 rgba(0,0,0,0.5); 
-        }
+        .large-btn:active { transform: translateY(4px); box-shadow: none; }
         .btn-confirm { background-color: var(--success); color: #000; }
         .btn-danger { background-color: var(--danger); }
         .btn-secondary { background-color: #424242; border: 1px solid #555; }
@@ -138,64 +112,52 @@
         /* --- 排程列表 --- */
         .queue-item {
             background: #1e1e1e; border: 1px solid #444; border-left: 6px solid #444;
-            padding: 18px; border-radius: 10px; margin-bottom: 12px;
+            padding: 15px; border-radius: 10px; margin-bottom: 10px;
             display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; position: relative;
+            cursor: pointer;
         }
-        .queue-item:active { background: #333; transform: scale(0.99); }
-        
-        /* 進行中樣式 */
+        .queue-item:active { background: #333; }
         .queue-item.active-job { 
-            background: #1b5e20; 
-            border-color: #66bb6a; 
-            border-left-color: #00e676;
+            background: #1b5e20; border-color: #66bb6a; border-left-color: #00e676;
         }
-        
-        .q-info h3 { margin: 0 0 6px 0; font-size: 1.3rem; color: white; }
+        .q-info h3 { margin: 0 0 5px 0; font-size: 1.3rem; color: white; }
         .q-info p { margin: 0; color: #bbb; font-size: 1rem; }
         
-        /* 狀態標籤 */
-        .status-tag {
-            font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; background: #333; color: #aaa;
-        }
-        .active-job .status-tag { background: #00e676; color: black; font-weight: bold; }
-
         /* --- 計時畫面 --- */
         .timer-box {
-            text-align: center; margin: 30px 0; padding: 20px;
-            background: #000; border-radius: 20px; border: 1px solid #333;
+            text-align: center; margin: 20px 0; padding: 20px;
+            background: #000; border-radius: 15px; border: 1px solid #333;
         }
-        .timer-val { font-size: 4rem; font-weight: bold; color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+        .timer-val { font-size: 4rem; font-weight: bold; color: var(--accent); font-variant-numeric: tabular-nums; }
         
         .job-card-large {
-            background: #222; padding: 20px; border-radius: 15px;
+            background: #222; padding: 15px; border-radius: 15px;
             text-align: center; border: 1px solid #444; margin-bottom: 10px;
         }
 
-        /* --- 生管表格 --- */
+        /* --- 生管後台 --- */
         .admin-panel { width: 100%; background: #111; padding: 15px; border-radius: 10px; }
         .admin-input { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; margin-bottom: 10px; font-size: 1rem; border-radius: 5px;}
 
         /* --- Loading --- */
         #loading-mask {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 3000; /* 最高 */
+            background: rgba(0,0,0,0.9); z-index: 3000;
             display: none; align-items: center; justify-content: center; flex-direction: column;
         }
         .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s infinite linear; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* RWD */
+        /* RWD 手機版 */
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            /* 手機版導航列改到底部，方便拇指操作，或保持頂部但優化 */
             .nav-bar { 
                 width: 100%; height: 65px; flex-direction: row; padding: 0 10px; 
-                border-right: none; border-top: 1px solid #333;
-                order: 2; /* 放到最下面 (App 風格) */
+                border-right: none; border-top: 1px solid #333; order: 2;
             }
-            .nav-group { flex-direction: row; justify-content: space-around; width: 100%; }
-            .container { order: 1; padding-bottom: 10px; } /* 內容在上面 */
+            .container { order: 1; padding-bottom: 10px; }
+            .nav-btn { margin-bottom: 0; flex-direction: column; padding: 5px; }
+            .nav-icons { flex-direction: row; justify-content: space-around; width: 100%; gap: 0; }
             .version-tag { display: none; }
         }
     </style>
@@ -207,28 +169,17 @@
         <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.1</span></div>
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.3</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
                 
-                <div id="pin-display" class="pin-dots"></div>
-                <div id="login-msg" style="color: var(--danger); height: 20px;"></div>
+                <div id="pin-display" class="pin-display">_ _ _ _</div>
+                <div id="login-msg" style="color: var(--danger); height: 20px; margin-bottom:10px;"></div>
 
-                <div class="circle-keypad">
-                    <div class="circle-btn" onclick="inputPin('1')">1</div>
-                    <div class="circle-btn" onclick="inputPin('2')">2</div>
-                    <div class="circle-btn" onclick="inputPin('3')">3</div>
-                    <div class="circle-btn" onclick="inputPin('4')">4</div>
-                    <div class="circle-btn" onclick="inputPin('5')">5</div>
-                    <div class="circle-btn" onclick="inputPin('6')">6</div>
-                    <div class="circle-btn" onclick="inputPin('7')">7</div>
-                    <div class="circle-btn" onclick="inputPin('8')">8</div>
-                    <div class="circle-btn" onclick="inputPin('9')">9</div>
-                    <div class="circle-btn clear" onclick="inputPin('C')">C</div>
-                    <div class="circle-btn" onclick="inputPin('0')">0</div>
-                    <div class="circle-btn ok" onclick="inputPin('OK')">OK</div>
+                <div id="login-keypad"></div> <!-- JS 生成 -->
+
+                <div style="margin-top:20px; font-size:0.8rem; color:#444;">
+                    GAS: <span id="gas-status">Checking...</span>
                 </div>
-
-                <div class="diagnostic-info" style="margin-top:20px; font-size:0.8rem; color:#444;">GAS: <span id="gas-status">Checking...</span></div>
             </div>
         </div>
 
@@ -248,35 +199,25 @@
             </div>
 
             <!-- 待辦區域 -->
-            <div style="font-size:0.9rem; color:#888; margin-bottom:5px;">待辦事項 (To Do)</div>
-            
-            <!-- 強制刷新按鈕 -->
-            <button class="large-btn btn-secondary" style="padding: 10px; font-size: 1rem; margin-bottom: 10px;" onclick="syncQueue()">🔄 重新整理列表</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <div style="font-size:0.9rem; color:#888;">待辦事項 (To Do)</div>
+                <button onclick="syncQueue()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 刷新</button>
+            </div>
             
             <div id="queue-list"></div>
         </div>
 
-        <!-- 3. 人數輸入 (Manpower) -->
+        <!-- 3. 人數輸入 (統一使用 ATM 鍵盤) -->
         <div id="screen-manpower" class="screen">
-            <h2 style="text-align:center; color:var(--accent);">👥 開工設定</h2>
-            <p style="text-align:center; color:#aaa;">本次投入多少人力？</p>
-            <div id="manpower-val" style="font-size: 4rem; color: var(--success); margin: 20px 0; text-align:center; font-weight:bold;">0</div>
+            <h2 id="manpower-title" style="text-align:center; color:var(--accent);">👥 開工設定</h2>
+            <p id="manpower-desc" style="text-align:center; color:#aaa;">本次投入多少人力？</p>
             
-            <div class="circle-keypad">
-                <div class="circle-btn" onclick="inputMan('1')">1</div>
-                <div class="circle-btn" onclick="inputMan('2')">2</div>
-                <div class="circle-btn" onclick="inputMan('3')">3</div>
-                <div class="circle-btn" onclick="inputMan('4')">4</div>
-                <div class="circle-btn" onclick="inputMan('5')">5</div>
-                <div class="circle-btn" onclick="inputMan('6')">6</div>
-                <div class="circle-btn" onclick="inputMan('7')">7</div>
-                <div class="circle-btn" onclick="inputMan('8')">8</div>
-                <div class="circle-btn" onclick="inputMan('9')">9</div>
-                <div class="circle-btn clear" onclick="inputMan('C')">C</div>
-                <div class="circle-btn" onclick="inputMan('0')">0</div>
-                <div class="circle-btn ok" onclick="inputMan('OK')">GO</div>
-            </div>
-            <button class="large-btn btn-secondary" onclick="showScreen('queue')">取消 (Cancel)</button>
+            <div id="manpower-display" class="pin-display">0</div>
+            
+            <div id="manpower-keypad"></div> <!-- JS 生成 -->
+            
+            <!-- V3.3: 修改取消按鈕行為 -->
+            <button class="large-btn btn-secondary" onclick="cancelManpower()">取消 (Cancel)</button>
         </div>
 
         <!-- 4. 計時畫面 (Working) -->
@@ -294,16 +235,32 @@
             </div>
 
             <div style="margin-top:auto;">
-                <button class="large-btn btn-confirm" style="height: 80px; font-size: 1.8rem;" onclick="finishJob()">🏁 完成 (Finish)</button>
+                <button class="large-btn btn-confirm" style="height: 80px; font-size: 1.8rem;" onclick="endJob()">🏁 完成 (Finish)</button>
                 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                    <!-- V3.3: 調整人數按鈕 -->
                     <button class="large-btn btn-secondary" onclick="adjustManpower()">👥 調整人數</button>
-                    <button class="large-btn btn-secondary" onclick="showScreen('queue')">⬅ 暫離 (Back)</button>
+                    <button class="large-btn btn-secondary" onclick="showScreen('queue')">⬅ 暫離</button>
                 </div>
             </div>
         </div>
 
-        <!-- 5. 生管後台 -->
+        <!-- 5. 數量輸入/確認 (統一 ATM 鍵盤) -->
+        <div id="screen-finish" class="screen">
+            <div id="finish-instruction" style="font-size: 1.5rem; text-align: center; margin-bottom: 10px; color: var(--accent); font-weight: bold;">
+                <!-- JS 動態填入 -->
+            </div>
+            
+            <div id="qty-display" class="pin-display">0</div>
+            
+            <div id="finish-summary" style="text-align: left; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
+                <!-- 總結確認清單 -->
+            </div>
+
+            <div id="finish-keypad"></div> <!-- JS 生成 -->
+        </div>
+
+        <!-- 6. 生管後台 -->
         <div id="screen-admin" class="screen">
             <h2>🛠️ 生管控制台</h2>
             <div class="admin-panel">
@@ -322,67 +279,72 @@
 
     </div>
 
-    <!-- 導航列 (手機版在底部，電腦版在左側) -->
+    <!-- 導航列 -->
     <div class="nav-bar">
-        <div class="nav-group">
+        <div class="nav-icons">
             <button class="nav-btn" onclick="showScreen('queue')">
                 <svg viewBox="0 0 24 24"><path d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z"/></svg>
-                <span>工單列表</span>
+                <span>工單</span>
             </button>
-            
-            <!-- 只有在特定畫面顯示返回，這裡簡化為固定顯示，由 JS 控制是否有效 -->
-            
             <button class="nav-btn" onclick="logout()">
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
                 <span>登出</span>
             </button>
         </div>
-        <div class="version-tag">V3.1</div>
+        <div class="version-tag">V3.3</div>
     </div>
 
     <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">處理中...</div></div>
 
     <script>
         // ================= CONFIG =================
-        // 🚨 請務必替換為您的 GAS Webhook URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec";
         const TOKEN = "MES_LITE_2025";
 
         // ================= STATE =================
-        let appData = { queue: [], activeJobs: {}, history: [], templates: [] };
-        let uiState = { screen: 'login', pin: '', user: null, lang: 'zh', targetWoId: null, tempVal: '0' };
+        let appData = { queue: [], activeJobs: {}, history: [] };
+        let uiState = { 
+            screen: 'login', pin: '', user: null, lang: 'zh', 
+            targetWoId: null, tempVal: '0', 
+            finishStep: 0, finishCache: {},
+            isAdjusting: false // V3.3 新增：判斷是否為調整人數模式
+        };
         
-        // 預設資料
         const DEMO_QUEUE = [
             { wo_id: 'DEMO-001', master: 'TEST-A', prod_zh: '鮭魚分切', prod_vn: 'Cá hồi', op_zh: '分切', op_vn: 'Cắt lát', rank: 1 },
             { wo_id: 'DEMO-002', master: 'TEST-A', prod_zh: '中段厚切', prod_vn: 'Lát dày', op_zh: '真空', op_vn: 'Hút chân không', rank: 2 }
         ];
 
+        const I18N = {
+            zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' },
+            vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' }
+        };
+
         // ================= INIT =================
         function init() {
             loadStorage();
-            // 安全檢查：如果沒有資料，載入 Demo
             if (!appData.queue || appData.queue.length === 0) {
                 appData.queue = JSON.parse(JSON.stringify(DEMO_QUEUE));
                 saveStorage();
             }
 
-            if (GAS_URL.includes("YOUR_GAS")) document.getElementById('gas-status').textContent = "URL 未設定";
+            // 生成所有鍵盤
+            renderATMKeypad('login-keypad', handleLoginInput);
+            renderATMKeypad('manpower-keypad', handleManpowerInput); // V3.3 復用此鍵盤
+            renderATMKeypad('finish-keypad', handleFinishInput);
+
+            if (GAS_URL.includes("YOUR")) document.getElementById('gas-status').textContent = "URL 未設定";
             else document.getElementById('gas-status').textContent = "Ready";
 
             showScreen('login');
-            
-            // Timer Loop
-            setInterval(() => {
-                if(uiState.screen === 'working') updateTimerDisplay();
-            }, 1000);
+            setInterval(() => { if(uiState.screen === 'working') updateTimerDisplay(); }, 1000);
         }
 
         function loadStorage() {
             try {
                 const raw = localStorage.getItem('mes_v3_data');
                 if (raw) appData = JSON.parse(raw);
-            } catch(e) { console.error("Load error", e); }
+            } catch(e) { console.error(e); }
         }
 
         function saveStorage() {
@@ -395,26 +357,20 @@
             document.getElementById('screen-' + id).style.display = 'block';
             uiState.screen = id;
 
+            if (id === 'login') {
+                uiState.pin = '';
+                document.getElementById('pin-display').textContent = '_ _ _ _';
+            }
             if (id === 'queue') renderQueue();
             if (id === 'admin') renderAdmin();
-            
-            // 導航列控制
-            const nav = document.querySelector('.nav-bar');
-            if (id === 'login') nav.style.display = 'none';
-            else nav.style.display = 'flex';
         }
 
         function logout() {
-            if(confirm("確定登出？")) {
-                uiState.user = null;
-                uiState.pin = '';
-                document.getElementById('pin-display').textContent = '_ _ _ _';
-                showScreen('login');
-            }
+            if(confirm("確定登出？")) { uiState.user = null; showScreen('login'); }
         }
 
         // ================= LOGIN =================
-        function inputPin(key) {
+        function handleLoginInput(key) {
             if(key === 'C') uiState.pin = '';
             else if(key === 'OK') {
                 if(uiState.pin === '9999') {
@@ -432,12 +388,11 @@
             } else {
                 if(uiState.pin.length < 4) uiState.pin += key;
             }
-            
             const dots = uiState.pin.length > 0 ? '● '.repeat(uiState.pin.length) : '_ _ _ _';
             document.getElementById('pin-display').textContent = dots;
         }
 
-        // ================= QUEUE & LIST =================
+        // ================= QUEUE =================
         function renderQueue() {
             const list = document.getElementById('queue-list');
             const activeList = document.getElementById('active-list');
@@ -446,7 +401,6 @@
             list.innerHTML = ''; activeList.innerHTML = '';
             let hasActive = false;
 
-            // 1. Active Jobs
             Object.keys(appData.activeJobs).forEach(id => {
                 const job = appData.queue.find(q => q.wo_id === id);
                 if(job) {
@@ -454,21 +408,16 @@
                     const div = document.createElement('div');
                     div.className = 'queue-item active-job';
                     div.innerHTML = `
-                        <div class="q-info">
-                            <div class="status-tag">執行中</div>
-                            <h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3>
-                            <p>👥 ${session.manpower} | ${job.master}</p>
-                        </div>
+                        <div class="q-info"><h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3><p>👥 ${session.manpower} | ${job.master}</p></div>
                         <div style="font-size:1.5rem;">▶️</div>
                     `;
-                    div.onclick = () => openWorkingScreen(id);
+                    div.onclick = function() { openWorkingScreen(id); };
                     activeList.appendChild(div);
                     hasActive = true;
                 }
             });
             activeSec.style.display = hasActive ? 'block' : 'none';
 
-            // 2. Todo Jobs
             const todo = appData.queue.filter(q => !appData.activeJobs[q.wo_id]);
             if(todo.length === 0) list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">無待辦工單</div>';
             
@@ -476,44 +425,73 @@
                 const div = document.createElement('div');
                 div.className = 'queue-item';
                 div.innerHTML = `
-                    <div class="q-info">
-                        <h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3>
-                        <p>${job.master}</p>
-                        <div class="q-id">${job.wo_id}</div>
-                    </div>
+                    <div class="q-info"><h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3><p>${job.master}</p></div>
                 `;
-                // Fix: Ensure ID is passed correctly
-                div.onclick = () => prepareJob(job.wo_id);
+                div.onclick = function() { prepareJob(job.wo_id); };
                 list.appendChild(div);
             });
         }
         
         function syncQueue() {
-            // 模擬同步：重新載入 Storage
             loadStorage();
             renderQueue();
-            alert("已刷新列表");
+            alert("列表已刷新");
         }
 
-        // ================= WORKING FLOW =================
+        // ================= WORKING & MANPOWER =================
         function prepareJob(id) {
-            if(!id) return alert("工單 ID 錯誤");
             uiState.targetWoId = id;
+            uiState.isAdjusting = false; // 標記為新任務
             uiState.tempVal = '0';
-            document.getElementById('manpower-val').textContent = '0';
+            
+            // 更新標題
+            document.querySelector('#screen-manpower h2').textContent = "👥 開工設定";
+            document.querySelector('#screen-manpower p').textContent = "本次投入多少人力？";
+            document.getElementById('manpower-display').textContent = '0';
+            
             showScreen('manpower');
         }
 
-        function inputMan(key) {
+        // V3.3 新增：調整人數功能
+        function adjustManpower() {
+            uiState.isAdjusting = true; // 標記為調整模式
+            uiState.tempVal = '0';
+            document.getElementById('manpower-display').textContent = '0';
+            
+            // 更新標題以區分
+            document.querySelector('#screen-manpower h2').textContent = "👥 調整人數";
+            document.querySelector('#screen-manpower p').textContent = "變更目前投入人力";
+            
+            showScreen('manpower');
+        }
+
+        // V3.3 新增：取消按鈕邏輯
+        function cancelManpower() {
+            if(uiState.isAdjusting) {
+                showScreen('working'); // 如果是調整中取消，回到計時畫面
+            } else {
+                showScreen('queue'); // 如果是開工前取消，回到列表
+            }
+        }
+
+        // V3.3 修改：共用的人數輸入處理
+        function handleManpowerInput(key) {
             if(key === 'C') uiState.tempVal = '0';
             else if(key === 'OK') {
                 const val = parseInt(uiState.tempVal);
-                if(val > 0) startSession(uiState.targetWoId, val);
-                else alert("人數需大於 0");
+                if(val > 0) {
+                    if(uiState.isAdjusting) {
+                        updateManpowerSession(val); // 更新現有
+                    } else {
+                        startSession(uiState.targetWoId, val); // 開始新任務
+                    }
+                } else {
+                    alert("人數需大於 0");
+                }
             } else {
                 uiState.tempVal = (uiState.tempVal === '0' ? key : uiState.tempVal + key);
             }
-            document.getElementById('manpower-val').textContent = uiState.tempVal;
+            document.getElementById('manpower-display').textContent = uiState.tempVal;
         }
 
         function startSession(woId, manpower) {
@@ -528,6 +506,25 @@
             openWorkingScreen(woId);
         }
 
+        // V3.3 新增：更新現有 Session 的人數
+        function updateManpowerSession(newVal) {
+            const now = Date.now();
+            const session = appData.activeJobs[uiState.targetWoId];
+            
+            // 結算舊工時
+            const duration = now - session.lastUpdate;
+            session.accTime += duration * session.manpower;
+            
+            // 更新狀態
+            session.lastUpdate = now;
+            session.manpower = newVal;
+            saveStorage();
+            
+            // 更新 UI 並返回
+            document.getElementById('work-man').textContent = session.manpower;
+            showScreen('working');
+        }
+
         function openWorkingScreen(woId) {
             uiState.targetWoId = woId;
             const job = appData.queue.find(j => j.wo_id === woId);
@@ -538,56 +535,77 @@
             document.getElementById('work-prod').textContent = uiState.lang==='vn' ? job.prod_vn : job.prod_zh;
             document.getElementById('work-op').textContent = uiState.lang==='vn' ? job.op_vn : job.op_zh;
             document.getElementById('work-id').textContent = woId;
-            document.getElementById('working-manpower').textContent = session.manpower;
+            document.getElementById('work-man').textContent = session.manpower;
             
             updateTimerDisplay();
             showScreen('working');
         }
 
         function updateTimerDisplay() {
-            if (uiState.screen !== 'working' || !uiState.targetWoId) return;
+            if(uiState.screen !== 'working' || !uiState.targetWoId) return;
             const session = appData.activeJobs[uiState.targetWoId];
-            if (!session) return;
+            if(!session) return;
 
-            const diff = Date.now() - session.lastUpdate;
+            const diff = Date.now() - session.lastUpdate; 
             const sec = Math.floor(diff / 1000);
-            const h = String(Math.floor(sec / 3600)).padStart(2,'0');
-            const m = String(Math.floor((sec % 3600) / 60)).padStart(2,'0');
-            const s = String(sec % 60).padStart(2,'0');
-            document.getElementById('working-timer').textContent = `${h}:${m}:${s}`;
+            const h = String(Math.floor(sec/3600)).padStart(2,'0');
+            const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
+            const s = String(sec%60).padStart(2,'0');
+            document.getElementById('timer').textContent = `${h}:${m}:${s}`;
         }
 
-        function adjustManpower() {
-            const current = appData.activeJobs[uiState.targetWoId].manpower;
-            const next = prompt("輸入新的人數:", current);
-            if(next && parseInt(next) > 0) {
-                const now = Date.now();
-                const session = appData.activeJobs[uiState.targetWoId];
-                session.accTime += (now - session.lastUpdate) * session.manpower; 
-                session.lastUpdate = now;
-                session.manpower = parseInt(next);
-                saveStorage();
-                document.getElementById('working-manpower').textContent = session.manpower;
-            }
-        }
-        
         function backToQueue() { showScreen('queue'); }
 
-        // ================= FINISH & SUBMIT =================
-        async function finishJob() {
-            if(!confirm("確定完成並送出工單？")) return;
+        // ================= FINISH =================
+        function endJob() {
+            uiState.finishStep = 99; // 純工時模式，直接確認
+            uiState.finishCache = { reject:0, collar:0, tail:0, good:0 };
+            uiState.tempVal = '0';
+            updateFinishUI();
+            showScreen('finish');
+        }
 
+        function updateFinishUI() {
+            const step = uiState.finishStep;
+            const instr = document.getElementById('finish-instruction');
+            const display = document.getElementById('qty-display');
+            const summary = document.getElementById('finish-summary');
+            const keypad = document.getElementById('finish-keypad');
+
+            summary.style.display = 'none';
+            keypad.style.display = 'grid'; 
+            display.style.display = 'none';
+
+            if (step === 99) {
+                instr.textContent = I18N[uiState.lang].summary;
+                summary.style.display = 'block';
+                summary.innerHTML = `
+                    <div style="text-align:center; padding:20px;">
+                        <div style="font-size:1.2rem; color:var(--success); margin-bottom:10px;">確認結束工單？</div>
+                        <div style="color:#888;">(本次紀錄僅包含工時)</div>
+                    </div>
+                    <div style="text-align:center; margin-top:10px; color:var(--accent);">按 OK 送出</div>
+                `;
+            }
+        }
+
+        function handleFinishInput(key) {
+            if (key === 'OK') {
+                if (uiState.finishStep === 99) { submitData(); return; }
+            }
+        }
+
+        async function submitData() {
             document.getElementById('loading-mask').style.display = 'flex';
             
             const session = appData.activeJobs[uiState.targetWoId];
             const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
             
-            // 計算
             const now = Date.now();
-            const totalMs = session.accTime + ((now - session.lastUpdate) * session.manpower);
-            const totalHours = totalMs / 3600000.0;
+            const lastDuration = now - session.lastUpdate;
+            const totalMs = session.accTime + (lastDuration * session.manpower);
             
-            // 反推 Start Time 供後端使用
+            // 反推 Effective Start Time (後端相容)
             const effectiveDuration = totalMs / session.manpower;
             const effectiveStart = new Date(now - effectiveDuration).toISOString();
 
@@ -599,7 +617,6 @@
                 supervisor_pin: uiState.pin,
                 manpower_count: session.manpower,
                 start_time: effectiveStart,
-                // 數量預設 0 (Time Only Mode)
                 qty_good: 0, qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0
             };
 
@@ -610,9 +627,7 @@
                     body: JSON.stringify(payload)
                 });
                 
-                // 成功
                 delete appData.activeJobs[uiState.targetWoId];
-                // 移除已完成的工單
                 appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
                 saveStorage();
                 
@@ -620,8 +635,9 @@
                 showScreen('queue');
 
             } catch(e) {
-                alert("連線失敗，請檢查網路");
+                alert("連線失敗 (已存本地)");
                 document.getElementById('loading-mask').style.display = 'none';
+                showScreen('queue');
             }
         }
 
@@ -640,9 +656,6 @@
                 saveStorage();
                 renderAdmin();
                 alert("已新增");
-                // 清空
-                document.getElementById('admin-prod').value = '';
-                document.getElementById('admin-op').value = '';
             }
         }
 
@@ -654,7 +667,32 @@
         }
 
         function adminReset() {
-            if(confirm("重置所有資料？")) { localStorage.clear(); location.reload(); }
+            if(confirm("重置所有資料？")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // ================= HELPERS =================
+        function renderATMKeypad(elementId, callback) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = '';
+            el.className = 'circle-keypad';
+
+            const keys = ['1','2','3','4','5','6','7','8','9','C','0','OK'];
+            keys.forEach(k => {
+                const btn = document.createElement('div');
+                btn.textContent = k;
+                if(k === 'C') btn.className = 'circle-btn clear';
+                else if(k === 'OK') btn.className = 'circle-btn ok';
+                else btn.className = 'circle-btn';
+                
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    callback(k);
+                });
+                el.appendChild(btn);
+            });
         }
 
         // Start
