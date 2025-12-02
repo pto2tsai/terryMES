@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 */
+        /* CSS: 響應式極簡風格 (修正版) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -20,397 +20,137 @@
             --panel-bg: #112233;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
             height: 100vh;
             text-align: center;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             overflow: hidden;
         }
 
         .container {
-            width: 100%;
-            flex-grow: 1;
-            padding: 10px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            width: 100%; flex-grow: 1; padding: 5px;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
             padding-top: 70px;
         }
 
-        .screen {
-            display: none;
-            min-height: 90vh; 
-            padding-bottom: 50px;
-        }
+        .screen { display: none; min-height: 90vh; padding-bottom: 50px; }
 
         /* 導航列 */
         .nav-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            background-color: #081220;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 10px;
-            z-index: 1000;
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background-color: #081220; display: flex; justify-content: space-between;
+            align-items: center; padding: 0 10px; z-index: 1000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
-
-        .nav-title {
-            font-size: 1.4rem;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        .nav-icons {
-            display: flex;
-            gap: 10px;
-        }
-
+        .nav-title { font-size: 1.4rem; color: var(--primary-color); font-weight: bold; }
+        .nav-icons { display: flex; gap: 10px; }
         .nav-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            transition: background 0.2s;
+            background: none; border: none; cursor: pointer; padding: 10px;
+            color: white; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: background 0.2s;
         }
-        
-        .nav-btn:active {
-            background-color: rgba(255,255,255,0.1);
-        }
+        .nav-btn:active { background-color: rgba(255,255,255,0.1); }
+        .nav-btn svg { width: 32px; height: 32px; fill: currentColor; }
 
-        .nav-btn svg {
-            width: 32px; /* 加大圖示 */
-            height: 32px;
-            fill: currentColor;
-        }
-
-        h1 {
-            font-size: 1.8rem;
-            color: var(--primary-color);
-            margin: 10px 0;
-        }
+        h1 { font-size: 1.6rem; color: var(--primary-color); margin: 5px 0; }
         
-        /* 通用大按鈕 */
+        /* 按鈕樣式 */
         .large-btn {
-            padding: 12px;
-            margin: 5px;
-            font-size: 1.3rem;
-            font-weight: bold;
-            cursor: pointer;
-            border: 2px solid var(--primary-color);
-            border-radius: 8px;
-            background-color: var(--btn-bg);
-            color: white;
-            transition: all 0.2s;
-            line-height: 1.3;
-            user-select: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            padding: 10px; margin: 4px; font-size: 1.3rem; font-weight: bold;
+            cursor: pointer; border: 2px solid var(--primary-color); border-radius: 8px;
+            background-color: var(--btn-bg); color: white; transition: all 0.2s;
+            line-height: 1.2; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
-        
-        .large-btn:active {
-            background-color: var(--btn-active);
-            transform: scale(0.98);
-        }
+        .large-btn:active { background-color: var(--btn-active); transform: scale(0.98); }
+        .large-btn.disabled { background-color: #555; border-color: #777; cursor: not-allowed; opacity: 0.6; }
 
-        /* 下拉選單 */
         .large-select {
-            width: 95%;
-            font-size: 1.2rem;
-            padding: 10px;
-            margin-bottom: 15px;
-            background-color: var(--btn-bg);
-            color: white;
-            border: 2px solid var(--primary-color);
-            border-radius: 8px;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300bcd4%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right 15px top 50%;
-            background-size: 16px auto;
+            width: 98%; font-size: 1.2rem; padding: 10px; margin-bottom: 10px;
+            background-color: var(--btn-bg); color: white; border: 2px solid var(--primary-color);
+            border-radius: 8px; appearance: none;
         }
 
-        /* 工單列表容器 */
-        #queue-list-container {
-            display: grid;
-            gap: 10px;
-            padding: 5px;
-        }
-
+        /* 工單列表 (更緊湊) */
+        #queue-list-container { display: grid; gap: 8px; padding: 2px; }
         .queue-item {
-            text-align: left;
-            border-color: var(--success-color);
-            position: relative;
-            padding: 15px; 
-            min-height: auto;   
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            border-radius: 8px;
-            border: 2px solid var(--success-color);
-            background-color: var(--btn-bg);
-            cursor: pointer;
+            text-align: left; border-color: var(--success-color); position: relative;
+            padding: 8px 12px; /* 縮小內距 */
+            min-height: auto; display: flex; flex-direction: column; justify-content: center;
+            border-radius: 6px; border: 1px solid var(--success-color); /* 線條變細 */
+            background-color: var(--btn-bg); cursor: pointer;
         }
-
         .queue-item.active-job {
-            background-color: #1b5e20;
-            border-color: #66bb6a;
-            border-width: 3px;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            background-color: #1b5e20; border-color: #66bb6a; border-width: 2px;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
         }
-
         .status-badge {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background-color: #00e676;
-            color: #000;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: bold;
+            position: absolute; top: 5px; right: 5px; background-color: #00e676;
+            color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;
             display: none;
         }
-        
-        .queue-item.active-job .status-badge {
-            display: block;
-        }
+        .queue-item.active-job .status-badge { display: block; }
 
-        .q-num {
-            font-size: 1.4rem;
-            font-weight: bold; 
-            color: var(--primary-color);
-            margin-right: 10px;
-        }
-
-        .main-lang {
-            font-size: 1.2rem;
-            font-weight: bold;
-            display: inline-block;
-            margin-bottom: 2px;
-        }
-        
-        .aux-lang {
-            font-size: 0.9rem;
-            color: #ccc;
-            display: block;
-        }
+        .q-num { font-size: 1.2rem; font-weight: bold; color: var(--primary-color); margin-right: 8px; }
+        .main-lang { font-size: 1.1rem; font-weight: bold; display: inline-block; margin-bottom: 2px; }
+        .aux-lang { font-size: 0.85rem; color: #ccc; display: block; }
 
         .pin-display {
-            font-size: 3rem;
-            letter-spacing: 5px; /* 縮小間距適應星號 */
-            margin: 20px auto;
-            height: 60px;
-            line-height: 60px;
-            border-bottom: 3px dashed var(--primary-color);
-            color: #ffd700;
-            max-width: 90%;
+            font-size: 3rem; letter-spacing: 5px; margin: 15px auto;
+            height: 60px; line-height: 60px; border-bottom: 3px dashed var(--primary-color);
+            color: #ffd700; max-width: 90%;
         }
+        .error { color: var(--error-color); font-size: 1.2rem; margin-top: 5px; font-weight: bold; }
 
-        .error {
-            color: var(--error-color);
-            font-size: 1.2rem;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-
-        /* 數字鍵盤佈局 */
         .keypad-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 10px;
-            width: 100%;
-            max-width: 500px;
-            margin: 10px auto;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+            width: 100%; max-width: 500px; margin: 5px auto;
         }
+        .btn-confirm { background-color: var(--success-color); border-color: var(--success-color); font-size: 1.4rem; }
+        .btn-back { background-color: #607d8b; border-color: #78909c; }
+        .btn-adjust { background-color: #3f51b5; border-color: #5c6bc0; }
 
-        .btn-confirm {
-            background-color: var(--success-color); 
-            border-color: var(--success-color);
-            font-size: 1.4rem; /* 確認鍵字體加大 */
-        }
+        .diagnostic-info { font-size: 0.7rem; color: #7fffd4; margin-top: 10px; }
+        .url-alert { background-color: #581515; border: 2px solid var(--error-color); padding: 10px; margin-bottom: 20px; border-radius: 5px; font-size: 1rem; color: white; text-align: left; font-weight: bold; display: none; }
 
-        .btn-back {
-            background-color: #607d8b;
-            border-color: #78909c;
-        }
-        
-        .btn-adjust {
-            background-color: #3f51b5;
-            border-color: #5c6bc0;
-        }
+        /* 生管表格 */
+        .admin-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
+        .admin-table th, .admin-table td { border: 1px solid #444; padding: 6px; text-align: left; }
+        .admin-table th { background-color: var(--primary-color); color: black; }
+        .admin-table tr:nth-child(even) { background-color: #1a3449; }
+        .admin-panel { background-color: var(--panel-bg); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: left; }
+        .admin-input { width: 100%; padding: 8px; margin: 5px 0 10px 0; background: #000; border: 1px solid #555; color: white; font-size: 1rem; }
+        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 5px; align-items: center; }
+        .btn-delete { background-color: #e91e63; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .btn-add-line { background-color: #4caf50; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+        .summary-box { background-color: var(--success-color); color: black; padding: 10px; border-radius: 10px; margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
+        .history-section { border-top: 1px solid #444; margin-top: 10px; padding-top: 10px; }
 
-        .diagnostic-info {
-            font-size: 0.7rem;
-            color: #7fffd4; 
-            margin-top: 10px;
-        }
-        .url-alert { 
-            background-color: #581515; 
-            border: 2px solid var(--error-color); 
-            padding: 10px; 
-            margin-bottom: 20px; 
-            border-radius: 5px; 
-            font-size: 1rem; 
-            color: white; 
-            text-align: left; 
-            font-weight: bold; 
-            display: none;
-        }
-
-        /* --- 生管畫面專用樣式 --- */
-        .planner-tabs {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 15px;
-        }
-        .tab-btn {
-            background-color: transparent;
-            border: 2px solid var(--primary-color);
-            color: var(--primary-color);
-            padding: 8px 15px;
-            font-size: 1.1rem;
-            border-radius: 20px;
-            cursor: pointer;
-        }
-        .tab-btn.active {
-            background-color: var(--primary-color);
-            color: #000;
-        }
-        
-        .admin-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-        }
-        .admin-table th, .admin-table td {
-            border: 1px solid #444;
-            padding: 8px;
-            text-align: left;
-        }
-        .admin-table th {
-            background-color: var(--primary-color);
-            color: black;
-        }
-        .admin-table tr:nth-child(even) {
-            background-color: #1a3449;
-        }
-        
-        .admin-panel {
-            background-color: var(--panel-bg);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        .admin-input {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0 10px 0;
-            background: #000;
-            border: 1px solid #555;
-            color: white;
-            font-size: 1rem;
-        }
-        .sub-item-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr 40px;
-            gap: 5px;
-            margin-bottom: 5px;
-            align-items: center;
-        }
-        .btn-delete {
-            background-color: #e91e63;
-            border: none;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .btn-add-line {
-            background-color: #4caf50;
-            border: none;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 5px;
-        }
-        .summary-box {
-            background-color: var(--success-color);
-            color: black;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        
-        .history-section {
-            border-top: 1px solid #444;
-            margin-top: 15px;
-            padding-top: 15px;
-        }
-
-        /* --- 響應式設計 --- */
+        /* 媒體查詢 */
         @media (min-width: 768px) {
-            body {
-                background-color: #2b2b2b; /* 電腦版深灰背景 */
-                align-items: center;
-            }
+            body { background-color: #2b2b2b; align-items: center; }
             .container {
-                max-width: 600px;
-                background-color: var(--bg-color);
-                box-shadow: 0 0 30px rgba(0,0,0,0.8);
-                margin: 20px 0;
-                height: calc(100vh - 40px);
-                border-radius: 20px;
-                position: relative;
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
+                max-width: 600px; background-color: var(--bg-color);
+                box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
+                height: calc(100vh - 40px); border-radius: 20px;
+                position: relative; overflow: hidden; display: flex; flex-direction: column;
                 padding-top: 70px;
             }
-            .nav-bar {
-                position: absolute;
-                width: 100%;
-                top: 0;
-                left: 0;
-                border-radius: 20px 20px 0 0;
-            }
+            .nav-bar { position: absolute; width: 100%; top: 0; left: 0; border-radius: 20px 20px 0 0; }
             h1 { font-size: 2.2rem; }
-            .large-btn { font-size: 1.6rem; padding: 20px; }
+            .large-btn { font-size: 1.5rem; padding: 15px; }
             .pin-display { font-size: 3.5rem; height: 70px; line-height: 70px; }
             #queue-list-container { grid-template-columns: repeat(2, 1fr); }
-            .keypad-grid { gap: 15px; max-width: 550px; }
+            .keypad-grid { gap: 12px; max-width: 550px; }
             .admin-table { font-size: 1rem; }
         }
-
         @media (max-width: 767px) {
-            .container { padding: 5px; padding-top: 60px; }
-            h1 { font-size: 1.5rem; }
             #queue-list-container { grid-template-columns: 1fr; }
-            .large-btn { padding: 12px; font-size: 1.2rem; margin: 5px; }
-            .pin-display { font-size: 2.5rem; letter-spacing: 5px; }
-            .admin-table th, .admin-table td { padding: 5px; font-size: 0.8rem; }
             .sub-item-row { grid-template-columns: 1fr; }
         }
     </style>
@@ -435,7 +175,6 @@
     </div>
 
     <div class="container">
-
         <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <h1>MES LITE 登入 🔒</h1>
@@ -443,19 +182,10 @@
                 <span data-i18n="login_prompt">請輸入您的 4 位識別碼 (PIN)</span>
                 <br><span style="font-size: 0.8em; color: #aaa;">(生管: 9999)</span>
             </div>
-            
-            <!-- 密碼顯示框 -->
             <div class="pin-display" id="pin-input"></div>
-            
             <div id="login-error" class="error"></div>
-            
-            <div class="diagnostic-info">
-                GAS Webhook URL: <span id="api-base-url-display">N/A</span>
-            </div>
-            <div id="url-alert-box" class="url-alert">
-                🚨 **重要!** 請將程式碼中的 `YOUR_GAS_WEBHOOK_URL` 替換為步驟一獲得的實際 URL。
-            </div>
-
+            <div class="diagnostic-info">GAS Webhook URL: <span id="api-base-url-display">N/A</span></div>
+            <div id="url-alert-box" class="url-alert">🚨 **重要!** 請將程式碼中的 `YOUR_GAS_WEBHOOK_URL` 替換為步驟一獲得的實際 URL。</div>
              <div id="keypad" class="keypad-grid"></div>
         </div>
 
@@ -466,8 +196,7 @@
                 <button class="tab-btn active" onclick="switchPlannerTab('tab-queue')">工單編輯</button>
                 <button class="tab-btn" onclick="switchPlannerTab('tab-report')">報表輸出</button>
             </div>
-
-            <!-- Tab 1: 工單編輯 -->
+            <!-- Tab 1 -->
             <div id="tab-queue" class="planner-tab-content">
                 <div class="admin-panel">
                     <h3>➕ 建立總工單 (批次)</h3>
@@ -477,14 +206,14 @@
                             <option value="">-- 選擇歷史工單 --</option>
                         </select>
                     </div>
-                    <label>總工單 ID (Master WO):</label>
+                    <label>總工單 ID:</label>
                     <input type="text" id="batch-mwo" class="admin-input" placeholder="例如: MWO-20251202-A">
-                    <h4>子工單項目 (品項 & 工序)</h4>
+                    <h4>子工單項目</h4>
                     <div id="sub-items-container"></div>
                     <button class="btn-add-line" onclick="addSubItemRow()">+ 新增項目</button>
                     <div style="margin-top: 20px; display: flex; gap: 10px;">
                         <button class="large-btn" style="width:50%; font-size:1.1rem; background-color:#607d8b; border-color:#78909c;" onclick="saveBatchTemplateOnly()">僅儲存為範本</button>
-                        <button class="large-btn btn-confirm" style="width:50%; font-size:1.1rem;" onclick="saveBatchWorkOrder()">確認並送出排程</button>
+                        <button class="large-btn btn-confirm" style="width:50%; font-size:1.1rem;" onclick="saveBatchWorkOrder()">確認並送出</button>
                     </div>
                 </div>
                 <h3>目前排程清單</h3>
@@ -495,18 +224,14 @@
                     </table>
                 </div>
             </div>
-
-            <!-- Tab 2: 報表輸出 -->
+            <!-- Tab 2 -->
             <div id="tab-report" class="planner-tab-content" style="display:none;">
                 <div class="admin-panel">
-                    <h3>📊 已完成紀錄 (本機暫存)</h3>
-                    <p style="font-size:0.8rem; color:#aaa;">勾選項目以計算總合</p>
+                    <h3>📊 已完成紀錄</h3>
                     <button class="large-btn" style="width:100%; font-size:1.2rem; background-color:#2196f3;" onclick="calculateReport()">計算選取項目總工時</button>
                 </div>
                 <div id="report-summary" class="summary-box" style="display:none;">
-                    總人時: <span id="sum-manhours">0</span> 小時<br>
-                    良品總重: <span id="sum-good">0</span> KG<br>
-                    損耗總重: <span id="sum-reject">0</span> KG
+                    總人時: <span id="sum-manhours">0</span> 小時<br>良品: <span id="sum-good">0</span> | 損耗: <span id="sum-reject">0</span> KG
                 </div>
                 <div style="overflow-x:auto;">
                     <table class="admin-table" id="admin-report-table">
@@ -523,14 +248,14 @@
             <h1 id="queue-title"></h1>
             <div style="font-size: 1rem; color: #00bcd4; margin-bottom: 10px;" data-i18n="select_job_prompt">👆 請點擊欲開始的工單</div>
             <select id="master-wo-select" class="large-select" onchange="filterQueue()">
-                <option value="ALL">全部顯示 (Hiển thị tất cả)</option>
+                <option value="ALL">全部顯示</option>
             </select>
             <div id="queue-list-container"></div>
         </div>
 
         <!-- 畫面 2.5: 輸入人數 -->
         <div id="screen-manpower" class="screen">
-            <h1 style="color: #ffd700;" data-i18n="manpower_input_title">輸入人數 (NHẬP SỐ NGƯỜI)</h1>
+            <h1 style="color: #ffd700;" data-i18n="manpower_input_title">輸入人數</h1>
             <div style="font-size: 1.2rem;">
                 <span data-i18n="working_wo">工單</span>: <span id="manpower-woid" style="font-weight: bold; color: #00bcd4;"></span>
             </div>
@@ -547,27 +272,27 @@
                 <span data-i18n="working_wo">工單</span>: <span id="working-woid" style="font-weight: bold;"></span>
             </div>
             <div style="font-size: 2.5rem; color: #ffd700; margin: 20px 0;">
-                <span data-i18n="manpower_count">人數</span>: <span id="manpower-display">4</span>
+                <span data-i18n="manpower_count">人數</span>: <span id="manpower-display"></span>
             </div>
             <div style="font-size: 3.5rem; color: #00bcd4;">
                 <span data-i18n="elapsed_time">已耗時</span>: <span id="elapsed-time">00:00:00</span>
             </div>
             <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center;">
                 <button class="large-btn btn-adjust" style="width: 90%; margin-bottom: 15px;" onclick="adjustManpower()">
-                    <span data-i18n="btn_adjust_manpower">👥 調整人數 / Change Manpower</span>
+                    <span data-i18n="btn_adjust_manpower">👥 調整人數</span>
                 </button>
                 <button class="large-btn btn-back" style="width: 90%; margin-bottom: 15px;" onclick="backToQueue()">
                     <span data-i18n="btn_back_list">⬅ 暫離 / 返回列表</span>
                 </button>
                 <button class="large-btn btn-confirm" style="background-color: orange; width: 90%; font-size: 1.8rem;" onclick="endJob()">
-                    <span data-i18n="btn_finish">完成工單</span> (HOÀN THÀNH)
+                    <span data-i18n="btn_finish">完成工單</span>
                 </button>
             </div>
         </div>
 
         <!-- 畫面 4: 數量輸入 -->
         <div id="screen-finish" class="screen">
-            <h1 style="color: #ff9800;" data-i18n="finish_prompt">步驟 4: 輸入數量 (NHẬP SỐ LƯỢNG)</h1>
+            <h1 style="color: #ff9800;" data-i18n="finish_prompt">步驟 4: 輸入數量</h1>
             <div style="font-size: 1.2rem;">
                 <span data-i18n="finish_wo">工單</span>: <span id="finish-woid" style="font-weight: bold; color: #ffd700;"></span>
             </div>
@@ -585,83 +310,85 @@
         const SECURITY_TOKEN = "MES_LITE_2025"; 
         
         let state = {
-            currentScreen: 'login',
-            currentPIN: '',
-            currentUser: null,
-            language: 'zh',
-            activeSessions: {}, 
-            currentViewingWoId: null,
-            currentWoOperationName: null, 
-            currentManpower: 0, 
-            finishStep: 0, 
+            currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
+            activeSessions: {}, currentViewingWoId: null, currentWoOperationName: null, 
+            currentManpower: 0, finishStep: 0, 
             finishData: { qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0, qty_good: 0 },
-            currentTypedValue: '0',
-            startTimeISO: null,
-            isSubmitting: false 
+            currentTypedValue: '0', startTimeISO: null, isSubmitting: false 
         };
 
         let timerInterval = null;
-        let appQueue = [];
-        let completedLogs = [];
-        let mwoHistory = [];
+        let appQueue = []; let completedLogs = []; let mwoHistory = [];
 
-        // 預設工單 (首次載入用)
-        const defaultQueue = [
-            { wo_id: 'WC001-Q1', master_wo_id: 'MWO-A', product_name_zh: '鮭魚分切', product_name_vn: 'Cá hồi lô A', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.2 }
-        ];
+        // 預設工單
+        const defaultQueue = [{ wo_id: 'WC001-Q1', master_wo_id: 'MWO-A', product_name_zh: '鮭魚分切', product_name_vn: 'Cá hồi lô A', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.2 }];
 
         const i18n = {
             zh: {
-                login_prompt: '請輸入 4 位識別碼 (PIN)', pin_error: 'PIN 碼錯誤！', select_job_prompt: '👆 請點擊欲開始的工單', job_start_error: '工單啟動失敗!', working_wo: '工單', manpower_count: '人數', elapsed_time: '已耗時', working_in_progress: '正在進行中', 
+                login_prompt: '請輸入 4 位識別碼', pin_error: 'PIN 碼錯誤！', select_job_prompt: '👆 請點擊欲開始的工單', job_start_error: '啟動失敗', working_wo: '工單', manpower_count: '人數', elapsed_time: '已耗時', working_in_progress: '正在進行中', 
                 manpower_input_title: '步驟 2: 輸入人數', manpower_error: '人數必須大於 0',
                 finish_prompt: '步驟 4: 輸入數量', finish_wo: '工單', finish_step1: '❌ 不良品/損耗重量 (KG)', finish_step2: '下巴重量 (KG)', finish_step3: '尾段重量 (KG)', finish_step4: '✅ 中後段總重 (KG)', finish_step5_good: '✅ 良品數量 (PCS/KG)', finish_step5_reject: '❌ 不良品數量 (PCS/KG)', btn_finish: '完成工單', btn_confirm_submit: '確認提交', missing_data: '數據不完整', api_error: '連線錯誤', no_job_in_queue: '目前沒有待辦工單', btn_back_list: '⬅ 暫離 / 返回列表', running_status: '進行中',
-                btn_adjust_manpower: '👥 調整人數 / Change Manpower',
-                confirm_summary_title: '📋 請確認資料 (Please Confirm):',
-                confirm_btn_text: '確認送出'
+                btn_adjust_manpower: '👥 調整人數', confirm_summary_title: '📋 請確認資料:', confirm_btn_text: '確認送出'
             },
             vn: {
-                login_prompt: 'NHẬP MÃ ĐỊNH DANH (PIN)', pin_error: 'Mã PIN sai!', select_job_prompt: '👆 CHỌN CÔNG VIỆC', job_start_error: 'Lỗi bắt đầu!', working_wo: 'Đơn hàng', manpower_count: 'Số người', elapsed_time: 'Đã chạy giờ', working_in_progress: 'ĐANG THỰC HIỆN', 
-                manpower_input_title: 'BƯỚC 2: NHẬP SỐ NGƯỜI', manpower_error: 'Số người > 0',
-                finish_prompt: 'BƯỚC 4: NHẬP SỐ LƯỢNG', finish_wo: 'Đơn hàng', finish_step1: '❌ SỐ CÂN NẶNG HỎNG (KG)', finish_step2: 'SỐ CÂN NẶNG CẰM (KG)', finish_step3: 'SỐ CÂN NẶNG ĐUÔI (KG)', finish_step4: '✅ TỔNG CÂN NẶNG GIỮA/SAU (KG)', finish_step5_good: '✅ Số lượng tốt (PCS/KG)', finish_step5_reject: '❌ Số lượng hỏng (PCS/KG)', btn_finish: 'Hoàn thành', btn_confirm_submit: 'XÁC NHẬN GỬI', missing_data: 'Thiếu dữ liệu', api_error: 'Lỗi kết nối', no_job_in_queue: 'Không có đơn hàng', btn_back_list: '⬅ Quay lại', running_status: 'Running',
-                btn_adjust_manpower: '👥 Thay đổi nhân lực',
-                confirm_summary_title: '📋 Xác nhận dữ liệu:',
-                confirm_btn_text: 'Nhấn Xác nhận'
+                login_prompt: 'NHẬP MÃ PIN', pin_error: 'Sai mã PIN!', select_job_prompt: '👆 CHỌN CÔNG VIỆC', job_start_error: 'Lỗi!', working_wo: 'Đơn hàng', manpower_count: 'Số người', elapsed_time: 'Đã chạy giờ', working_in_progress: 'ĐANG THỰC HIỆN', 
+                manpower_input_title: 'NHẬP SỐ NGƯỜI', manpower_error: 'Số người > 0',
+                finish_prompt: 'NHẬP SỐ LƯỢNG', finish_wo: 'Đơn hàng', finish_step1: '❌ CÂN NẶNG HỎNG', finish_step2: 'CÂN NẶNG CẰM', finish_step3: 'CÂN NẶNG ĐUÔI', finish_step4: '✅ TỔNG CÂN NẶNG', finish_step5_good: '✅ Số lượng tốt', finish_step5_reject: '❌ Số lượng hỏng', btn_finish: 'Hoàn thành', btn_confirm_submit: 'XÁC NHẬN GỬI', missing_data: 'Thiếu dữ liệu', api_error: 'Lỗi kết nối', no_job_in_queue: 'Không có đơn hàng', btn_back_list: '⬅ Quay lại', running_status: 'Running',
+                btn_adjust_manpower: '👥 Thay đổi nhân lực', confirm_summary_title: '📋 Xác nhận dữ liệu:', confirm_btn_text: 'Nhấn Xác nhận'
             }
         };
 
+        // --- Helper: Escape HTML to prevent broken UI on quotes ---
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
         // --- Init & Storage ---
         function initApp() {
-            // 加載排程
             const storedQueue = localStorage.getItem('mes_lite_queue');
-            if (storedQueue) { appQueue = JSON.parse(storedQueue); } 
-            else { appQueue = [...defaultQueue]; saveQueueToStorage(); }
-
-            // 加載歷史紀錄
+            appQueue = storedQueue ? JSON.parse(storedQueue) : [...defaultQueue];
+            
             const storedLogs = localStorage.getItem('mes_lite_logs');
-            if (storedLogs) { completedLogs = JSON.parse(storedLogs); }
+            if (storedLogs) completedLogs = JSON.parse(storedLogs);
 
-            // 加載生管範本
             const storedMWOHistory = localStorage.getItem('mes_mwo_history');
-            if (storedMWOHistory) { mwoHistory = JSON.parse(storedMWOHistory); }
+            if (storedMWOHistory) mwoHistory = JSON.parse(storedMWOHistory);
 
-            // 加載活躍 Sessions (防止重整後計時消失)
+            // Restore active state
             const storedSessions = localStorage.getItem('mes_active_sessions');
-            if (storedSessions) { state.activeSessions = JSON.parse(storedSessions); }
+            if (storedSessions) state.activeSessions = JSON.parse(storedSessions);
+
+            // 🌟 關鍵修正：恢復上次瀏覽的工單 ID，防止刷新後找不到資訊
+            const storedAppState = localStorage.getItem('mes_app_state');
+            if (storedAppState) {
+                const savedState = JSON.parse(storedAppState);
+                if (savedState.currentViewingWoId) state.currentViewingWoId = savedState.currentViewingWoId;
+                if (savedState.currentWoOperationName) state.currentWoOperationName = savedState.currentWoOperationName;
+                if (savedState.currentManpower) state.currentManpower = savedState.currentManpower;
+            }
 
             document.getElementById('api-base-url-display').textContent = GAS_WEBHOOK_URL; 
-            if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') {
-                document.getElementById('url-alert-box').style.display = 'block';
-            }
+            if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') document.getElementById('url-alert-box').style.display = 'block';
+            
             renderKeypad('keypad', 'PIN'); 
             updateUI();
         }
 
-        function saveQueueToStorage() { localStorage.setItem('mes_lite_queue', JSON.stringify(appQueue)); }
-        function saveLogsToStorage() { localStorage.setItem('mes_lite_logs', JSON.stringify(completedLogs)); }
-        function saveMWOHistoryToStorage() { localStorage.setItem('mes_mwo_history', JSON.stringify(mwoHistory)); }
-        function saveSessionsToStorage() { localStorage.setItem('mes_active_sessions', JSON.stringify(state.activeSessions)); }
+        function saveAll() {
+            localStorage.setItem('mes_lite_queue', JSON.stringify(appQueue));
+            localStorage.setItem('mes_lite_logs', JSON.stringify(completedLogs));
+            localStorage.setItem('mes_mwo_history', JSON.stringify(mwoHistory));
+            localStorage.setItem('mes_active_sessions', JSON.stringify(state.activeSessions));
+            // Save UI State
+            localStorage.setItem('mes_app_state', JSON.stringify({
+                currentViewingWoId: state.currentViewingWoId,
+                currentWoOperationName: state.currentWoOperationName,
+                currentManpower: state.currentManpower
+            }));
+        }
 
-        // --- UI & Nav ---
+        // --- UI ---
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => screen.style.display = 'none');
             document.getElementById(screenId).style.display = 'block';
@@ -684,10 +411,10 @@
 
             if (state.currentScreen === 'queue') loadQueue();
             if (state.currentScreen === 'planner') {
-                renderPlannerQueue();
-                updateMWOHistoryDropdown();
+                renderPlannerQueue(); updateMWOHistoryDropdown();
                 if (document.getElementById('sub-items-container').children.length === 0) addSubItemRow();
             }
+            saveAll();
         }
 
         function updateUI() {
@@ -697,21 +424,17 @@
                 if (i18n[currentLang] && i18n[currentLang][key]) el.textContent = i18n[currentLang][key];
             });
             if (state.currentUser && state.currentUser.name_zh) {
-                const greeting = currentLang === 'vn' ? `Chào Ông ${state.currentUser.name_vn}!` : `您好，${state.currentUser.name_zh}主管!`;
+                const greeting = currentLang === 'vn' ? `Chào Ông ${state.currentUser.name_vn}` : `你好，${state.currentUser.name_zh}`;
                 document.getElementById('queue-title').textContent = greeting;
             }
         }
 
         function goHome() {
-            if (state.currentUser && state.currentUser.user_pin === '9999') {
-                showScreen('screen-planner');
-                switchPlannerTab('tab-queue');
-            } else {
-                backToQueue();
-            }
+            if (state.currentUser && state.currentUser.user_pin === '9999') { showScreen('screen-planner'); switchPlannerTab('tab-queue'); } 
+            else { backToQueue(); }
         }
 
-        // --- Planner Logic ---
+        // --- Planner ---
         function switchPlannerTab(tabId) {
             document.querySelectorAll('.planner-tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(tabId).style.display = 'block';
@@ -725,11 +448,7 @@
             const tbody = document.getElementById('admin-queue-body');
             tbody.innerHTML = '';
             appQueue.forEach((job, index) => {
-                const row = `<tr>
-                    <td>${job.master_wo_id}</td><td>${job.product_name_zh}</td><td>${job.operation_name_zh}</td>
-                    <td><button class="btn-delete" onclick="deleteWorkOrder(${index})">刪除</button></td>
-                </tr>`;
-                tbody.innerHTML += row;
+                tbody.innerHTML += `<tr><td>${escapeHtml(job.master_wo_id)}</td><td>${escapeHtml(job.product_name_zh)}</td><td>${escapeHtml(job.operation_name_zh)}</td><td><button class="btn-delete" onclick="deleteWorkOrder(${index})">刪除</button></td></tr>`;
             });
         }
 
@@ -737,11 +456,7 @@
             const container = document.getElementById('sub-items-container');
             const div = document.createElement('div');
             div.className = 'sub-item-row';
-            div.innerHTML = `
-                <input type="text" class="admin-input prod-input" placeholder="產品名稱" value="${prod}">
-                <input type="text" class="admin-input op-input" placeholder="工序名稱" value="${op}">
-                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
-            `;
+            div.innerHTML = `<input type="text" class="admin-input prod-input" placeholder="產品名稱" value="${escapeHtml(prod)}"><input type="text" class="admin-input op-input" placeholder="工序名稱" value="${escapeHtml(op)}"><button class="btn-delete" onclick="this.parentElement.remove()">X</button>`;
             container.appendChild(div);
         }
 
@@ -761,61 +476,55 @@
             if (!selectedMWO) return;
             const template = mwoHistory.find(t => t.mwo_id === selectedMWO);
             if (!template) return;
-            document.getElementById('batch-mwo').value = template.mwo_id + "-COPY";
-            const container = document.getElementById('sub-items-container');
-            container.innerHTML = '';
+            document.getElementById('batch-mwo').value = template.mwo_id + "-" + Math.floor(Math.random()*1000); // 避免重複ID
+            document.getElementById('sub-items-container').innerHTML = '';
             template.items.forEach(item => addSubItemRow(item.prod, item.op));
         }
 
         function saveBatchTemplateOnly() {
             const mwo = document.getElementById('batch-mwo').value;
-            const rows = document.querySelectorAll('.sub-item-row');
             if (!mwo) { alert("請輸入總工單 ID"); return; }
             const templateItems = [];
-            rows.forEach((row) => {
+            document.querySelectorAll('.sub-item-row').forEach((row) => {
                 const prod = row.querySelector('.prod-input').value;
                 const op = row.querySelector('.op-input').value;
                 if (prod && op) templateItems.push({ prod: prod, op: op });
             });
             if (templateItems.length > 0) {
-                const existingIndex = mwoHistory.findIndex(t => t.mwo_id === mwo);
-                if (existingIndex >= 0) {
-                    if(!confirm(`範本 ${mwo} 已存在，覆蓋？`)) return;
-                    mwoHistory[existingIndex] = { mwo_id: mwo, items: templateItems };
-                } else {
-                    mwoHistory.push({ mwo_id: mwo, items: templateItems });
-                }
-                saveMWOHistoryToStorage();
-                updateMWOHistoryDropdown();
-                alert(`範本 ${mwo} 已儲存！`);
+                // 檢查是否已存在，若有則覆蓋
+                const existIdx = mwoHistory.findIndex(x => x.mwo_id === mwo);
+                if (existIdx >= 0) mwoHistory[existIdx] = { mwo_id: mwo, items: templateItems };
+                else mwoHistory.push({ mwo_id: mwo, items: templateItems });
+                
+                saveAll(); updateMWOHistoryDropdown(); alert(`範本 ${mwo} 已儲存！`);
             }
         }
 
         function saveBatchWorkOrder() {
             const mwo = document.getElementById('batch-mwo').value;
-            const rows = document.querySelectorAll('.sub-item-row');
             if (!mwo) { alert("請輸入總工單 ID"); return; }
-            let addedCount = 0;
-            const templateItems = [];
-            rows.forEach((row, index) => {
+            let addedCount = 0; const templateItems = [];
+            document.querySelectorAll('.sub-item-row').forEach((row, index) => {
                 const prod = row.querySelector('.prod-input').value;
                 const op = row.querySelector('.op-input').value;
                 if (prod && op) {
-                    const newJob = {
-                        wo_id: `${mwo}-Q${appQueue.length + 1 + index}`, 
-                        master_wo_id: mwo, product_name_zh: prod, product_name_vn: prod, 
-                        operation_name_zh: op, operation_name_vn: op, queue_rank: appQueue.length + 1 + index, standard_time_hr: 1.0
-                    };
-                    appQueue.push(newJob);
+                    // 🌟 唯一 ID 生成策略：時間戳 + 索引
+                    const uniqueId = `${mwo}-Q${Date.now()}-${index}`;
+                    appQueue.push({
+                        wo_id: uniqueId, master_wo_id: mwo, 
+                        product_name_zh: prod, product_name_vn: prod, 
+                        operation_name_zh: op, operation_name_vn: op, 
+                        queue_rank: appQueue.length + 1, standard_time_hr: 1.0
+                    });
                     templateItems.push({ prod: prod, op: op });
                     addedCount++;
                 }
             });
             if (addedCount > 0) {
-                saveQueueToStorage();
-                const exists = mwoHistory.some(t => t.mwo_id === mwo);
-                if (!exists) { mwoHistory.push({ mwo_id: mwo, items: templateItems }); saveMWOHistoryToStorage(); }
-                renderPlannerQueue(); updateMWOHistoryDropdown();
+                const existIdx = mwoHistory.findIndex(x => x.mwo_id === mwo);
+                if (existIdx < 0) mwoHistory.push({ mwo_id: mwo, items: templateItems });
+                
+                saveAll(); renderPlannerQueue(); updateMWOHistoryDropdown();
                 alert(`成功新增 ${addedCount} 筆工單！`);
                 document.getElementById('batch-mwo').value = '';
                 document.getElementById('sub-items-container').innerHTML = '';
@@ -824,7 +533,7 @@
         }
 
         function deleteWorkOrder(index) {
-            if (confirm("刪除此工單？")) { appQueue.splice(index, 1); saveQueueToStorage(); renderPlannerQueue(); }
+            if (confirm("刪除此工單？")) { appQueue.splice(index, 1); saveAll(); renderPlannerQueue(); }
         }
 
         function renderPlannerReport() {
@@ -833,19 +542,16 @@
             [...completedLogs].reverse().forEach((log, index) => {
                 const time = new Date(log.endTime).toLocaleString();
                 const realIndex = completedLogs.length - 1 - index;
-                const row = `<tr><td><input type="checkbox" class="report-checkbox" data-index="${realIndex}"></td><td>${time}</td><td>${log.wo_id}</td><td>${log.operation_name}</td><td>${parseFloat(log.totalManHours).toFixed(2)}</td></tr>`;
-                tbody.innerHTML += row;
+                tbody.innerHTML += `<tr><td><input type="checkbox" class="report-checkbox" data-index="${realIndex}"></td><td>${time}</td><td>${escapeHtml(log.wo_id)}</td><td>${escapeHtml(log.operation_name)}</td><td>${parseFloat(log.totalManHours).toFixed(2)}</td></tr>`;
             });
         }
 
-        function toggleAllReports(source) {
-            document.querySelectorAll('.report-checkbox').forEach(cb => cb.checked = source.checked);
-        }
+        function toggleAllReports(source) { document.querySelectorAll('.report-checkbox').forEach(cb => cb.checked = source.checked); }
 
         function calculateReport() {
             const checkboxes = document.querySelectorAll('.report-checkbox:checked');
-            let totalHours = 0, totalGood = 0, totalReject = 0;
             if (checkboxes.length === 0) { alert("請先勾選項目"); return; }
+            let totalHours = 0, totalGood = 0, totalReject = 0;
             checkboxes.forEach(cb => {
                 const log = completedLogs[cb.getAttribute('data-index')];
                 totalHours += parseFloat(log.totalManHours || 0);
@@ -859,7 +565,7 @@
         }
 
         function clearCompletedLogs() {
-            if (confirm("清除已匯出紀錄 (無法復原)？")) { completedLogs = []; saveLogsToStorage(); renderPlannerReport(); document.getElementById('report-summary').style.display = 'none'; }
+            if (confirm("清除紀錄？")) { completedLogs = []; saveAll(); renderPlannerReport(); document.getElementById('report-summary').style.display = 'none'; }
         }
 
         function logout() { state.currentUser = null; showScreen('screen-login'); }
@@ -883,11 +589,7 @@
 
         function handleKeypadInput(key) {
             if (state.isSubmitting && key === 'OK') return;
-            // 7. 確認步驟只有OK鍵有效
-            if (state.finishStep === 7) {
-                if (key === 'OK') handleConfirmKey();
-                return;
-            }
+            if (state.finishStep === 7) { if (key === 'OK') handleConfirmKey(); return; }
 
             let currentInput = (state.currentScreen === 'login') ? state.currentPIN : state.currentTypedValue;
             let displayEl = document.getElementById((state.currentScreen === 'login') ? 'pin-input' : (state.currentScreen === 'manpower' ? 'manpower-input-display' : 'qty-input-display'));
@@ -904,10 +606,8 @@
                 return;
             }
             
-            // 更新 State 與 UI
             if (state.currentScreen === 'login') {
                 state.currentPIN = currentInput;
-                // 2. 密碼星號動態顯示
                 displayEl.textContent = '*'.repeat(currentInput.length);
             } else {
                 state.currentTypedValue = currentInput;
@@ -950,15 +650,21 @@
                     const isActive = state.activeSessions[job.wo_id] !== undefined;
                     const activeClass = isActive ? 'active-job' : '';
                     const badge = isActive ? `<div class="status-badge">${i18n[state.language].running_status}</div>` : '';
-                    list.innerHTML += `<div class="queue-item ${activeClass}" onclick="selectJob('${job.wo_id}', '${op}')">
-                        <span class="q-num">Q${job.queue_rank}</span><div style="flex-grow:1;"><span class="main-lang">${prod}</span><span class="aux-lang">${op}</span></div>
-                        <div style="font-size: 0.8rem; color: #aaa;">${job.master_wo_id}</div>${badge}</div>`;
+                    
+                    // 🌟 關鍵修正：使用 escapeHtml 處理 ID 和名稱
+                    const safeWoId = escapeHtml(job.wo_id);
+                    const safeOp = escapeHtml(op);
+                    
+                    list.innerHTML += `<div class="queue-item ${activeClass}" onclick="selectJob('${safeWoId}', '${safeOp}')">
+                        <span class="q-num">Q${job.queue_rank}</span><div style="flex-grow:1;"><span class="main-lang">${escapeHtml(prod)}</span><span class="aux-lang">${safeOp}</span></div>
+                        <div style="font-size: 0.8rem; color: #aaa;">${escapeHtml(job.master_wo_id)}</div>${badge}</div>`;
                 });
             } else { list.innerHTML = `<p style="font-size:1.2rem; color: #ccc;">${i18n[state.language].no_job_in_queue}</p>`; }
         }
 
         function selectJob(woId, operationName) {
             state.currentViewingWoId = woId; state.currentWoOperationName = operationName;
+            
             if (state.activeSessions[woId]) {
                 const session = state.activeSessions[woId];
                 state.currentManpower = session.manpower;
@@ -966,6 +672,7 @@
                 timerInterval = setInterval(updateTimer, 1000);
                 document.getElementById('working-woid').textContent = woId;
                 document.getElementById('manpower-display').textContent = session.manpower;
+                saveAll(); // 儲存狀態
                 showScreen('screen-working'); updateTimer();
             } else {
                 state.currentTypedValue = '0';
@@ -996,7 +703,7 @@
                 timerInterval = setInterval(updateTimer, 1000);
                 document.getElementById('working-woid').textContent = state.currentViewingWoId;
                 document.getElementById('manpower-display').textContent = state.currentManpower;
-                saveSessionsToStorage(); // 儲存狀態
+                saveAll(); 
                 showScreen('screen-working');
             } else {
                 state.currentManpower = value;
@@ -1010,7 +717,7 @@
                 startTime: now, lastUpdateTime: now, startTimeISO: new Date(now).toISOString(),
                 manpower: state.currentManpower, operationName: state.currentWoOperationName, accumulatedManHours: 0
             };
-            saveSessionsToStorage(); // 儲存狀態
+            saveAll(); 
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(updateTimer, 1000);
             document.getElementById('working-woid').textContent = state.currentViewingWoId;
@@ -1091,7 +798,7 @@
             state.isSubmitting = true;
             
             const session = state.activeSessions[state.currentViewingWoId];
-            if (!session) { alert("錯誤：無工單資訊"); state.isSubmitting = false; return; }
+            if (!session) { alert("錯誤：無工單資訊 (請嘗試重新點選工單)"); state.isSubmitting = false; return; }
 
             const now = Date.now();
             const totalManHours = (session.accumulatedManHours || 0) + ((now - session.lastUpdateTime) / 3600000.0) * session.manpower;
@@ -1110,7 +817,7 @@
                     saveLogsToStorage();
                 } else { alert(`提交失敗: ${data.message}`); }
                 delete state.activeSessions[state.currentViewingWoId];
-                saveSessionsToStorage(); // 更新儲存
+                saveAll(); // 更新儲存
                 state.currentViewingWoId = null; state.finishData = {}; showScreen('screen-queue');
             } catch (error) { alert(`${i18n[state.language].api_error}: ${error.message}`); showScreen('screen-queue'); } 
             finally { state.isSubmitting = false; }
