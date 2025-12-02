@@ -1,0 +1,524 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MES Lite 簡易工時採集</title>
+    <style>
+        /* ---------------------------------- */
+        /* CSS: 極簡、巨型觸控與雙語風格 */
+        /* ---------------------------------- */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #0b1a2c; 
+            color: #ffffff;
+            height: 100vh;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        .screen {
+            display: none;
+            min-height: 90vh; 
+        }
+
+        h1 {
+            font-size: 2em;
+            color: #00bcd4;
+            margin-bottom: 5px;
+        }
+        
+        .large-btn {
+            padding: 15px 20px;
+            margin: 8px;
+            font-size: 2.2em;
+            cursor: pointer;
+            border: 1px solid #00bcd4;
+            border-radius: 8px;
+            background-color: #1a3449;
+            color: white;
+            transition: background-color 0.1s;
+            line-height: 1.2;
+            user-select: none;
+        }
+        
+        .large-btn:active {
+            background-color: #007bff;
+        }
+
+        .queue-item {
+            display: block;
+            width: 90%;
+            margin: 15px auto;
+            text-align: left;
+            border-color: #4caf50;
+        }
+
+        .main-lang {
+            font-size: 1.6em;
+            font-weight: bold;
+        }
+        
+        .aux-lang {
+            font-size: 0.9em;
+            color: #a0a0a0;
+        }
+
+        .pin-display {
+            font-size: 4em;
+            letter-spacing: 15px;
+            margin: 20px auto;
+            height: 80px;
+            line-height: 80px;
+            border-bottom: 3px dashed #00bcd4;
+            color: #ffd700;
+            max-width: 300px;
+        }
+
+        .error {
+            color: #ff5722;
+            font-size: 1.5em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        #keypad, #finish-keypad-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 450px;
+            margin: 20px auto;
+        }
+
+        .btn-confirm {
+            background-color: #4caf50; 
+            border-color: #4caf50;
+        }
+        
+        .diagnostic-info {
+            font-size: 0.8em;
+            color: #7fffd4; 
+            margin-top: 15px;
+        }
+        .url-alert { 
+            background-color: #581515; 
+            border: 2px solid #ff5722; 
+            padding: 10px; 
+            margin-bottom: 20px; 
+            border-radius: 5px; 
+            font-size: 1em; 
+            color: white; 
+            text-align: left; 
+            font-weight: bold; 
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- 畫面 1: 登入 (簡化為 PIN 碼輸入) -->
+        <div id="screen-login" class="screen" style="display: block;">
+            <h1>MES LITE 登入 🔒</h1>
+            <div style="font-size: 1.5em; margin-bottom: 20px;">
+                <span data-i18n="login_prompt">請輸入您的 4 位識別碼 (PIN)</span>
+            </div>
+            
+            <div class="pin-display" id="pin-input">****</div>
+            
+            <div id="login-error" class="error"></div>
+            
+            <div class="diagnostic-info">
+                GAS Webhook URL: <span id="api-base-url-display">N/A</span>
+            </div>
+            <div id="url-alert-box" class="url-alert">
+                🚨 **重要!** 請將程式碼中的 `YOUR_GAS_WEBHOOK_URL` 替換為步驟一獲得的實際 URL。
+            </div>
+
+             <div id="keypad"></div>
+        </div>
+
+        <!-- 畫面 2: 待辦排隊與開始 (使用模擬數據) -->
+        <div id="screen-queue" class="screen">
+            <h1 id="queue-title"></h1>
+            <div style="font-size: 1.2em; color: #00bcd4; margin-bottom: 15px;" data-i18n="select_job_prompt">
+                👆 請點擊欲開始的工單 (CHỌN CÔNG VIỆC)
+            </div>
+            
+            <div id="queue-list-container">
+                <!-- 模擬工單列表 -->
+            </div>
+        </div>
+
+        <!-- 畫面 3: 正在計時 -->
+        <div id="screen-working" class="screen">
+            <h1 class="working-status">🟢 <span data-i18n="working_in_progress">正在進行中</span></h1>
+            <div style="font-size: 2em; margin-top: 20px;">
+                <span data-i18n="working_wo">工單</span>: <span id="working-woid" style="font-weight: bold;"></span>
+            </div>
+            <div style="font-size: 3em; color: #ffd700; margin: 30px 0;">
+                <span data-i18n="manpower_count">人數</span>: <span id="manpower-display">4</span>
+            </div>
+            <div style="font-size: 4em; color: #00bcd4;">
+                <span data-i18n="elapsed_time">已耗時</span>: <span id="elapsed-time">00:00:00</span>
+            </div>
+            <div style="margin-top: 50px;">
+                <button class="large-btn btn-confirm" style="background-color: orange; font-size: 2em;" onclick="endJob()">
+                    <span data-i18n="btn_finish">完成工單</span> (HOÀN THÀNH)
+                </button>
+            </div>
+        </div>
+
+        <!-- 畫面 4: 數量輸入 (四步驟客製化) -->
+        <div id="screen-finish" class="screen">
+            <h1 style="color: #ff9800;" data-i18n="finish_prompt">步驟 4: 輸入數量 (NHẬP SỐ LƯỢNG)</h1>
+            <div style="font-size: 1.5em;">
+                <span data-i18n="finish_wo">工單</span>: <span id="finish-woid" style="font-weight: bold; color: #ffd700;"></span>
+            </div>
+
+            <div style="margin: 20px auto; max-width: 400px;">
+                <div id="finish-instruction" style="font-size: 1.8em; color: #00bcd4; margin-bottom: 10px; min-height: 40px;">
+                    <!-- 這裡是動態指令 -->
+                </div>
+                
+                <div class="pin-display" id="qty-input-display" style="letter-spacing: normal; color: #ffd700;">0</div>
+            </div>
+            
+            <div id="finish-keypad-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // ----------------------------------
+        // JAVASCRIPT: 邏輯與 GAS Webhook 溝通
+        // ----------------------------------
+
+        // 🚨 關鍵：已植入您的 Google Apps Script URL
+        const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
+        const SECURITY_TOKEN = "MES_LITE_2025"; 
+        
+        let state = {
+            currentScreen: 'login',
+            currentPIN: '',
+            currentUser: null,
+            language: 'zh',
+            currentWoId: null,
+            currentWoOperationName: null, 
+            currentManpower: 4, 
+            
+            finishStep: 0, 
+            finishData: { qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0, qty_good: 0 },
+            currentTypedValue: '0',
+            startTimeISO: null 
+        };
+
+        let timerInterval = null;
+        let startTime = 0;
+
+        // 模擬的工單數據 (不再從 API 獲取)
+        const mockQueue = [
+            { wo_id: 'WC001-Q1', master_wo_id: 'MWO-A', product_name_zh: '鮭魚分切批次', product_name_vn: 'Cá hồi lô A', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.2 },
+            { wo_id: 'WC001-Q3', master_wo_id: 'MWO-A', product_name_zh: '中段厚切', product_name_vn: 'Lát giữa dày', operation_name_zh: '重量選別', operation_name_vn: 'Phân loại', queue_rank: 3, standard_time_hr: 0.3 },
+            { wo_id: 'WC002-Q1', master_wo_id: 'MWO-B', product_name_zh: '鮪魚分塊', product_name_vn: 'Cá ngừ cắt khối', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 5, standard_time_hr: 0.8 }
+        ];
+
+        // 雙語字典
+        const i18n = {
+            zh: {
+                login_prompt: '步驟 1: 請輸入您的 4 位識別碼 (PIN)', pin_error: 'PIN 碼錯誤或不存在！', select_job_prompt: '👆 請點擊欲開始的工單 (CHỌN CÔNG VIỆC)', job_start_error: '工單啟動失敗!', working_wo: '工單', manpower_count: '人數', elapsed_time: '已耗時', working_in_progress: '正在進行中', finish_prompt: '步驟 4: 輸入數量', finish_wo: '工單', finish_step1: '❌ 不良品/損耗重量 (KG)', finish_step2: '下巴重量 (KG)', finish_step3: '尾段重量 (KG)', finish_step4: '✅ 中後段總重 (KG)', finish_step5_good: '✅ 良品數量 (PCS/KG)', finish_step5_reject: '❌ 不良品數量 (PCS/KG)', btn_finish: '完成工單', btn_confirm_submit: '確認提交', missing_data: '數據不完整，請檢查。', api_error: '連線錯誤，請檢查網路或 URL。', no_job_in_queue: '目前沒有待辦工單 (Không có đơn hàng)'
+            },
+            vn: {
+                login_prompt: 'BƯỚC 1: NHẬP MÃ ĐỊNH DANH CỦA BẠN (PIN)', pin_error: 'Mã PIN sai hoặc không tồn tại!', select_job_prompt: '👆 VUI LÒNG CHỌN CÔNG VIỆC (CHỌN CÔNG VIỆC)', job_start_error: 'Bắt đầu đơn hàng thất bại!', working_wo: 'Đơn hàng', manpower_count: 'Số người', elapsed_time: 'Đã chạy giờ', working_in_progress: 'ĐANG THỰC HIỆN', finish_prompt: 'BƯỚC 4: NHẬP SỐ LƯỢNG', finish_wo: 'Đơn hàng', finish_step1: '❌ SỐ CÂN NẶNG HỎNG (KG)', finish_step2: 'SỐ CÂN NẶNG CẰM (KG)', finish_step3: 'SỐ CÂN NẶNG ĐUÔI (KG)', finish_step4: '✅ TỔNG CÂN NẶNG GIỮA/SAU (KG)', finish_step5_good: '✅ Số lượng tốt (PCS/KG)', finish_step5_reject: '❌ Số lượng hỏng (PCS/KG)', btn_finish: 'Hoàn thành', btn_confirm_submit: 'XÁC NHẬN GỬI', missing_data: 'Dữ liệu không đầy đủ, vui lòng kiểm tra lại.', api_error: 'Lỗi kết nối, vui lòng kiểm tra mạng hoặc URL。', no_job_in_queue: 'Không có đơn hàng'
+            }
+        };
+
+        // --- UI & State Functions ---
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => screen.style.display = 'none');
+            document.getElementById(screenId).style.display = 'block';
+            state.currentScreen = screenId.replace('screen-', '');
+            
+            if (state.currentScreen === 'login') {
+                renderKeypad('keypad', 'PIN');
+                state.currentPIN = '';
+            } else if (state.currentScreen === 'queue') {
+                loadQueue();
+            }
+        }
+
+        function updateUI() {
+            const currentLang = state.language;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[currentLang] && i18n[currentLang][key]) el.textContent = i18n[currentLang][key];
+            });
+
+            if (state.currentUser) {
+                const greeting = currentLang === 'vn' ? `Chào Ông ${state.currentUser.name_vn}!` : `您好，${state.currentUser.name_zh}主管!`;
+                document.getElementById('queue-title').textContent = greeting;
+            }
+        }
+
+        // --- 鍵盤處理邏輯 ---
+        function renderKeypad(targetElementId, targetInputType) {
+            state.inputTarget = targetInputType;
+            const layout = ['7', '8', '9', 'C', '4', '5', '6', '0', '1', '2', '3', 'OK'];
+            const keypadDiv = document.getElementById(targetElementId);
+            keypadDiv.innerHTML = '';
+            
+            layout.forEach(key => {
+                const btn = document.createElement('div');
+                btn.className = 'large-btn';
+                if (key === 'OK') btn.className += ' btn-confirm';
+                btn.textContent = key;
+                btn.style.width = '100px'; 
+                btn.onclick = () => handleKeypadInput(key);
+                keypadDiv.appendChild(btn);
+            });
+        }
+
+        function handleKeypadInput(key) {
+            let displayElementId = (state.currentScreen === 'login') ? 'pin-input' : 'qty-input-display';
+            let currentInput = (state.currentScreen === 'login') ? state.currentPIN : state.currentTypedValue;
+            
+            document.getElementById('login-error').textContent = ''; 
+
+            if (key >= '0' && key <= '9') {
+                if (currentInput.length < 8) {
+                    currentInput = (currentInput === '0' || currentInput === '') ? key : currentInput + key;
+                }
+            } else if (key === 'C') {
+                currentInput = '0';
+            } else if (key === 'OK') {
+                if (state.currentScreen === 'login') {
+                    validateLogin(currentInput);
+                } else if (state.currentScreen === 'finish') {
+                    processFinishStep(parseFloat(currentInput));
+                }
+                return;
+            }
+            
+            if (state.currentScreen === 'login') {
+                state.currentPIN = currentInput;
+                document.getElementById(displayElementId).textContent = currentInput.padEnd(4, '*').replace(/./g, '*').substring(0, 4);
+            } else {
+                state.currentTypedValue = currentInput;
+                document.getElementById(displayElementId).textContent = currentInput;
+            }
+        }
+
+        // --- 登入邏輯 (簡化，只做本地檢查和模擬用戶) ---
+        function validateLogin(pin) {
+            if (pin.length !== 4) {
+                 document.getElementById('login-error').textContent = i18n[state.language].pin_error;
+                 return;
+            }
+
+            let user;
+            if (pin === '1234') {
+                 user = { user_pin: pin, name_zh: '阮氏美', name_vn: 'Nguyễn Thị Mỹ', language: 'vn' };
+            } else if (pin === '5678') {
+                 user = { user_pin: pin, name_zh: '陳經理', name_vn: 'Trần Quản Lý', language: 'zh' };
+            } else {
+                 document.getElementById('login-error').textContent = i18n[state.language].pin_error;
+                 return;
+            }
+
+            state.currentUser = user;
+            state.language = user.language; 
+            updateUI();
+            showScreen('screen-queue');
+        }
+
+        // --- 排程載入邏輯 (簡化，使用模擬數據) ---
+        function loadQueue() {
+            const listContainer = document.getElementById('queue-list-container');
+            listContainer.innerHTML = '';
+            const queue = mockQueue.filter(j => j.master_wo_id); 
+            
+            if (queue.length > 0) {
+                queue.forEach(job => {
+                    const prodName = state.language === 'vn' ? 
+                        `${job.product_name_vn} (${job.product_name_zh})` : 
+                        `${job.product_name_zh} (${job.product_name_vn})`;
+                    
+                    const opName = job.operation_name_zh || "未知工序"; 
+
+                    const html = `
+                        <div class="large-btn queue-item" data-woid="${job.wo_id}" data-opname="${opName}" onclick="selectJob('${job.wo_id}', '${opName}')">
+                            <span class="q-num">Q${job.queue_rank}</span>
+                            <span class="main-lang">${prodName}</span>
+                            <span class="aux-lang">${opName} (Est: ${job.standard_time_hr ? job.standard_time_hr.toFixed(2) + ' Hrs' : 'N/A'})</span>
+                        </div>
+                    `;
+                    listContainer.innerHTML += html;
+                });
+            } else {
+                 listContainer.innerHTML = `<p style="font-size:1.5em; color: #ccc;">${i18n[state.language].no_job_in_queue}</p>`;
+            }
+            
+            updateUI();
+        }
+
+        // --- 開始工單邏輯 (簡化，只記錄本地時間) ---
+        function selectJob(woId, operationName) {
+            state.currentWoId = woId;
+            state.currentWoOperationName = operationName; 
+            
+            startTime = Date.now();
+            state.startTimeISO = new Date(startTime).toISOString(); 
+
+            timerInterval = setInterval(updateTimer, 1000);
+            document.getElementById('working-woid').textContent = woId;
+
+            showScreen('screen-working');
+        }
+
+        function updateTimer() {
+            const elapsed = Date.now() - startTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const remainingSeconds = String(seconds % 60).padStart(2, '0');
+            
+            document.getElementById('elapsed-time').textContent = `${hours}:${minutes}:${remainingSeconds}`;
+        }
+
+        function endJob() {
+            startFinishFlow();
+        }
+
+        // ----------------------------------------------------
+        // 畫面 4 (Finish) 流程邏輯 (發送 POST)
+        // ----------------------------------------------------
+
+        function startFinishFlow() {
+            clearInterval(timerInterval);
+            state.currentTypedValue = '0';
+            document.getElementById('finish-woid').textContent = state.currentWoId;
+            
+            const isSlicing = state.currentWoOperationName && state.currentWoOperationName.includes('分切');
+
+            if (isSlicing) {
+                state.finishStep = 1; 
+                document.getElementById('finish-instruction').innerHTML = `<span class="main-lang">${i18n[state.language].finish_step1}</span>`;
+            } else {
+                state.finishStep = 5; 
+                document.getElementById('finish-instruction').innerHTML = `<span class="main-lang">${i18n[state.language].finish_step5_good}</span>`;
+            }
+            
+            state.finishData = { qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0, qty_good: 0 };
+            document.getElementById('qty-input-display').textContent = '0';
+
+            renderKeypad('finish-keypad-container', 'QTY_INPUT');
+            showScreen('screen-finish');
+        }
+
+        function processFinishStep(value) {
+            const instruction = document.getElementById('finish-instruction');
+            const lang = state.language;
+
+            // 處理四步驟 (分切/分料)
+            if (state.finishStep >= 1 && state.finishStep <= 4) {
+                if (state.finishStep === 1) { 
+                    state.finishData.qty_reject = value;
+                    state.finishStep = 2;
+                    instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step2}</span>`;
+                } else if (state.finishStep === 2) { 
+                    state.finishData.actual_collar_qty = value;
+                    state.finishStep = 3;
+                    instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step3}</span>`;
+                } else if (state.finishStep === 3) { 
+                    state.finishData.actual_tail_qty = value;
+                    state.finishStep = 4;
+                    instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step4}</span>`;
+                } else if (state.finishStep === 4) { 
+                    state.finishData.qty_good = value;
+                    confirmFinishWithYields();
+                    return;
+                }
+            } else if (state.finishStep === 5) { // 處理標準兩步驟 - 步驟 5: 輸入良品
+                state.finishData.qty_good = value;
+                state.finishStep = 6;
+                instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step5_reject}</span>`;
+            } else if (state.finishStep === 6) { // 處理標準兩步驟 - 步驟 6: 輸入不良品
+                 state.finishData.qty_reject = value;
+                 confirmFinishWithYields(); 
+                 return;
+            }
+            
+            state.currentTypedValue = '0';
+            document.getElementById('qty-input-display').textContent = '0';
+        }
+
+        // 🚨 最終提交 API 函數 (發送到 GAS)
+        async function confirmFinishWithYields() {
+            if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') {
+                alert("🚨 錯誤: 請先替換程式碼中的 GAS Webhook URL!");
+                return;
+            }
+            
+            const postData = {
+                token: SECURITY_TOKEN,
+                supervisor_pin: state.currentUser.user_pin,
+                operation_name: state.currentWoOperationName,
+                manpower_count: state.currentManpower,
+                wo_id: state.currentWoId,
+                start_time: state.startTimeISO, // ISO 時間字符串
+                qty_good: state.finishData.qty_good,
+                qty_reject: state.finishData.qty_reject,
+                actual_collar_qty: state.finishData.actual_collar_qty, 
+                actual_tail_qty: state.finishData.actual_tail_qty     
+            };
+            
+            try {
+                const response = await fetch(GAS_WEBHOOK_URL, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' }, // 關鍵修正：GAS 跨域有時需要 text/plain
+                    body: JSON.stringify(postData)
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`${i18n[state.language].btn_confirm_submit} 成功! ${data.message}`);
+                } else {
+                    alert(`提交失敗: ${data.message}`);
+                }
+                
+                state.finishData = {};
+                state.currentWoId = null;
+                showScreen('screen-queue');
+
+            } catch (error) {
+                alert(`${i18n[state.language].api_error}: ${error.message}`);
+                showScreen('screen-queue'); 
+            }
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 顯示診斷信息
+            document.getElementById('api-base-url-display').textContent = GAS_WEBHOOK_URL; 
+            if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') {
+                document.getElementById('url-alert-box').style.display = 'block';
+            }
+
+            renderKeypad('keypad', 'PIN'); 
+            updateUI();
+        });
+    </script>
+</body>
+</html>
