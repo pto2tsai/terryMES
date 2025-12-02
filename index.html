@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -6,14 +6,29 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 極簡、巨型觸控與雙語風格 */
+        /* CSS: 響應式極簡風格 */
         /* ---------------------------------- */
+        :root {
+            --bg-color: #0b1a2c;
+            --text-color: #ffffff;
+            --primary-color: #00bcd4;
+            --btn-bg: #1a3449;
+            --btn-active: #007bff;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #ff5722;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #0b1a2c; 
-            color: #ffffff;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             height: 100vh;
             text-align: center;
             display: flex;
@@ -26,38 +41,44 @@
             flex-grow: 1;
             padding: 10px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .screen {
             display: none;
             min-height: 90vh; 
+            padding-bottom: 50px;
         }
 
         h1 {
-            font-size: 2em;
-            color: #00bcd4;
-            margin-bottom: 5px;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin: 10px 0;
         }
         
+        /* 通用大按鈕樣式 */
         .large-btn {
-            padding: 15px 20px;
+            padding: 15px;
             margin: 8px;
-            font-size: 2.2em;
+            font-size: 1.5rem;
+            font-weight: bold;
             cursor: pointer;
-            border: 1px solid #00bcd4;
-            border-radius: 8px;
-            background-color: #1a3449;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            background-color: var(--btn-bg);
             color: white;
-            transition: background-color 0.1s;
-            line-height: 1.2;
+            transition: all 0.2s;
+            line-height: 1.3;
             user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         
         .large-btn:active {
-            background-color: #007bff;
+            background-color: var(--btn-active);
+            transform: scale(0.98);
         }
 
-        /* 按鈕禁用樣式 */
+        /* 禁用樣式 */
         .large-btn.disabled {
             background-color: #555;
             border-color: #777;
@@ -65,20 +86,46 @@
             opacity: 0.6;
         }
 
-        .queue-item {
-            display: block;
-            width: 90%;
-            margin: 15px auto;
-            text-align: left;
-            border-color: #4caf50;
-            position: relative; /* 用於定位狀態標籤 */
+        /* 下拉選單樣式 */
+        .large-select {
+            width: 95%;
+            font-size: 1.5rem;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: var(--btn-bg);
+            color: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            appearance: none; /* 移除預設箭頭 */
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300bcd4%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 20px auto;
         }
 
-        /* 進行中工單的特殊樣式 */
+        /* 工單列表容器 - 網格佈局 */
+        #queue-list-container {
+            display: grid;
+            gap: 15px;
+            padding: 5px;
+        }
+
+        .queue-item {
+            text-align: left;
+            border-color: var(--success-color);
+            position: relative;
+            padding: 20px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
         .queue-item.active-job {
-            background-color: #1b5e20; /* 深綠色背景 */
+            background-color: #1b5e20;
             border-color: #66bb6a;
             border-width: 3px;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
         }
 
         .status-badge {
@@ -89,7 +136,7 @@
             color: #000;
             padding: 5px 10px;
             border-radius: 5px;
-            font-size: 0.6em;
+            font-size: 0.8rem;
             font-weight: bold;
             display: none;
         }
@@ -99,45 +146,49 @@
         }
 
         .main-lang {
-            font-size: 1.6em;
+            font-size: 1.4rem;
             font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
         }
         
         .aux-lang {
-            font-size: 0.9em;
-            color: #a0a0a0;
+            font-size: 1rem;
+            color: #ccc;
+            display: block;
         }
 
         .pin-display {
-            font-size: 4em;
-            letter-spacing: 15px;
+            font-size: 3rem;
+            letter-spacing: 10px;
             margin: 20px auto;
-            height: 80px;
-            line-height: 80px;
-            border-bottom: 3px dashed #00bcd4;
+            height: 60px;
+            line-height: 60px;
+            border-bottom: 3px dashed var(--primary-color);
             color: #ffd700;
-            max-width: 300px;
+            max-width: 90%;
         }
 
         .error {
-            color: #ff5722;
-            font-size: 1.5em;
+            color: var(--error-color);
+            font-size: 1.2rem;
             margin-top: 10px;
             font-weight: bold;
         }
 
-        #keypad, #finish-keypad-container, #manpower-keypad-container {
+        /* 數字鍵盤佈局 */
+        .keypad-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr); /* 手機預設 3欄 */
             gap: 10px;
             width: 100%;
-            max-width: 450px;
-            margin: 20px auto;
+            max-width: 500px;
+            margin: 10px auto;
         }
 
         .btn-confirm {
-            background-color: #4caf50; 
-            border-color: #4caf50;
+            background-color: var(--success-color); 
+            border-color: var(--success-color);
         }
 
         .btn-back {
@@ -146,21 +197,65 @@
         }
         
         .diagnostic-info {
-            font-size: 0.8em;
+            font-size: 0.7rem;
             color: #7fffd4; 
-            margin-top: 15px;
+            margin-top: 10px;
         }
         .url-alert { 
             background-color: #581515; 
-            border: 2px solid #ff5722; 
+            border: 2px solid var(--error-color); 
             padding: 10px; 
             margin-bottom: 20px; 
             border-radius: 5px; 
-            font-size: 1em; 
+            font-size: 1rem; 
             color: white; 
             text-align: left; 
             font-weight: bold; 
             display: none;
+        }
+
+        /* --- 響應式設計 (Media Queries) --- */
+
+        /* 平板與桌面 (寬度大於 768px) */
+        @media (min-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .large-btn { font-size: 1.8rem; padding: 25px; }
+            .pin-display { font-size: 4rem; height: 80px; line-height: 80px; }
+            
+            /* 平板模式下，工單列表顯示為 2 欄 */
+            #queue-list-container {
+                grid-template-columns: repeat(2, 1fr); 
+            }
+            
+            /* 鍵盤在平板上改為 4 欄 (更寬) 或保持 3 欄但更大 */
+            .keypad-grid {
+                gap: 15px;
+                max-width: 600px;
+            }
+        }
+
+        /* 手機直向 (寬度小於 768px) */
+        @media (max-width: 767px) {
+            .container { padding: 5px; }
+            h1 { font-size: 1.5rem; }
+            
+            /* 手機模式下，工單列表為單欄 */
+            #queue-list-container {
+                grid-template-columns: 1fr; 
+            }
+            
+            .large-btn {
+                padding: 15px;
+                font-size: 1.2rem;
+                margin: 5px;
+            }
+            .queue-item {
+                min-height: 100px; /* 稍微縮小高度 */
+            }
+            .pin-display {
+                font-size: 2.5rem;
+                letter-spacing: 5px;
+            }
         }
     </style>
 </head>
@@ -170,7 +265,7 @@
         <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <h1>MES LITE 登入 🔒</h1>
-            <div style="font-size: 1.5em; margin-bottom: 20px;">
+            <div style="font-size: 1.2rem; margin-bottom: 20px;">
                 <span data-i18n="login_prompt">請輸入您的 4 位識別碼 (PIN)</span>
             </div>
             
@@ -185,75 +280,80 @@
                 🚨 **重要!** 請將程式碼中的 `YOUR_GAS_WEBHOOK_URL` 替換為步驟一獲得的實際 URL。
             </div>
 
-             <div id="keypad"></div>
+             <div id="keypad" class="keypad-grid"></div>
         </div>
 
         <!-- 畫面 2: 待辦排隊 -->
         <div id="screen-queue" class="screen">
             <h1 id="queue-title"></h1>
-            <div style="font-size: 1.2em; color: #00bcd4; margin-bottom: 15px;" data-i18n="select_job_prompt">
+            <div style="font-size: 1rem; color: #00bcd4; margin-bottom: 10px;" data-i18n="select_job_prompt">
                 👆 請點擊欲開始的工單 (CHỌN CÔNG VIỆC)
             </div>
+
+            <!-- 新增：總工單選擇 (下拉選單) -->
+            <select id="master-wo-select" class="large-select" onchange="filterQueue()">
+                <option value="ALL">全部顯示 (Hiển thị tất cả)</option>
+                <!-- 選項將由 JS 動態生成 -->
+            </select>
             
             <div id="queue-list-container">
                 <!-- 模擬工單列表 -->
             </div>
         </div>
 
-        <!-- 畫面 2.5: 輸入人數 (新增) -->
+        <!-- 畫面 2.5: 輸入人數 -->
         <div id="screen-manpower" class="screen">
             <h1 style="color: #ffd700;" data-i18n="manpower_input_title">輸入人數 (NHẬP SỐ NGƯỜI)</h1>
-            <div style="font-size: 1.5em;">
+            <div style="font-size: 1.2rem;">
                 <span data-i18n="working_wo">工單</span>: <span id="manpower-woid" style="font-weight: bold; color: #00bcd4;"></span>
             </div>
 
-            <div style="margin: 30px auto; max-width: 400px;">
+            <div style="margin: 20px auto; max-width: 400px;">
                 <div class="pin-display" id="manpower-input-display" style="letter-spacing: normal; color: #ffd700;">0</div>
             </div>
             
-            <div id="manpower-keypad-container"></div>
+            <div id="manpower-keypad-container" class="keypad-grid"></div>
         </div>
 
         <!-- 畫面 3: 正在計時 -->
         <div id="screen-working" class="screen">
             <h1 class="working-status">🟢 <span data-i18n="working_in_progress">正在進行中</span></h1>
-            <div style="font-size: 2em; margin-top: 20px;">
+            <div style="font-size: 1.5rem; margin-top: 10px;">
                 <span data-i18n="working_wo">工單</span>: <span id="working-woid" style="font-weight: bold;"></span>
             </div>
-            <div style="font-size: 3em; color: #ffd700; margin: 30px 0;">
+            <div style="font-size: 2.5rem; color: #ffd700; margin: 20px 0;">
                 <span data-i18n="manpower_count">人數</span>: <span id="manpower-display">4</span>
             </div>
-            <div style="font-size: 4em; color: #00bcd4;">
+            <div style="font-size: 3.5rem; color: #00bcd4;">
                 <span data-i18n="elapsed_time">已耗時</span>: <span id="elapsed-time">00:00:00</span>
             </div>
             <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center;">
-                <!-- 暫離按鈕 (多工模式) -->
-                <button class="large-btn btn-back" style="width: 80%; font-size: 1.5em; margin-bottom: 20px;" onclick="backToQueue()">
+                <button class="large-btn btn-back" style="width: 90%; margin-bottom: 15px;" onclick="backToQueue()">
                     <span data-i18n="btn_back_list">⬅ 暫離 / 返回列表</span> (Quay lại)
                 </button>
 
-                <button class="large-btn btn-confirm" style="background-color: orange; font-size: 2em; width: 80%;" onclick="endJob()">
+                <button class="large-btn btn-confirm" style="background-color: orange; width: 90%; font-size: 1.8rem;" onclick="endJob()">
                     <span data-i18n="btn_finish">完成工單</span> (HOÀN THÀNH)
                 </button>
             </div>
         </div>
 
-        <!-- 畫面 4: 數量輸入 (四步驟客製化) -->
+        <!-- 畫面 4: 數量輸入 -->
         <div id="screen-finish" class="screen">
             <h1 style="color: #ff9800;" data-i18n="finish_prompt">步驟 4: 輸入數量 (NHẬP SỐ LƯỢNG)</h1>
-            <div style="font-size: 1.5em;">
+            <div style="font-size: 1.2rem;">
                 <span data-i18n="finish_wo">工單</span>: <span id="finish-woid" style="font-weight: bold; color: #ffd700;"></span>
             </div>
 
-            <div style="margin: 20px auto; max-width: 400px;">
-                <div id="finish-instruction" style="font-size: 1.8em; color: #00bcd4; margin-bottom: 10px; min-height: 40px;">
+            <div style="margin: 10px auto; max-width: 400px;">
+                <div id="finish-instruction" style="font-size: 1.5rem; color: #00bcd4; margin-bottom: 10px; min-height: 40px;">
                     <!-- 這裡是動態指令 -->
                 </div>
                 
                 <div class="pin-display" id="qty-input-display" style="letter-spacing: normal; color: #ffd700;">0</div>
             </div>
             
-            <div id="finish-keypad-container"></div>
+            <div id="finish-keypad-container" class="keypad-grid"></div>
         </div>
     </div>
 
@@ -262,7 +362,7 @@
         // JAVASCRIPT: 邏輯與 GAS Webhook 溝通
         // ----------------------------------
 
-        // 🚨 關鍵：已植入您的 Google Apps Script URL
+        // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
         
@@ -271,52 +371,42 @@
             currentPIN: '',
             currentUser: null,
             language: 'zh',
-            
-            // 多工模式核心：活躍任務清單 { wo_id: { startTime, manpower, operationName } }
             activeSessions: {}, 
-            // 當前正在查看的工單 ID (用於計時畫面顯示)
             currentViewingWoId: null,
-
-            // 臨時輸入狀態
             currentWoOperationName: null, 
             currentManpower: 0, 
-            
             finishStep: 0, 
             finishData: { qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0, qty_good: 0 },
             currentTypedValue: '0',
+            startTimeISO: null,
             isSubmitting: false 
         };
 
         let timerInterval = null;
 
-        // 模擬的工單數據
+        // 模擬的工單數據 (包含總工單 ID 以供篩選)
         const mockQueue = [
             { wo_id: 'WC001-Q1', master_wo_id: 'MWO-A', product_name_zh: '鮭魚分切批次', product_name_vn: 'Cá hồi lô A', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.2 },
             { wo_id: 'WC001-Q3', master_wo_id: 'MWO-A', product_name_zh: '中段厚切', product_name_vn: 'Lát giữa dày', operation_name_zh: '重量選別', operation_name_vn: 'Phân loại', queue_rank: 3, standard_time_hr: 0.3 },
-            { wo_id: 'WC002-Q1', master_wo_id: 'MWO-B', product_name_zh: '鮪魚分塊', product_name_vn: 'Cá ngừ cắt khối', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 5, standard_time_hr: 0.8 }
+            { wo_id: 'WC002-Q1', master_wo_id: 'MWO-B', product_name_zh: '鮪魚分塊', product_name_vn: 'Cá ngừ cắt khối', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 5, standard_time_hr: 0.8 },
+            { wo_id: 'WC003-Q2', master_wo_id: 'MWO-C', product_name_zh: '蝦仁加工', product_name_vn: 'Tôm chế biến', operation_name_zh: '剝殼', operation_name_vn: 'Bóc vỏ', queue_rank: 2, standard_time_hr: 0.5 }
         ];
 
         // 雙語字典
         const i18n = {
             zh: {
-                login_prompt: '步驟 1: 請輸入您的 4 位識別碼 (PIN)', pin_error: 'PIN 碼錯誤或不存在！', select_job_prompt: '👆 請點擊欲開始的工單 (CHỌN CÔNG VIỆC)', job_start_error: '工單啟動失敗!', working_wo: '工單', manpower_count: '人數', elapsed_time: '已耗時', working_in_progress: '正在進行中', 
-                manpower_input_title: '步驟 2: 輸入人數', 
-                manpower_error: '人數必須大於 0',
-                finish_prompt: '步驟 4: 輸入數量', finish_wo: '工單', finish_step1: '❌ 不良品/損耗重量 (KG)', finish_step2: '下巴重量 (KG)', finish_step3: '尾段重量 (KG)', finish_step4: '✅ 中後段總重 (KG)', finish_step5_good: '✅ 良品數量 (PCS/KG)', finish_step5_reject: '❌ 不良品數量 (PCS/KG)', btn_finish: '完成工單', btn_confirm_submit: '確認提交', missing_data: '數據不完整，請檢查。', api_error: '連線錯誤，請檢查網路或 URL。', no_job_in_queue: '目前沒有待辦工單 (Không có đơn hàng)',
-                btn_back_list: '⬅ 暫離 / 返回列表',
-                running_status: '進行中'
+                login_prompt: '請輸入 4 位識別碼 (PIN)', pin_error: 'PIN 碼錯誤！', select_job_prompt: '👆 請點擊欲開始的工單', job_start_error: '工單啟動失敗!', working_wo: '工單', manpower_count: '人數', elapsed_time: '已耗時', working_in_progress: '正在進行中', 
+                manpower_input_title: '步驟 2: 輸入人數', manpower_error: '人數必須大於 0',
+                finish_prompt: '步驟 4: 輸入數量', finish_wo: '工單', finish_step1: '❌ 不良品/損耗重量 (KG)', finish_step2: '下巴重量 (KG)', finish_step3: '尾段重量 (KG)', finish_step4: '✅ 中後段總重 (KG)', finish_step5_good: '✅ 良品數量 (PCS/KG)', finish_step5_reject: '❌ 不良品數量 (PCS/KG)', btn_finish: '完成工單', btn_confirm_submit: '確認提交', missing_data: '數據不完整', api_error: '連線錯誤', no_job_in_queue: '目前沒有待辦工單', btn_back_list: '⬅ 暫離 / 返回列表', running_status: '進行中'
             },
             vn: {
-                login_prompt: 'BƯỚC 1: NHẬP MÃ ĐỊNH DANH CỦA BẠN (PIN)', pin_error: 'Mã PIN sai hoặc không tồn tại!', select_job_prompt: '👆 VUI LÒNG CHỌN CÔNG VIỆC (CHỌN CÔNG VIỆC)', job_start_error: 'Bắt đầu đơn hàng thất bại!', working_wo: 'Đơn hàng', manpower_count: 'Số người', elapsed_time: 'Đã chạy giờ', working_in_progress: 'ĐANG THỰC HIỆN', 
-                manpower_input_title: 'BƯỚC 2: NHẬP SỐ NGƯỜI', 
-                manpower_error: 'Số người phải lớn hơn 0',
-                finish_prompt: 'BƯỚC 4: NHẬP SỐ LƯỢNG', finish_wo: 'Đơn hàng', finish_step1: '❌ SỐ CÂN NẶNG HỎNG (KG)', finish_step2: 'SỐ CÂN NẶNG CẰM (KG)', finish_step3: 'SỐ CÂN NẶNG ĐUÔI (KG)', finish_step4: '✅ TỔNG CÂN NẶNG GIỮA/SAU (KG)', finish_step5_good: '✅ Số lượng tốt (PCS/KG)', finish_step5_reject: '❌ Số lượng hỏng (PCS/KG)', btn_finish: 'Hoàn thành', btn_confirm_submit: 'XÁC NHẬN GỬI', missing_data: 'Dữ liệu không đầy đủ, vui lòng kiểm tra lại.', api_error: 'Lỗi kết nối, vui lòng kiểm tra mạng hoặc URL。', no_job_in_queue: 'Không có đơn hàng',
-                btn_back_list: '⬅ Quay lại',
-                running_status: 'Running'
+                login_prompt: 'NHẬP MÃ ĐỊNH DANH (PIN)', pin_error: 'Mã PIN sai!', select_job_prompt: '👆 CHỌN CÔNG VIỆC', job_start_error: 'Lỗi bắt đầu!', working_wo: 'Đơn hàng', manpower_count: 'Số người', elapsed_time: 'Đã chạy giờ', working_in_progress: 'ĐANG THỰC HIỆN', 
+                manpower_input_title: 'BƯỚC 2: NHẬP SỐ NGƯỜI', manpower_error: 'Số người > 0',
+                finish_prompt: 'BƯỚC 4: NHẬP SỐ LƯỢNG', finish_wo: 'Đơn hàng', finish_step1: '❌ SỐ CÂN NẶNG HỎNG (KG)', finish_step2: 'SỐ CÂN NẶNG CẰM (KG)', finish_step3: 'SỐ CÂN NẶNG ĐUÔI (KG)', finish_step4: '✅ TỔNG CÂN NẶNG GIỮA/SAU (KG)', finish_step5_good: '✅ Số lượng tốt (PCS/KG)', finish_step5_reject: '❌ Số lượng hỏng (PCS/KG)', btn_finish: 'Hoàn thành', btn_confirm_submit: 'XÁC NHẬN GỬI', missing_data: 'Thiếu dữ liệu', api_error: 'Lỗi kết nối', no_job_in_queue: 'Không có đơn hàng', btn_back_list: '⬅ Quay lại', running_status: 'Running'
             }
         };
 
-        // --- UI & State Functions ---
+        // --- UI Functions ---
 
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => screen.style.display = 'none');
@@ -344,7 +434,7 @@
             }
         }
 
-        // --- 鍵盤處理邏輯 ---
+        // --- Keypad Functions ---
         function renderKeypad(targetElementId, targetInputType) {
             state.inputTarget = targetInputType;
             const layout = ['7', '8', '9', 'C', '4', '5', '6', '0', '1', '2', '3', 'OK'];
@@ -356,7 +446,8 @@
                 btn.className = 'large-btn';
                 if (key === 'OK') btn.className += ' btn-confirm';
                 btn.textContent = key;
-                btn.style.width = '100px'; 
+                // 適應新的 grid 佈局，按鈕本身不需要固定寬度
+                btn.style.width = '100%'; 
                 btn.onclick = () => handleKeypadInput(key);
                 keypadDiv.appendChild(btn);
             });
@@ -407,7 +498,7 @@
             }
         }
 
-        // --- 業務邏輯 ---
+        // --- Logic ---
 
         function validateLogin(pin) {
             if (pin.length !== 4) {
@@ -430,49 +521,77 @@
         }
 
         function loadQueue() {
+            // 1. 提取所有總工單 ID 製作下拉選單
+            const masterWOs = [...new Set(mockQueue.map(item => item.master_wo_id))];
+            const select = document.getElementById('master-wo-select');
+            
+            // 保存當前選擇 (防止刷新後重置)
+            const currentSelection = select.value;
+            
+            // 清空並重建選項
+            select.innerHTML = `<option value="ALL">${state.language === 'vn' ? 'Tất cả (全部)' : '全部顯示'}</option>`;
+            masterWOs.forEach(mwo => {
+                const option = document.createElement('option');
+                option.value = mwo;
+                option.textContent = mwo;
+                select.appendChild(option);
+            });
+
+            // 恢復選擇 (如果還存在)
+            if (masterWOs.includes(currentSelection)) {
+                select.value = currentSelection;
+            }
+
+            // 2. 執行過濾與渲染
+            filterQueue();
+        }
+
+        // 新增：工單過濾功能
+        function filterQueue() {
+            const selectedMasterWO = document.getElementById('master-wo-select').value;
             const listContainer = document.getElementById('queue-list-container');
             listContainer.innerHTML = '';
-            const queue = mockQueue.filter(j => j.master_wo_id); 
+
+            // 根據下拉選單篩選
+            const filteredQueue = mockQueue.filter(job => {
+                return selectedMasterWO === 'ALL' || job.master_wo_id === selectedMasterWO;
+            });
             
-            if (queue.length > 0) {
-                queue.forEach(job => {
+            if (filteredQueue.length > 0) {
+                filteredQueue.forEach(job => {
                     const prodName = state.language === 'vn' ? 
                         `${job.product_name_vn} (${job.product_name_zh})` : 
                         `${job.product_name_zh} (${job.product_name_vn})`;
                     const opName = job.operation_name_zh || "未知工序"; 
                     
-                    // 檢查是否為活躍任務
                     const isActive = state.activeSessions[job.wo_id] !== undefined;
                     const activeClass = isActive ? 'active-job' : '';
                     const badge = isActive ? `<div class="status-badge">${i18n[state.language].running_status}</div>` : '';
 
                     const html = `
                         <div class="large-btn queue-item ${activeClass}" onclick="selectJob('${job.wo_id}', '${opName}')">
+                            <div style="font-size: 0.8em; color: #aaa; margin-bottom: 5px;">${job.master_wo_id}</div>
                             <span class="q-num">Q${job.queue_rank}</span>
                             <span class="main-lang">${prodName}</span>
-                            <span class="aux-lang">${opName} (Est: ${job.standard_time_hr ? job.standard_time_hr.toFixed(2) + ' Hrs' : 'N/A'})</span>
+                            <span class="aux-lang">${opName}</span>
                             ${badge}
                         </div>
                     `;
                     listContainer.innerHTML += html;
                 });
             } else {
-                 listContainer.innerHTML = `<p style="font-size:1.5em; color: #ccc;">${i18n[state.language].no_job_in_queue}</p>`;
+                 listContainer.innerHTML = `<p style="font-size:1.2em; color: #ccc; grid-column: 1 / -1;">${i18n[state.language].no_job_in_queue}</p>`;
             }
-            updateUI();
         }
 
         function selectJob(woId, operationName) {
-            state.currentViewingWoId = woId; // 設定當前查看的工單
+            state.currentViewingWoId = woId; 
             state.currentWoOperationName = operationName; 
             
-            // 檢查該工單是否已經在進行中 (多工邏輯)
             if (state.activeSessions[woId]) {
-                // 如果是活躍任務，直接進入計時畫面，不需輸入人數
                 const session = state.activeSessions[woId];
                 state.currentManpower = session.manpower;
                 
-                // 啟動計時器 (只負責顯示)
                 if (timerInterval) clearInterval(timerInterval);
                 timerInterval = setInterval(updateTimer, 1000);
                 
@@ -480,9 +599,8 @@
                 document.getElementById('manpower-display').textContent = session.manpower;
                 
                 showScreen('screen-working');
-                updateTimer(); // 立即更新一次
+                updateTimer(); 
             } else {
-                // 如果是新任務，初始化人數輸入介面
                 state.currentTypedValue = '0';
                 document.getElementById('manpower-woid').textContent = woId;
                 document.getElementById('manpower-input-display').textContent = '0';
@@ -503,8 +621,6 @@
 
         function startJobSession() {
             const now = Date.now();
-            
-            // 建立新的活躍 Session
             state.activeSessions[state.currentViewingWoId] = {
                 startTime: now,
                 startTimeISO: new Date(now).toISOString(),
@@ -512,7 +628,6 @@
                 operationName: state.currentWoOperationName
             };
 
-            // 啟動 UI 計時器
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(updateTimer, 1000);
             
@@ -522,15 +637,13 @@
             showScreen('screen-working');
         }
 
-        // 新增：暫離/返回列表
         function backToQueue() {
             if (timerInterval) clearInterval(timerInterval);
-            state.currentViewingWoId = null; // 清除當前查看的 ID
+            state.currentViewingWoId = null; 
             showScreen('screen-queue');
         }
 
         function updateTimer() {
-            // 從 activeSessions 獲取當前工單的開始時間
             const session = state.activeSessions[state.currentViewingWoId];
             if (!session) return;
 
@@ -546,10 +659,6 @@
         function endJob() {
             startFinishFlow();
         }
-
-        // ----------------------------------------------------
-        // 畫面 4 (Finish) 流程邏輯
-        // ----------------------------------------------------
 
         function startFinishFlow() {
             if (timerInterval) clearInterval(timerInterval);
@@ -577,7 +686,6 @@
             const instruction = document.getElementById('finish-instruction');
             const lang = state.language;
 
-            // 處理四步驟 (分切/分料)
             if (state.finishStep >= 1 && state.finishStep <= 4) {
                 if (state.finishStep === 1) { 
                     state.finishData.qty_reject = value;
@@ -596,7 +704,7 @@
                     confirmFinishWithYields();
                     return;
                 }
-            } else if (state.finishStep === 5) { // 處理標準兩步驟
+            } else if (state.finishStep === 5) { 
                 state.finishData.qty_good = value;
                 state.finishStep = 6;
                 instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step5_reject}</span>`;
@@ -610,17 +718,15 @@
             document.getElementById('qty-input-display').textContent = '0';
         }
 
-        // 🚨 最終提交 API 函數
         async function confirmFinishWithYields() {
             if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') {
                 alert("🚨 錯誤: 請先替換程式碼中的 GAS Webhook URL!");
                 return;
             }
 
-            if (state.isSubmitting) return; // 防重複鎖
+            if (state.isSubmitting) return; 
             state.isSubmitting = true;
             
-            // 從 activeSessions 獲取當前工單的開始資訊
             const session = state.activeSessions[state.currentViewingWoId];
             if (!session) {
                 alert("錯誤：找不到工單資訊");
@@ -655,7 +761,6 @@
                     alert(`提交失敗: ${data.message}`);
                 }
                 
-                // 成功後移除活躍 Session
                 delete state.activeSessions[state.currentViewingWoId];
                 state.currentViewingWoId = null;
                 
@@ -666,7 +771,7 @@
                 alert(`${i18n[state.language].api_error}: ${error.message}`);
                 showScreen('screen-queue'); 
             } finally {
-                state.isSubmitting = false; // 解鎖
+                state.isSubmitting = false; 
             }
         }
 
