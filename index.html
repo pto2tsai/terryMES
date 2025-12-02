@@ -6,7 +6,7 @@
     <title>MES Lite 簡易工時採集</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (V1.9 Data-Safe) */
+        /* CSS: 響應式極簡風格 (V2.1 Robust) */
         /* ---------------------------------- */
         :root {
             --bg-color: #0b1a2c;
@@ -197,6 +197,7 @@
         .btn-add-line { background-color: #4caf50; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 5px; width: 100%; }
         .summary-box { background-color: var(--success-color); color: black; padding: 10px; border-radius: 10px; margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
         .history-section { border-top: 1px solid #444; margin-top: 10px; padding-top: 10px; }
+        .last-updated { font-size: 0.7rem; color: #555; margin-top: 5px; }
 
         /* Loading */
         #loading-overlay {
@@ -270,7 +271,7 @@
                 <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
         </div>
-        <div class="version-tag">V1.9</div>
+        <div class="version-tag">V2.1</div>
     </div>
 
     <!-- Loading Overlay -->
@@ -283,7 +284,7 @@
         <!-- 畫面 1: 登入 -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V1.9</span></h1>
+                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V2.1</span></h1>
                 <div style="font-size: 1rem; margin-bottom: 5px;">
                     <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
                 </div>
@@ -358,12 +359,13 @@
         <!-- 畫面 2: 待辦排隊 -->
         <div id="screen-queue" class="screen">
             <h1 id="queue-title"></h1>
-            <button class="refresh-btn" onclick="initApp()">🔄 刷新</button>
+            <button class="refresh-btn" onclick="forceReload()">🔄 刷新</button>
             <div style="font-size: 1rem; color: #00bcd4; margin-bottom: 10px;" data-i18n="select_job_prompt">👆 請點擊欲開始的工單</div>
             <select id="master-wo-select" class="large-select" onchange="filterQueue()">
                 <option value="ALL">全部顯示</option>
             </select>
             <div id="queue-list-container"></div>
+            <div class="last-updated" id="last-update-time"></div>
         </div>
 
         <!-- 畫面 2.5: 輸入人數 -->
@@ -421,7 +423,7 @@
         // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
         const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
         const SECURITY_TOKEN = "MES_LITE_2025"; 
-        const VERSION = "V1.9";
+        const VERSION = "V2.1";
 
         let state = {
             currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
@@ -433,8 +435,8 @@
 
         let timerInterval = null;
         let appQueue = []; let completedLogs = []; let mwoHistory = [];
+        let autoRefreshInterval = null;
 
-        // 預設資料，確保初次使用不空白 (修復空列表問題)
         const defaultQueue = [
             { wo_id: 'WC-TEST-Q1', master_wo_id: 'MWO-TEST', product_name_zh: '測試-鮭魚分切', product_name_vn: 'Test-Cá hồi', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.0 },
             { wo_id: 'WC-TEST-Q2', master_wo_id: 'MWO-TEST', product_name_zh: '測試-真空包裝', product_name_vn: 'Test-Đóng gói', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 2, standard_time_hr: 0.5 }
@@ -486,7 +488,7 @@
         }
 
         function initApp() {
-            // 優先載入資料，若無則使用預設
+            // 1. Load Queue: 強制檢查數據完整性
             const storedQueue = localStorage.getItem('mes_lite_queue');
             if (storedQueue) { 
                 try {
@@ -524,16 +526,27 @@
                 if (savedState.currentManpower) state.currentManpower = savedState.currentManpower;
             }
 
-            document.getElementById('api-base-url-display').textContent = GAS_WEBHOOK_URL; 
+            const el = document.getElementById('api-base-url-display');
+            if(el) el.textContent = GAS_WEBHOOK_URL; 
             if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') document.getElementById('url-alert-box').style.display = 'block';
             
             renderKeypad('keypad', 'PIN'); 
             updateUI();
+
+            // 2. 啟動自動更新 (每5秒檢查一次 Storage，實現跨分頁同步)
+            if(autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                if (state.currentScreen === 'queue') {
+                    loadQueue(); // 靜默重載
+                }
+            }, 5000);
             
-            // 如果已經登入，強制重新載入一次佇列
-            if (state.currentUser) {
-                 loadQueue();
-            }
+            // 3. 跨分頁監聽
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'mes_lite_queue' && state.currentScreen === 'queue') {
+                    loadQueue();
+                }
+            });
         }
 
         function saveAll() {
@@ -548,6 +561,28 @@
             if(confirm("確定要重置所有資料？這會刪除本機所有工單、紀錄和設定，並恢復預設值。")) {
                 localStorage.clear();
                 location.reload();
+            }
+        }
+
+        function forceReload() {
+            // 手動強制重載數據
+            const storedQueue = localStorage.getItem('mes_lite_queue');
+            if (storedQueue) {
+                try {
+                   appQueue = JSON.parse(storedQueue);
+                } catch(e) {
+                   appQueue = [...defaultQueue];
+                   saveQueueToStorage();
+                }
+                loadQueue();
+                // 顯示輕量提示
+                const btn = document.querySelector('.refresh-btn');
+                const originalText = btn.textContent;
+                btn.textContent = "已刷新";
+                setTimeout(() => btn.textContent = originalText, 1000);
+            } else {
+                initApp(); // 重新初始化
+                alert("資料已重置");
             }
         }
 
@@ -588,7 +623,8 @@
             });
             if (state.currentUser && state.currentUser.name_zh) {
                 const greeting = currentLang === 'vn' ? `Chào Ông ${state.currentUser.name_vn}` : `你好，${state.currentUser.name_zh}`;
-                document.getElementById('queue-title').textContent = greeting;
+                const titleEl = document.getElementById('queue-title');
+                if(titleEl) titleEl.textContent = greeting;
             }
         }
 
@@ -614,15 +650,14 @@
             const tbody = document.getElementById('admin-queue-body');
             tbody.innerHTML = '';
             
-            // 更新計數
-            document.getElementById('queue-count').textContent = appQueue.length;
+            const countEl = document.getElementById('queue-count');
+            if(countEl) countEl.textContent = appQueue.length;
 
             if (appQueue.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">無資料</td></tr>';
                 return;
             }
             
-            // 使用 map 和 join 構建 HTML 字符串，提高渲染穩定性
             const html = appQueue.map((job, index) => `
                 <tr>
                     <td>${escapeHtml(job.master_wo_id)}</td>
@@ -803,10 +838,10 @@
             
             if (state.currentScreen === 'login') {
                 state.currentPIN = currentInput;
-                displayEl.textContent = '*'.repeat(currentInput.length);
+                if(displayEl) displayEl.textContent = '*'.repeat(currentInput.length);
             } else {
                 state.currentTypedValue = currentInput;
-                displayEl.textContent = currentInput;
+                if(displayEl) displayEl.textContent = currentInput;
             }
         }
 
@@ -821,6 +856,12 @@
         }
 
         function loadQueue() {
+            // 安全讀取
+            const storedQueue = localStorage.getItem('mes_lite_queue');
+            if (storedQueue) {
+                 try { appQueue = JSON.parse(storedQueue); } catch(e) { appQueue = []; }
+            }
+
             const masterWOs = [...new Set(appQueue.map(item => item.master_wo_id))];
             const select = document.getElementById('master-wo-select');
             const currentSelection = select.value;
@@ -869,6 +910,9 @@
                 list.innerHTML = `<div class="empty-message">${i18n[state.language].no_job_in_queue}</div>`;
                 list.style.display = 'block';
             }
+            // 更新時間戳記
+            const timeEl = document.getElementById('last-update-time');
+            if(timeEl) timeEl.textContent = "Updated: " + new Date().toLocaleTimeString();
         }
 
         function selectJob(woId, operationName) {
