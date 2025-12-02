@@ -1,1112 +1,956 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MES Lite 簡易工時採集</title>
+    <title>MES Lite 現場工時系統</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: 響應式極簡風格 (V2.4 Stability Fix) */
+        /* CSS: V2.5 現場主管體驗優化版 */
         /* ---------------------------------- */
         :root {
-            --bg-color: #0b1a2c;
-            --text-color: #ffffff;
-            --primary-color: #00bcd4;
-            --btn-bg: #1a3449;
-            --btn-active: #007bff;
-            --success-color: #4caf50;
-            --warning-color: #ff9800;
-            --error-color: #ff5722;
-            --panel-bg: #112233;
-            --nav-width: 70px;
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #ffffff;
+            --text-sub: #b0b0b0;
+            
+            --primary: #2196f3; /* 藍色：一般操作 */
+            --accent: #00bcd4;  /* 青色：強調 */
+            --success: #4caf50; /* 綠色：進行中/確認 */
+            --warning: #ff9800; /* 橘色：結束/暫停 */
+            --danger: #f44336;  /* 紅色：錯誤/刪除 */
+            
+            --nav-height: 60px;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0; padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             height: 100vh;
-            text-align: center;
-            display: flex; flex-direction: row;
+            display: flex; flex-direction: column;
             overflow: hidden;
         }
 
-        /* 導航列 */
+        /* --- 頂部導航 (固定) --- */
         .nav-bar {
-            width: var(--nav-width);
-            height: 100vh;
-            background-color: #050b14;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 20px;
+            height: var(--nav-height);
+            background-color: #000000;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
             z-index: 1000;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.5);
-            flex-shrink: 0;
         }
-
-        .nav-icons {
-            display: flex; flex-direction: column; gap: 25px; margin-bottom: auto;
-        }
-
+        .nav-brand { font-size: 1.2rem; font-weight: bold; color: var(--accent); letter-spacing: 1px; }
+        .nav-user { font-size: 0.9rem; color: var(--text-sub); text-align: right; }
         .nav-btn {
-            background: none; border: none; cursor: pointer; padding: 12px;
-            color: var(--primary-color); display: flex; align-items: center; justify-content: center;
-            border-radius: 12px; transition: background 0.2s, transform 0.1s;
-            touch-action: manipulation;
+            background: #333; border: none; color: white;
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.2s;
         }
-        .nav-btn:active { background-color: rgba(255,255,255,0.1); transform: scale(0.95); }
-        .nav-btn svg { width: 36px; height: 36px; fill: currentColor; }
+        .nav-btn:active { background: #555; }
+        .nav-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
-        /* 導航標題 (預設在側邊欄隱藏，避免過擠) */
-        .nav-title {
-            font-size: 1.2rem; color: var(--primary-color); font-weight: bold;
-            display: none; 
-        }
-
-        .version-tag {
-            font-size: 0.7rem; color: #555; margin-bottom: 10px; writing-mode: vertical-lr;
-        }
-
+        /* --- 主容器 (可捲動) --- */
         .container {
-            flex-grow: 1; padding: 10px;
-            overflow-y: auto; -webkit-overflow-scrolling: touch;
-            position: relative; display: flex; flex-direction: column;
-        }
-
-        .screen { display: none; min-height: 90vh; padding-bottom: 50px; width: 100%; }
-
-        h1 { font-size: 1.5rem; color: var(--primary-color); margin: 5px 0; }
-        
-        .large-btn {
-            padding: 12px; margin: 4px; font-size: 1.3rem; font-weight: bold;
-            cursor: pointer; border: 2px solid var(--primary-color); border-radius: 8px;
-            background-color: var(--btn-bg); color: white; transition: all 0.1s;
-            line-height: 1.2; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            touch-action: manipulation;
-        }
-        .large-btn:active { background-color: var(--btn-active); transform: scale(0.96); }
-        .large-btn.disabled { background-color: #555; border-color: #777; cursor: not-allowed; opacity: 0.6; }
-
-        .large-select {
-            width: 98%; font-size: 1.1rem; padding: 10px; margin-bottom: 10px;
-            background-color: var(--btn-bg); color: white; border: 2px solid var(--primary-color);
-            border-radius: 8px; appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300bcd4%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 16px auto;
-        }
-
-        #queue-list-container { display: grid; gap: 8px; padding: 2px; }
-        .queue-item {
-            text-align: left; border-color: var(--success-color); position: relative;
-            padding: 12px 15px;
-            min-height: auto; display: flex; flex-direction: column; justify-content: center;
-            border-radius: 8px; border: 1px solid var(--success-color);
-            background-color: var(--btn-bg); cursor: pointer;
-            touch-action: manipulation;
-        }
-        .queue-item:active { transform: scale(0.98); }
-        .queue-item.active-job {
-            background-color: #1b5e20; border-color: #66bb6a; border-width: 2px;
-            box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
-        }
-        
-        .status-badge {
-            position: absolute; top: 8px; right: 8px; background-color: #00e676;
-            color: #000; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;
-            display: none;
-        }
-        .queue-item.active-job .status-badge { display: block; }
-
-        .q-num { font-size: 1.3rem; font-weight: bold; color: var(--primary-color); margin-right: 8px; float: left;}
-        .main-lang { font-size: 1.1rem; font-weight: bold; display: block; margin-bottom: 4px; }
-        .aux-lang { font-size: 0.9rem; color: #ccc; display: block; margin-bottom: 4px;}
-        .wo-details { font-size: 0.9rem; color: #b2dfdb; border-top: 1px solid #444; margin-top: 5px; padding-top: 5px; }
-
-        .empty-message {
-            grid-column: 1 / -1;
-            padding: 40px;
-            color: #888;
-            font-size: 1.2rem;
-            border: 2px dashed #444;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-
-        .pin-display {
-            font-size: 3rem; letter-spacing: 5px; margin: 10px auto;
-            height: 50px; line-height: 50px; border-bottom: 3px dashed var(--primary-color);
-            color: #ffd700; max-width: 250px;
-        }
-        .error { color: var(--error-color); font-size: 1.1rem; margin-top: 5px; font-weight: bold; min-height: 1.2em; }
-
-        .keypad-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
-            width: 100%; max-width: 400px; margin: 5px auto;
-        }
-        .keypad-grid .large-btn { font-size: 1.5rem; padding: 15px; margin: 0; }
-
-        .btn-confirm { background-color: var(--success-color); border-color: var(--success-color); font-size: 1.3rem; }
-        .btn-back { background-color: #607d8b; border-color: #78909c; }
-        .btn-adjust { background-color: #3f51b5; border-color: #5c6bc0; }
-        .btn-reset { background-color: #d32f2f; border-color: #b71c1c; font-size: 1rem; width: 100%; margin-top: 10px;}
-
-        .diagnostic-info { font-size: 0.6rem; color: #555; margin-top: 5px; }
-        .url-alert { background-color: #581515; border: 2px solid var(--error-color); padding: 10px; margin-bottom: 10px; border-radius: 5px; font-size: 0.9rem; color: white; text-align: left; font-weight: bold; display: none; }
-
-        /* 生管畫面 */
-        .planner-tabs {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: #050b14;
-            padding: 10px;
-            border-radius: 10px;
-        }
-        .tab-btn {
-            background-color: transparent;
-            color: #888;
-            padding: 12px 25px;
-            font-size: 1.2rem;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
             flex: 1;
-            max-width: 200px;
-            font-weight: bold;
+            overflow-y: auto;
+            padding: 15px;
+            padding-bottom: 20px;
+            max-width: 800px; /* 限制最大寬度，大螢幕置中 */
+            margin: 0 auto;
+            width: 100%;
         }
-        .tab-btn.active {
-            background-color: var(--primary-color);
-            color: #000;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
-        }
-        .tab-btn:not(.active) { border-color: #333; color: #aaa; }
-        .tab-btn:not(.active):hover { border-color: #555; color: #fff; }
-        
-        .admin-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
-        .admin-table th, .admin-table td { border: 1px solid #444; padding: 6px; text-align: left; }
-        .admin-table th { background-color: var(--primary-color); color: black; }
-        .admin-table tr:nth-child(even) { background-color: #1a3449; }
-        .admin-panel { 
-            background-color: var(--panel-bg); padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; 
-            max-height: 65vh; overflow-y: auto; border: 1px solid #333;
-        }
-        .admin-input { width: 100%; padding: 10px; margin: 5px 0 10px 0; background: #000; border: 1px solid #555; color: white; font-size: 1rem; border-radius: 5px;}
-        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 5px; align-items: center; }
-        .btn-delete { background-color: #e91e63; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .btn-add-line { background-color: #4caf50; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 5px; width: 100%; }
-        .summary-box { background-color: var(--success-color); color: black; padding: 10px; border-radius: 10px; margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
-        .history-section { border-top: 1px solid #444; margin-top: 10px; padding-top: 10px; }
-        .last-updated { font-size: 0.7rem; color: #555; margin-top: 5px; }
 
-        /* Loading */
-        #loading-overlay {
+        /* --- 畫面切換 --- */
+        .screen { display: none; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- 卡片樣式 --- */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border: 1px solid #333;
+        }
+
+        /* --- 登入畫面 --- */
+        .login-box {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 80vh;
+        }
+        .pin-dots {
+            font-size: 3rem; letter-spacing: 10px; color: var(--accent);
+            margin: 20px 0; min-height: 60px;
+        }
+
+        /* --- 排程列表 (List View) --- */
+        .section-title {
+            font-size: 1rem; color: var(--text-sub); margin: 10px 0 5px 5px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        
+        /* 進行中任務卡片 (置頂) */
+        .active-job-card {
+            background: linear-gradient(135deg, #1b5e20 0%, #0d3310 100%);
+            border: 2px solid var(--success);
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border { 0% { border-color: #4caf50; } 50% { border-color: #81c784; } 100% { border-color: #4caf50; } }
+
+        .job-item {
+            display: flex; align-items: center;
+            padding: 15px;
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 5px solid var(--primary); /* 預設藍色 */
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .job-item:active { transform: scale(0.98); background-color: #2a2a2a; }
+        
+        .job-left { flex: 0 0 50px; font-size: 1.4rem; font-weight: bold; color: var(--text-sub); text-align: center; }
+        .job-main { flex: 1; padding: 0 15px; }
+        .job-title { font-size: 1.2rem; font-weight: bold; color: #fff; margin-bottom: 4px; }
+        .job-sub { font-size: 0.9rem; color: #aaa; }
+        .job-meta { font-size: 0.8rem; color: #666; margin-top: 4px; }
+        .job-status { font-size: 1.5rem; }
+
+        /* --- 計時畫面 (Working) --- */
+        .timer-display {
+            font-size: 4.5rem; font-weight: bold; color: var(--accent);
+            text-align: center; margin: 20px 0; font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 20px rgba(0, 188, 212, 0.3);
+        }
+        .info-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
+        }
+        .info-box {
+            background: #252525; padding: 15px; border-radius: 8px; text-align: center;
+        }
+        .info-label { font-size: 0.8rem; color: #888; margin-bottom: 5px; }
+        .info-value { font-size: 1.4rem; font-weight: bold; color: #fff; }
+
+        /* --- 鍵盤 (Keypad) --- */
+        .keypad {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            max-width: 400px; margin: 0 auto;
+        }
+        .key-btn {
+            background-color: #333; color: white;
+            font-size: 1.6rem; font-weight: bold;
+            padding: 20px 0; border-radius: 8px; border: none;
+            box-shadow: 0 4px 0 #111; cursor: pointer;
+        }
+        .key-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #111; }
+        .key-confirm { background-color: var(--success); color: black; box-shadow: 0 4px 0 #2e7d32; }
+        .key-clear { background-color: var(--danger); color: white; box-shadow: 0 4px 0 #c62828; }
+
+        /* --- 底部操作列 (Bottom Actions) --- */
+        .bottom-actions {
+            margin-top: auto; /* 推到底部 */
+            display: grid; grid-template-columns: 1fr 2fr; gap: 10px;
+            padding-top: 20px;
+        }
+        .action-btn {
+            padding: 15px; font-size: 1.2rem; font-weight: bold; border: none; border-radius: 8px; color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-secondary { background-color: #424242; }
+        .btn-primary { background-color: var(--warning); color: black; } /* 結束通常用醒目顏色 */
+        .btn-blue { background-color: var(--primary); }
+
+        /* --- 數量輸入/確認頁 --- */
+        .input-instruction {
+            font-size: 1.5rem; text-align: center; margin-bottom: 20px; color: var(--accent); font-weight: bold;
+        }
+        .input-value-display {
+            background: #000; color: var(--success); font-size: 3rem; text-align: center;
+            padding: 10px; border: 2px solid #333; border-radius: 8px; margin-bottom: 20px;
+        }
+        .summary-list {
+            text-align: left; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px;
+        }
+        .summary-item {
+            display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding: 10px 0;
+        }
+        .summary-item:last-child { border-bottom: none; }
+
+        /* --- 生管後台 --- */
+        .admin-header { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px; }
+        .admin-tab { 
+            background: transparent; color: #888; border: 1px solid #555; padding: 8px 16px; border-radius: 20px; white-space: nowrap; 
+        }
+        .admin-tab.active { background: var(--primary); color: black; border-color: var(--primary); font-weight: bold; }
+        
+        /* Loading & Alert */
+        #loading-mask {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); z-index: 2000;
-            display: none; justify-content: center; align-items: center; flex-direction: column;
+            background: rgba(0,0,0,0.85); z-index: 2000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
         }
-        .spinner {
-            border: 8px solid #f3f3f3; border-top: 8px solid var(--primary-color);
-            border-radius: 50%; width: 60px; height: 60px;
-            animation: spin 1s linear infinite;
+        .loader {
+            width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loading-text { color: white; margin-top: 20px; font-size: 1.2rem; font-weight: bold; }
-        
-        /* 刷新按鈕 */
-        .refresh-btn {
-            position: absolute; top: 10px; right: 10px;
-            background: #333; color: white; border: 1px solid #555;
-            padding: 5px 10px; border-radius: 5px; cursor: pointer;
-            z-index: 100;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- 響應式設計 --- */
+        /* 電腦版優化 */
         @media (min-width: 768px) {
-            body { background-color: #2b2b2b; align-items: center; justify-content: center;}
-            .nav-bar {
-                position: absolute; left: 0; top: 0; height: 100%; width: 80px;
-                border-radius: 20px 0 0 20px;
-            }
-            .container {
-                max-width: 750px; background-color: var(--bg-color);
-                box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
-                height: calc(100vh - 40px); border-radius: 20px;
-                overflow: hidden; padding-left: 80px;
-                width: 100%;
-            }
-            h1 { font-size: 2rem; }
-            .keypad-grid { gap: 10px; max-width: 450px; }
-            .admin-table { font-size: 1rem; }
-            #queue-list-container { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        @media (max-width: 767px) {
-            body { flex-direction: column; }
-            .nav-bar {
-                width: 100%; height: 50px; flex-direction: row; padding: 0 10px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            }
-            .nav-icons { flex-direction: row; gap: 15px; margin-bottom: 0; }
-            .version-tag { writing-mode: horizontal-tb; margin-bottom: 0; margin-left: auto; }
-            .nav-title { display: block; } /* 手機版顯示標題 */
-            
-            .container { padding: 5px; padding-top: 55px; height: 100vh; margin: 0; border-radius: 0; width: 100%; }
-            #queue-list-container { grid-template-columns: 1fr; }
-            .sub-item-row { grid-template-columns: 1fr; }
-            .keypad-grid .large-btn { padding: 12px; font-size: 1.4rem; }
+            .keypad { max-width: 500px; gap: 15px; }
+            .key-btn { font-size: 2rem; padding: 25px 0; }
+            .job-item { padding: 20px; }
+            .job-title { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
-    <!-- 導航列 -->
-    <div id="nav-bar" class="nav-bar" style="display:none;">
-        <div class="nav-icons">
-            <button class="nav-btn" onclick="backToQueue()" title="返回列表">
-                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-            </button>
-            <button class="nav-btn" onclick="goHome()" title="回到主畫面">
-                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            </button>
-            <button class="nav-btn" onclick="logout()" title="登出">
-                <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-            </button>
-        </div>
-        <!-- V2.4 新增：補回標題元素，但在 CSS 中設定電腦版隱藏，手機版顯示 -->
-        <div class="nav-title" id="nav-title-display">MES Lite</div>
-        <div class="version-tag">V2.4</div>
-    </div>
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <div class="loading-text">處理中 / Processing...</div>
+    <!-- 頂部導航 -->
+    <div class="nav-bar">
+        <button class="nav-btn" onclick="handleNavBack()" id="nav-back-btn" style="visibility: hidden;">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="nav-brand">MES Lite <span style="font-size:0.7rem; color:#555;">V2.5</span></div>
+        <button class="nav-btn" onclick="logout()" id="nav-logout-btn" style="visibility: hidden;">
+            <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        </button>
     </div>
 
     <div class="container">
-        <!-- 畫面 1: 登入 -->
-        <div id="screen-login" class="screen" style="display: block;">
-            <div class="login-wrapper">
-                <h1>MES LITE <span style="font-size:0.8rem; color:#aaa;">V2.4</span></h1>
-                <div style="font-size: 1rem; margin-bottom: 5px;">
-                    <span data-i18n="login_prompt">請輸入 PIN</span> <span style="color:#aaa;">(生管:9999)</span>
+        
+        <!-- 1. 登入畫面 -->
+        <div id="screen-login" class="screen">
+            <div class="login-box">
+                <div style="margin-bottom: 20px; color: var(--text-sub);">請輸入識別碼 / ENTER PIN</div>
+                <div id="pin-display" class="pin-dots">_ _ _ _</div>
+                <div id="login-msg" style="color: var(--danger); height: 20px; margin-bottom: 10px;"></div>
+                <div class="keypad" id="login-keypad">
+                    <!-- JS 生成 -->
                 </div>
-                <div class="pin-display" id="pin-input"></div>
-                <div id="login-error" class="error"></div>
-                
-                <div id="keypad" class="keypad-grid"></div>
-                
-                <div id="url-alert-box" class="url-alert">🚨 請設定 GAS URL</div>
-                <div class="diagnostic-info">GAS: <span id="api-base-url-display">N/A</span></div>
+                <div style="margin-top: 30px; font-size: 0.8rem; color: #444;">
+                    GAS Status: <span id="gas-status" style="color: var(--success);">Ready</span>
+                </div>
             </div>
         </div>
 
-        <!-- 畫面 1.5: 生管主頁面 -->
-        <div id="screen-planner" class="screen">
-            <h1>📋 生管控制台</h1>
-            <div class="planner-tabs">
-                <button class="tab-btn active" id="btn-tab-queue" onclick="switchPlannerTab('tab-queue')">工單編輯</button>
-                <button class="tab-btn" id="btn-tab-report" onclick="switchPlannerTab('tab-report')">報表輸出</button>
-            </div>
-            <!-- Tab 1 -->
-            <div id="tab-queue" class="planner-tab-content">
-                <div class="admin-panel">
-                    <h3>➕ 建立總工單</h3>
-                    <div class="history-section">
-                        <label style="color: #aaa;">📂 範本 (Templates):</label>
-                        <div style="display:flex; gap:5px;">
-                            <select id="mwo-history-select" class="large-select" style="font-size:1rem; padding:8px; margin-bottom:5px;" onchange="loadMWOFromHistory()">
-                                <option value="">-- 選擇範本 --</option>
-                            </select>
-                            <button class="btn-delete" style="height:40px;" onclick="deleteTemplate()" title="刪除範本">🗑️</button>
-                        </div>
-                    </div>
-                    <label>總工單 ID:</label>
-                    <input type="text" id="batch-mwo" class="admin-input" placeholder="例如: MWO-A">
-                    <h4>子工單項目</h4>
-                    <div id="sub-items-container"></div>
-                    <button class="btn-add-line" onclick="addSubItemRow()">+ 新增項目</button>
-                    <div style="margin-top: 20px; display: flex; gap: 10px;">
-                        <button class="large-btn" style="width:50%; font-size:1.1rem; background-color:#607d8b; border-color:#78909c;" onclick="saveBatchTemplateOnly()">僅儲存範本</button>
-                        <button class="large-btn btn-confirm" style="width:50%; font-size:1.1rem;" onclick="saveBatchWorkOrder()">確認送出</button>
-                    </div>
-                    <button class="large-btn btn-reset" onclick="resetAllData()">⚠️ 重置並恢復預設資料 (修復空白)</button>
-                </div>
-                <h3>目前排程 (<span id="queue-count">0</span> 筆)</h3>
-                <div style="overflow-x:auto;">
-                    <table class="admin-table" id="admin-queue-table">
-                        <thead><tr><th>總工單</th><th>產品</th><th>工序</th><th>操作</th></tr></thead>
-                        <tbody id="admin-queue-body"></tbody>
-                    </table>
-                </div>
-            </div>
-            <!-- Tab 2 -->
-            <div id="tab-report" class="planner-tab-content" style="display:none;">
-                <div class="admin-panel">
-                    <h3>📊 已完成紀錄</h3>
-                    <button class="large-btn" style="width:100%; font-size:1.2rem; background-color:#2196f3;" onclick="calculateReport()">計算選取總工時</button>
-                </div>
-                <div id="report-summary" class="summary-box" style="display:none;">
-                    總人時: <span id="sum-manhours">0</span> 小時<br>良品: <span id="sum-good">0</span> | 損耗: <span id="sum-reject">0</span>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="admin-table" id="admin-report-table">
-                        <thead><tr><th><input type="checkbox" onclick="toggleAllReports(this)"></th><th>時間</th><th>工單</th><th>工序</th><th>人時</th></tr></thead>
-                        <tbody id="admin-report-body"></tbody>
-                    </table>
-                </div>
-                <button class="large-btn btn-back" style="margin-top:20px;" onclick="clearCompletedLogs()">清除紀錄</button>
-            </div>
-        </div>
-
-        <!-- 畫面 2: 待辦排隊 -->
+        <!-- 2. 待辦排程 (Dashboard) -->
         <div id="screen-queue" class="screen">
-            <h1 id="queue-title"></h1>
-            <button class="refresh-btn" onclick="forceReload()">🔄 刷新</button>
-            <div style="font-size: 1rem; color: #00bcd4; margin-bottom: 10px;" data-i18n="select_job_prompt">👆 請點擊欲開始的工單</div>
-            <select id="master-wo-select" class="large-select" onchange="filterQueue()">
-                <option value="ALL">全部顯示</option>
+            <div class="user-welcome" style="margin-bottom: 15px; color: var(--accent); font-weight: bold;">
+                👋 <span id="user-name-display">User</span>
+            </div>
+            
+            <div id="active-jobs-section" style="display: none;">
+                <div class="section-title">🔥 進行中 (RUNNING)</div>
+                <div id="active-jobs-list"></div>
+            </div>
+
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>📋 待辦清單 (QUEUE)</span>
+                <button onclick="forceReload()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:2px 8px; font-size:0.8rem;">↻ 刷新</button>
+            </div>
+            
+            <!-- 過濾器 -->
+            <select id="queue-filter" onchange="renderQueue()" style="width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #444; border-radius: 8px; margin-bottom: 10px; font-size: 1rem;">
+                <option value="ALL">全部顯示 (Show All)</option>
             </select>
-            <div id="queue-list-container"></div>
-            <div class="last-updated" id="last-update-time"></div>
+
+            <div id="queue-list">
+                <!-- JS 生成 -->
+            </div>
         </div>
 
-        <!-- 畫面 2.5: 輸入人數 -->
+        <!-- 3. 人數輸入 -->
         <div id="screen-manpower" class="screen">
-            <h1 style="color: #ffd700;" data-i18n="manpower_input_title">輸入人數</h1>
-            <div style="font-size: 1.2rem;">
-                <span data-i18n="working_wo">工單</span>: <span id="manpower-woid" style="font-weight: bold; color: #00bcd4;"></span>
+            <div class="input-instruction">
+                <div>👥 本次投入人數?</div>
+                <div style="font-size: 1rem; color: #888;">How many workers?</div>
             </div>
-            <div style="margin: 20px auto; max-width: 400px;">
-                <div class="pin-display" id="manpower-input-display" style="letter-spacing: normal; color: #ffd700;">0</div>
-            </div>
-            <div id="manpower-keypad-container" class="keypad-grid"></div>
+            <div id="manpower-display" class="input-value-display">0</div>
+            <div class="keypad" id="manpower-keypad"></div>
         </div>
 
-        <!-- 畫面 3: 正在計時 -->
-        <div id="screen-working" class="screen">
-            <h1 class="working-status">🟢 <span data-i18n="working_in_progress">正在進行中</span></h1>
-            <div style="font-size: 1.5rem; margin-top: 10px;">
-                <span data-i18n="working_wo">工單</span>: <span id="working-woid" style="font-weight: bold;"></span>
+        <!-- 4. 計時畫面 (Working) -->
+        <div id="screen-working" class="screen" style="display: flex; flex-direction: column;">
+            <div class="card active-job-card" style="text-align: center;">
+                <div style="font-size: 0.9rem; color: #cfd8dc; margin-bottom: 5px;">正在執行 (Running)</div>
+                <div id="working-prod" style="font-size: 1.5rem; font-weight: bold;">產品名稱</div>
+                <div id="working-op" style="font-size: 1.1rem; color: #a5d6a7;">工序名稱</div>
             </div>
-            <div style="font-size: 2.5rem; color: #ffd700; margin: 20px 0;">
-                <span data-i18n="manpower_count">人數</span>: <span id="manpower-display"></span>
+
+            <div class="timer-display" id="working-timer">00:00:00</div>
+
+            <div class="info-grid">
+                <div class="info-box">
+                    <div class="info-label">工單號</div>
+                    <div class="info-value" id="working-woid" style="font-size: 1rem;">-</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">目前人數</div>
+                    <div class="info-value" id="working-manpower">-</div>
+                </div>
             </div>
-            <div style="font-size: 3.5rem; color: #00bcd4;">
-                <span data-i18n="elapsed_time">已耗時</span>: <span id="elapsed-time">00:00:00</span>
-            </div>
-            <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
-                <button class="large-btn btn-adjust" style="width: 90%; margin-bottom: 10px;" onclick="adjustManpower()">
-                    <span data-i18n="btn_adjust_manpower">👥 調整人數</span>
+
+            <div class="bottom-actions">
+                <button class="action-btn btn-secondary" onclick="backToQueue()">
+                    <span>⬅ 暫離 (Back)</span>
                 </button>
-                <button class="large-btn btn-back" style="width: 90%; margin-bottom: 10px;" onclick="backToQueue()">
-                    <span data-i18n="btn_back_list">⬅ 暫離 / 返回列表</span>
-                </button>
-                <button class="large-btn btn-confirm" style="background-color: orange; width: 90%; font-size: 1.8rem;" onclick="endJob()">
-                    <span data-i18n="btn_finish">完成工單</span>
+                <button class="action-btn btn-primary" onclick="endJob()">
+                    <span>🏁 完成 (Finish)</span>
                 </button>
             </div>
+            
+            <button onclick="adjustManpower()" style="width: 100%; background: none; border: 1px dashed #555; color: #888; padding: 10px; margin-top: 15px; border-radius: 8px;">
+                👥 調整人數 (Change Manpower)
+            </button>
         </div>
 
-        <!-- 畫面 4: 數量輸入 -->
+        <!-- 5. 數量輸入/確認 -->
         <div id="screen-finish" class="screen">
-            <h1 style="color: #ff9800;" data-i18n="finish_prompt">步驟 4: 輸入數量</h1>
-            <div style="font-size: 1.2rem;">
-                <span data-i18n="finish_wo">工單</span>: <span id="finish-woid" style="font-weight: bold; color: #ffd700;"></span>
+            <div class="input-instruction" id="finish-instruction">
+                <!-- JS 動態填入：輸入良品/不良品/確認 -->
             </div>
-            <div style="margin: 10px auto; max-width: 400px;">
-                <div id="finish-instruction" style="font-size: 1.5rem; color: #00bcd4; margin-bottom: 10px; min-height: 40px; white-space: pre-line;"></div>
-                <div class="pin-display" id="qty-input-display" style="letter-spacing: normal; color: #ffd700;">0</div>
+            
+            <div id="qty-display" class="input-value-display">0</div>
+            
+            <div id="finish-summary" class="summary-list" style="display: none;">
+                <!-- 總結確認清單 -->
             </div>
-            <div id="finish-keypad-container" class="keypad-grid"></div>
+
+            <div class="keypad" id="finish-keypad"></div>
         </div>
+
+        <!-- 6. 生管後台 (Admin) -->
+        <div id="screen-admin" class="screen">
+            <h2>🛠️ 生管控制台</h2>
+            <div class="admin-header">
+                <button class="admin-tab active" onclick="showAdminTab('create')">建立工單</button>
+                <button class="admin-tab" onclick="showAdminTab('history')">匯出報表</button>
+            </div>
+
+            <!-- 建立工單 Tab -->
+            <div id="admin-tab-create">
+                <div class="card">
+                    <label style="color:#aaa; font-size:0.8rem;">總工單 ID (Master WO)</label>
+                    <input type="text" id="admin-mwo" placeholder="MWO-2025..." style="width:100%; padding:10px; margin:5px 0 15px; background:#333; border:1px solid #555; color:white; border-radius:4px;">
+                    
+                    <label style="color:#aaa; font-size:0.8rem;">快速範本 (Templates)</label>
+                    <select id="admin-template" onchange="loadTemplate()" style="width:100%; padding:10px; background:#333; border:1px solid #555; color:white; border-radius:4px; margin-bottom: 10px;">
+                        <option value="">-- 選擇載入 --</option>
+                    </select>
+
+                    <div id="admin-sub-items">
+                        <!-- JS 動態生成輸入框 -->
+                    </div>
+                    
+                    <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#444; border:1px dashed #666; color:#ccc; margin-top:10px;">+ 新增項目</button>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                    <button class="action-btn btn-secondary" onclick="saveTemplate()">儲存範本</button>
+                    <button class="action-btn btn-blue" onclick="publishWorkOrders()">🚀 發布工單</button>
+                </div>
+                <button onclick="resetData()" style="width:100%; margin-top:20px; padding:10px; background:#300; color:#f88; border:none; border-radius:4px;">⚠️ 重置系統資料</button>
+            </div>
+
+            <!-- 匯出報表 Tab -->
+            <div id="admin-tab-history" style="display:none;">
+                <div id="history-list" style="font-size:0.8rem;"></div>
+                <button class="action-btn btn-blue" style="width:100%; margin-top:15px;" onclick="exportReport()">計算勾選項目</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Loading Mask -->
+    <div id="loading-mask">
+        <div class="loader"></div>
+        <div style="color: white; margin-top: 15px; font-size: 1.2rem;">處理中...</div>
     </div>
 
     <script>
-        // 🚨 關鍵：請將此處替換為您部署的 Google Apps Script Webhook URL
-        const GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec'; 
-        const SECURITY_TOKEN = "MES_LITE_2025"; 
-        const VERSION = "V2.4";
-
-        let state = {
-            currentScreen: 'login', currentPIN: '', currentUser: null, language: 'zh',
-            activeSessions: {}, currentViewingWoId: null, currentWoOperationName: null, 
-            currentManpower: 0, finishStep: 0, 
-            finishData: { qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0, qty_good: 0 },
-            currentTypedValue: '0', startTimeISO: null, isSubmitting: false 
+        // ================= CONFIG =================
+        // 🚨 請務必替換為您的 GAS Webhook URL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec";
+        const SECURITY_TOKEN = "MES_LITE_2025";
+        
+        // ================= STATE =================
+        let appData = {
+            queue: [],          // 待辦工單
+            activeJobs: {},     // 進行中: { wo_id: { startTime, manpower, ... } }
+            history: [],        // 已完成紀錄
+            templates: []       // 生管範本
         };
 
+        let uiState = {
+            screen: 'login',
+            pin: '',
+            user: null,
+            lang: 'zh',         // 'zh' | 'vn'
+            targetWoId: null,   // 當前操作的工單ID
+            tempManpower: 0,    // 暫存人數
+            tempQty: '',        // 暫存輸入數字
+            finishStep: 0,      // 0:None, 1:Reject, 2:Collar, 3:Tail, 4:Total, 99:Confirm
+            finishCache: {}     // 暫存結算數據
+        };
+        
         let timerInterval = null;
-        let appQueue = []; let completedLogs = []; let mwoHistory = [];
-        let autoRefreshInterval = null;
 
-        const defaultQueue = [
-            { wo_id: 'WC-TEST-Q1', master_wo_id: 'MWO-TEST', product_name_zh: '測試-鮭魚分切', product_name_vn: 'Test-Cá hồi', operation_name_zh: '分切/分料', operation_name_vn: 'Cắt lát', queue_rank: 1, standard_time_hr: 1.0 },
-            { wo_id: 'WC-TEST-Q2', master_wo_id: 'MWO-TEST', product_name_zh: '測試-真空包裝', product_name_vn: 'Test-Đóng gói', operation_name_zh: '真空包裝', operation_name_vn: 'Đóng gói HK', queue_rank: 2, standard_time_hr: 0.5 }
+        // 預設工單 (若無資料時顯示)
+        const DEMO_QUEUE = [
+            { wo_id: 'TEST-Q1', master: 'DEMO', prod_zh: '鮭魚分切', prod_vn: 'Cá hồi', op_zh: '分切/分料', op_vn: 'Cắt lát', rank: 1, st: 1.0 },
+            { wo_id: 'TEST-Q2', master: 'DEMO', prod_zh: '中段厚切', prod_vn: 'Lát dày', op_zh: '真空包裝', op_vn: 'Hút chân không', rank: 2, st: 0.5 }
         ];
 
-        const i18n = {
-            zh: {
-                login_prompt: '請輸入 4 位識別碼', pin_error: 'PIN 碼錯誤！', select_job_prompt: '👆 請點擊欲開始的工單', job_start_error: '啟動失敗', working_wo: '工單', manpower_count: '人數', elapsed_time: '已耗時', working_in_progress: '正在進行中', 
-                manpower_input_title: '步驟 2: 輸入人數', manpower_error: '人數必須大於 0',
-                finish_prompt: '步驟 4: 輸入數量', finish_wo: '工單', finish_step1: '❌ 不良品/損耗重量 (KG)', finish_step2: '下巴重量 (KG)', finish_step3: '尾段重量 (KG)', finish_step4: '✅ 中後段總重 (KG)', finish_step5_good: '✅ 良品數量 (PCS/KG)', finish_step5_reject: '❌ 不良品數量 (PCS/KG)', btn_finish: '完成工單', btn_confirm_submit: '確認提交', missing_data: '數據不完整', api_error: '連線錯誤', no_job_in_queue: '📭 目前沒有待辦工單', btn_back_list: '⬅ 暫離 / 返回列表', running_status: '進行中',
-                btn_adjust_manpower: '👥 調整人數', confirm_summary_title: '📋 請確認資料:', confirm_btn_text: '確認送出'
-            },
-            vn: {
-                login_prompt: 'NHẬP MÃ PIN', pin_error: 'Sai mã PIN!', select_job_prompt: '👆 CHỌN CÔNG VIỆC', job_start_error: 'Lỗi!', working_wo: 'Đơn hàng', manpower_count: 'Số người', elapsed_time: 'Đã chạy giờ', working_in_progress: 'ĐANG THỰC HIỆN', 
-                manpower_input_title: 'NHẬP SỐ NGƯỜI', manpower_error: 'Số người > 0',
-                finish_prompt: 'NHẬP SỐ LƯỢNG', finish_wo: 'Đơn hàng', finish_step1: '❌ CÂN NẶNG HỎNG', finish_step2: 'CÂN NẶNG CẰM', finish_step3: 'CÂN NẶNG ĐUÔI', finish_step4: '✅ TỔNG CÂN NẶNG', finish_step5_good: '✅ Số lượng tốt', finish_step5_reject: '❌ Số lượng hỏng', btn_finish: 'Hoàn thành', btn_confirm_submit: 'XÁC NHẬN GỬI', missing_data: 'Thiếu dữ liệu', api_error: 'Lỗi kết nối', no_job_in_queue: 'Không có đơn hàng', btn_back_list: '⬅ Quay lại', running_status: 'Running',
-                btn_adjust_manpower: '👥 Thay đổi nhân lực', confirm_summary_title: '📋 Xác nhận dữ liệu:', confirm_btn_text: 'Nhấn Xác nhận'
-            }
+        const I18N = {
+            zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' },
+            vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' }
         };
 
-        function escapeHtml(text) {
-            if (text === null || text === undefined) return "";
-            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        // --- Loading Overlay ---
-        function showLoading() { document.getElementById('loading-overlay').style.display = 'flex'; }
-        function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
-
-        // --- Init & Storage ---
-        function saveQueueToStorage() {
-            localStorage.setItem('mes_lite_queue', JSON.stringify(appQueue));
-        }
-        function saveLogsToStorage() {
-            localStorage.setItem('mes_lite_logs', JSON.stringify(completedLogs));
-        }
-        function saveMWOHistoryToStorage() {
-            localStorage.setItem('mes_mwo_history', JSON.stringify(mwoHistory));
-        }
-        function saveSessionsToStorage() {
-            localStorage.setItem('mes_active_sessions', JSON.stringify(state.activeSessions));
-        }
-        function saveAppStateToStorage() {
-            localStorage.setItem('mes_app_state', JSON.stringify({
-                currentViewingWoId: state.currentViewingWoId,
-                currentWoOperationName: state.currentWoOperationName,
-                currentManpower: state.currentManpower
-            }));
-        }
-
-        function initApp() {
-            // 1. Load Queue: 強制檢查數據完整性
-            const storedQueue = localStorage.getItem('mes_lite_queue');
-            if (storedQueue) { 
-                try {
-                    const parsed = JSON.parse(storedQueue);
-                    if (!Array.isArray(parsed) || parsed.length === 0) { 
-                        appQueue = [...defaultQueue]; 
-                        saveQueueToStorage(); 
-                    } else { 
-                        appQueue = parsed; 
-                    }
-                } catch (e) {
-                    appQueue = [...defaultQueue];
-                    saveQueueToStorage();
-                }
-            } else { 
-                appQueue = [...defaultQueue]; 
-                saveQueueToStorage(); 
+        // ================= INIT & STORAGE =================
+        function init() {
+            loadStorage();
+            // 如果是第一次，載入 Demo
+            if (appData.queue.length === 0 && Object.keys(appData.activeJobs).length === 0) {
+                appData.queue = JSON.parse(JSON.stringify(DEMO_QUEUE));
+                saveStorage();
             }
             
-            const storedLogs = localStorage.getItem('mes_lite_logs');
-            if (storedLogs) completedLogs = JSON.parse(storedLogs);
+            // 檢查 URL 是否設定
+            if (GAS_URL.includes("YOUR_GAS")) alert("⚠️ 請先設定 GAS Webhook URL！");
+            else document.getElementById('gas-status').textContent = "Connected";
 
-            const storedMWOHistory = localStorage.getItem('mes_mwo_history');
-            if (storedMWOHistory) mwoHistory = JSON.parse(storedMWOHistory);
+            renderKeypad('login-keypad', handleLoginInput);
+            showScreen('login');
+            
+            // 自動刷新
+            setInterval(() => {
+                if(uiState.screen === 'working') updateTimerDisplay();
+            }, 1000);
+        }
 
-            const storedSessions = localStorage.getItem('mes_active_sessions');
-            if (storedSessions) state.activeSessions = JSON.parse(storedSessions);
+        function loadStorage() {
+            const raw = localStorage.getItem('mes_v2_data');
+            if (raw) {
+                try { appData = JSON.parse(raw); } catch(e) { console.error("Data corrupted", e); }
+            }
+        }
 
-            const storedAppState = localStorage.getItem('mes_app_state');
-            if (storedAppState) {
-                const savedState = JSON.parse(storedAppState);
-                if (savedState.currentViewingWoId) state.currentViewingWoId = savedState.currentViewingWoId;
-                if (savedState.currentWoOperationName) state.currentWoOperationName = savedState.currentWoOperationName;
-                if (savedState.currentManpower) state.currentManpower = savedState.currentManpower;
+        function saveStorage() {
+            localStorage.setItem('mes_v2_data', JSON.stringify(appData));
+        }
+
+        // ================= NAVIGATION & SCREEN =================
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(el => el.style.display = 'none');
+            document.getElementById('screen-' + id).style.display = 'block';
+            uiState.screen = id;
+
+            // 導航按鈕控制
+            const backBtn = document.getElementById('nav-back-btn');
+            const logoutBtn = document.getElementById('nav-logout-btn');
+            
+            if (id === 'login') {
+                backBtn.style.visibility = 'hidden';
+                logoutBtn.style.visibility = 'hidden';
+            } else {
+                logoutBtn.style.visibility = 'visible';
+                // 如果在子頁面顯示返回
+                backBtn.style.visibility = (id === 'queue' || id === 'admin') ? 'hidden' : 'visible';
             }
 
-            document.getElementById('api-base-url-display').textContent = GAS_WEBHOOK_URL; 
-            if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') document.getElementById('url-alert-box').style.display = 'block';
-            
-            renderKeypad('keypad', 'PIN'); 
-            updateUI();
+            // 畫面特定初始化
+            if (id === 'queue') renderQueue();
+            if (id === 'admin') renderAdminCreate();
+        }
 
-            // 2. 啟動自動更新 (每5秒檢查一次 Storage，實現跨分頁同步)
-            if(autoRefreshInterval) clearInterval(autoRefreshInterval);
-            autoRefreshInterval = setInterval(() => {
-                if (state.currentScreen === 'queue') {
-                    loadQueue(); // 靜默重載
+        function handleNavBack() {
+            if (uiState.screen === 'working' || uiState.screen === 'manpower' || uiState.screen === 'finish') {
+                showScreen('queue');
+            }
+        }
+
+        function logout() {
+            if(confirm("確定登出？")) {
+                uiState.user = null;
+                uiState.pin = '';
+                document.getElementById('pin-display').textContent = '_ _ _ _';
+                showScreen('login');
+            }
+        }
+
+        // ================= LOGIN LOGIC =================
+        function handleLoginInput(key) {
+            if (key === 'C') {
+                uiState.pin = '';
+            } else if (key === 'OK') {
+                if (uiState.pin === '9999') {
+                    // 生管登入
+                    uiState.user = { name: 'Admin', role: 'admin' };
+                    showScreen('admin');
+                } else if (uiState.pin === '1234' || uiState.pin === '5678') {
+                    // 現場主管登入
+                    uiState.lang = (uiState.pin === '1234') ? 'vn' : 'zh';
+                    uiState.user = { name: (uiState.lang==='vn'?'Nguyễn':'陳主管'), role: 'supervisor' };
+                    document.getElementById('user-name-display').textContent = `${I18N[uiState.lang].welcome}, ${uiState.user.name}`;
+                    showScreen('queue');
+                } else {
+                    document.getElementById('login-msg').textContent = "PIN Error / 密碼錯誤";
+                    uiState.pin = '';
                 }
-            }, 5000);
+            } else {
+                if (uiState.pin.length < 4) uiState.pin += key;
+            }
+            // Update UI
+            const dots = uiState.pin.length > 0 ? '● '.repeat(uiState.pin.length) : '_ _ _ _';
+            document.getElementById('pin-display').textContent = dots;
+        }
+
+        // ================= QUEUE LOGIC =================
+        function renderQueue() {
+            const activeList = document.getElementById('active-jobs-list');
+            const queueList = document.getElementById('queue-list');
+            const activeSection = document.getElementById('active-jobs-section');
+            const filter = document.getElementById('queue-filter');
+
+            activeList.innerHTML = '';
+            queueList.innerHTML = '';
+
+            // 1. 渲染進行中任務 (Active Jobs)
+            const activeIds = Object.keys(appData.activeJobs);
+            if (activeIds.length > 0) {
+                activeSection.style.display = 'block';
+                activeIds.forEach(woId => {
+                    const job = appData.queue.find(q => q.wo_id === woId) || { prod_zh:'未知', op_zh:'未知' }; // Fallback
+                    const session = appData.activeJobs[woId];
+                    const card = createJobCard(job, true, session);
+                    activeList.appendChild(card);
+                });
+            } else {
+                activeSection.style.display = 'none';
+            }
+
+            // 2. 更新過濾器選項
+            const masters = [...new Set(appData.queue.map(j => j.master))];
+            const currentFilter = filter.value;
+            filter.innerHTML = `<option value="ALL">全部顯示 (Show All)</option>`;
+            masters.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m; opt.textContent = m;
+                filter.appendChild(opt);
+            });
+            filter.value = currentFilter; // Restore selection
+
+            // 3. 渲染待辦清單
+            const filtered = appData.queue.filter(j => !appData.activeJobs[j.wo_id] && (filter.value === 'ALL' || j.master === filter.value));
             
-            // 3. 跨分頁監聽
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'mes_lite_queue' && state.currentScreen === 'queue') {
-                    loadQueue();
+            if (filtered.length === 0) {
+                queueList.innerHTML = `<div style="text-align:center; color:#555; padding:20px;">📭 無待辦工單 (No Jobs)</div>`;
+            } else {
+                filtered.forEach(job => {
+                    queueList.appendChild(createJobCard(job, false));
+                });
+            }
+        }
+
+        function createJobCard(job, isActive, session) {
+            const div = document.createElement('div');
+            div.className = isActive ? 'job-item active-job-card' : 'job-item';
+            
+            const prodName = uiState.lang === 'vn' ? job.prod_vn : job.prod_zh;
+            const opName = uiState.lang === 'vn' ? job.op_vn : job.op_zh;
+            
+            // 如果是進行中，顯示計時
+            let statusHtml = '';
+            if (isActive) {
+                statusHtml = `<div class="job-status">▶️</div>`; // Play icon
+                div.onclick = () => openWorkingScreen(job.wo_id);
+            } else {
+                div.onclick = () => startJobFlow(job.wo_id);
+            }
+
+            div.innerHTML = `
+                <div class="job-left">Q${job.rank}</div>
+                <div class="job-main">
+                    <div class="job-title">${prodName}</div>
+                    <div class="job-sub">${opName}</div>
+                    <div class="job-meta">${job.master} ${isActive ? '| 👥 '+session.manpower : ''}</div>
+                </div>
+                ${statusHtml}
+            `;
+            return div;
+        }
+
+        // ================= JOB FLOW =================
+        function startJobFlow(woId) {
+            uiState.targetWoId = woId;
+            // Reset Input
+            uiState.tempQty = '0';
+            renderKeypad('manpower-keypad', handleManpowerInput);
+            document.getElementById('manpower-display').textContent = '0';
+            showScreen('manpower');
+        }
+
+        function handleManpowerInput(key) {
+            if (key === 'C') uiState.tempQty = '0';
+            else if (key === 'OK') {
+                const val = parseInt(uiState.tempQty);
+                if (val > 0) {
+                    // 開始計時
+                    startSession(uiState.targetWoId, val);
+                } else {
+                    alert("0?");
                 }
+            } else {
+                uiState.tempQty = (uiState.tempQty === '0' ? key : uiState.tempQty + key);
+            }
+            document.getElementById('manpower-display').textContent = uiState.tempQty;
+        }
+
+        function startSession(woId, manpower) {
+            const now = Date.now();
+            // 記錄 Session
+            appData.activeJobs[woId] = {
+                startISO: new Date().toISOString(), // 傳給後端用
+                lastUpdate: now,                    // 前端計算分段用
+                accTime: 0,                         // 累積工時 (毫秒)
+                manpower: manpower
+            };
+            saveStorage();
+            openWorkingScreen(woId);
+        }
+
+        function openWorkingScreen(woId) {
+            uiState.targetWoId = woId;
+            const job = appData.queue.find(j => j.wo_id === woId);
+            const session = appData.activeJobs[woId];
+            
+            if (!job || !session) { alert("Error loading job"); showScreen('queue'); return; }
+
+            // UI Update
+            document.getElementById('working-prod').textContent = uiState.lang==='vn' ? job.prod_vn : job.prod_zh;
+            document.getElementById('working-op').textContent = uiState.lang==='vn' ? job.op_vn : job.op_zh;
+            document.getElementById('working-woid').textContent = woId;
+            document.getElementById('working-manpower').textContent = session.manpower;
+            
+            updateTimerDisplay();
+            showScreen('working');
+        }
+
+        function updateTimerDisplay() {
+            if (uiState.screen !== 'working' || !uiState.targetWoId) return;
+            const session = appData.activeJobs[uiState.targetWoId];
+            if (!session) return;
+
+            // 簡單顯示當前這一段的時間，或總時間 (這裡簡化為顯示本次登入後的持續時間，實際工時後端會算)
+            const diff = Date.now() - session.lastUpdate; 
+            // 格式化 HH:MM:SS
+            const sec = Math.floor(diff / 1000);
+            const h = Math.floor(sec / 3600).toString().padStart(2,'0');
+            const m = Math.floor((sec % 3600) / 60).toString().padStart(2,'0');
+            const s = (sec % 60).toString().padStart(2,'0');
+            document.getElementById('working-timer').textContent = `${h}:${m}:${s}`;
+        }
+
+        function backToQueue() {
+            showScreen('queue');
+        }
+
+        function adjustManpower() {
+            // 簡單實作：直接跳回人數輸入，輸入後更新 session
+            const current = appData.activeJobs[uiState.targetWoId].manpower;
+            const newVal = prompt(`目前 ${current} 人。請輸入新的人數：`, current);
+            if (newVal && parseInt(newVal) > 0) {
+                // 結算舊工時
+                const now = Date.now();
+                const session = appData.activeJobs[uiState.targetWoId];
+                const duration = now - session.lastUpdate;
+                session.accTime += duration * session.manpower; // 累積 (時間x人)
+                
+                // 更新狀態
+                session.lastUpdate = now;
+                session.manpower = parseInt(newVal);
+                saveStorage();
+                
+                // 刷新 UI
+                document.getElementById('working-manpower').textContent = session.manpower;
+            }
+        }
+
+        // ================= FINISH LOGIC =================
+        function endJob() {
+            // 判斷是否為分切工序 (需要四步輸入)
+            const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
+            const isSlicing = (job.op_zh.indexOf('分切') >= 0);
+
+            uiState.finishStep = isSlicing ? 1 : 4; // 1=Reject, 4=Total(Good)
+            uiState.finishCache = { reject:0, collar:0, tail:0, good:0 };
+            uiState.tempQty = '0';
+            
+            updateFinishUI();
+            renderKeypad('finish-keypad', handleFinishInput);
+            showScreen('finish');
+        }
+
+        function updateFinishUI() {
+            const step = uiState.finishStep;
+            const instr = document.getElementById('finish-instruction');
+            const display = document.getElementById('qty-display');
+            const summary = document.getElementById('finish-summary');
+            const keypad = document.getElementById('finish-keypad');
+
+            summary.style.display = 'none';
+            keypad.style.display = 'grid';
+            display.style.display = 'block';
+
+            if (step === 1) instr.textContent = I18N[uiState.lang].step_reject;
+            else if (step === 2) instr.textContent = I18N[uiState.lang].step_collar;
+            else if (step === 3) instr.textContent = I18N[uiState.lang].step_tail;
+            else if (step === 4) instr.textContent = I18N[uiState.lang].step_total;
+            else if (step === 99) {
+                instr.textContent = I18N[uiState.lang].summary;
+                display.style.display = 'none';
+                summary.style.display = 'block';
+                // Build Summary HTML
+                summary.innerHTML = `
+                    <div class="summary-item"><span>良品 (Good)</span><span>${uiState.finishCache.good}</span></div>
+                    <div class="summary-item"><span>損耗 (Reject)</span><span>${uiState.finishCache.reject}</span></div>
+                    ${uiState.finishCache.collar > 0 ? `<div class="summary-item"><span>下巴 (Collar)</span><span>${uiState.finishCache.collar}</span></div>` : ''}
+                    ${uiState.finishCache.tail > 0 ? `<div class="summary-item"><span>尾段 (Tail)</span><span>${uiState.finishCache.tail}</span></div>` : ''}
+                    <div style="text-align:center; margin-top:10px; color:var(--success);">Press OK to Confirm</div>
+                `;
+            }
+            
+            if (step !== 99) display.textContent = uiState.tempQty;
+        }
+
+        function handleFinishInput(key) {
+            if (key === 'C') {
+                uiState.tempQty = '0';
+                updateFinishUI();
+                return;
+            }
+            
+            if (key === 'OK') {
+                const val = parseFloat(uiState.tempQty);
+                const step = uiState.finishStep;
+
+                if (step === 99) { submitData(); return; } // 最終送出
+
+                // 儲存數值
+                if (step === 1) uiState.finishCache.reject = val;
+                else if (step === 2) uiState.finishCache.collar = val;
+                else if (step === 3) uiState.finishCache.tail = val;
+                else if (step === 4) uiState.finishCache.good = val;
+
+                // 下一步
+                uiState.tempQty = '0';
+                if (step === 1) uiState.finishStep = 2;
+                else if (step === 2) uiState.finishStep = 3;
+                else if (step === 3) uiState.finishStep = 4;
+                else if (step === 4) uiState.finishStep = 99; // Go to confirm
+                
+                updateFinishUI();
+                return;
+            }
+
+            // 數字輸入
+            uiState.tempQty = (uiState.tempQty === '0' ? key : uiState.tempQty + key);
+            updateFinishUI();
+        }
+
+        async function submitData() {
+            // 顯示 Loading
+            document.getElementById('loading-mask').style.display = 'flex';
+            
+            const session = appData.activeJobs[uiState.targetWoId];
+            const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
+            
+            // 計算最終工時
+            const now = Date.now();
+            const lastDuration = now - session.lastUpdate;
+            const totalMs = session.accTime + (lastDuration * session.manpower);
+            // 反推後端需要的格式: start_time
+            // Backend logic: (End - Start) * Manpower. 
+            // 這裡簡化：我們直接送出 man_hours 欄位給 GAS 比較好，但為了相容舊 GAS 代碼，我們用 totalMs 反推一個 start_time
+            // 假設後端用的是 session.manpower (最後人數)，那時間長度要是 totalMs / lastManpower
+            const effectiveDuration = totalMs / session.manpower;
+            const effectiveStart = new Date(now - effectiveDuration).toISOString();
+
+            const payload = {
+                token: SECURITY_TOKEN,
+                wo_id: uiState.targetWoId,
+                operation_name: job.op_zh,
+                supervisor_pin: uiState.pin,
+                manpower_count: session.manpower,
+                start_time: effectiveStart, // Hack for backend calculation
+                qty_good: uiState.finishCache.good,
+                qty_reject: uiState.finishCache.reject,
+                actual_collar_qty: uiState.finishCache.collar,
+                actual_tail_qty: uiState.finishCache.tail
+            };
+
+            try {
+                // 發送 (使用 no-cors 避免簡單請求問題，或者 text/plain)
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // 重要：GAS Webhook 常用此模式
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                // 成功處理
+                delete appData.activeJobs[uiState.targetWoId];
+                // 加入歷史紀錄
+                appData.history.push({ ...payload, end_time: new Date().toISOString() });
+                saveStorage();
+                
+                document.getElementById('loading-mask').style.display = 'none';
+                showScreen('queue');
+
+            } catch (e) {
+                alert("Network Error (但資料已暫存本地)");
+                console.error(e);
+                document.getElementById('loading-mask').style.display = 'none';
+                showScreen('queue');
+            }
+        }
+
+        // ================= ADMIN LOGIC =================
+        function renderAdminCreate() {
+            const container = document.getElementById('admin-sub-items');
+            // 如果是空的，加一行
+            if (!container.innerHTML) addAdminRow();
+            
+            // 渲染範本下拉
+            const sel = document.getElementById('admin-template');
+            sel.innerHTML = '<option value="">-- 選擇範本 --</option>';
+            appData.templates.forEach((t, i) => {
+                const opt = document.createElement('option');
+                opt.value = i; opt.textContent = t.name;
+                sel.appendChild(opt);
             });
         }
 
-        function saveAll() {
-            saveQueueToStorage();
-            saveLogsToStorage();
-            saveMWOHistoryToStorage();
-            saveSessionsToStorage();
-            saveAppStateToStorage();
+        function addAdminRow(prod='', op='') {
+            const container = document.getElementById('admin-sub-items');
+            const div = document.createElement('div');
+            div.className = 'sub-item-row';
+            div.innerHTML = `
+                <input class="admin-input prod" placeholder="產品 (鮭魚...)" value="${prod}">
+                <input class="admin-input op" placeholder="工序 (真空...)" value="${op}">
+                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(div);
         }
 
-        function resetAllData() {
-            if(confirm("確定要重置所有資料？這會刪除本機所有工單、紀錄和設定，並恢復預設值。")) {
+        function saveTemplate() {
+            const mwo = document.getElementById('admin-mwo').value;
+            if(!mwo) return alert("需輸入總工單號做為範本名");
+            
+            const items = [];
+            document.querySelectorAll('#admin-sub-items .sub-item-row').forEach(row => {
+                items.push({ 
+                    prod: row.querySelector('.prod').value, 
+                    op: row.querySelector('.op').value 
+                });
+            });
+            
+            appData.templates.push({ name: mwo, items: items });
+            saveStorage();
+            renderAdminCreate();
+            alert("範本已儲存");
+        }
+
+        function loadTemplate() {
+            const idx = document.getElementById('admin-template').value;
+            if(idx === "") return;
+            const tmpl = appData.templates[idx];
+            document.getElementById('admin-mwo').value = tmpl.name + "-NEW";
+            document.getElementById('admin-sub-items').innerHTML = '';
+            tmpl.items.forEach(i => addAdminRow(i.prod, i.op));
+        }
+
+        function publishWorkOrders() {
+            const mwo = document.getElementById('admin-mwo').value;
+            if(!mwo) return alert("缺單號");
+            
+            let count = 0;
+            document.querySelectorAll('#admin-sub-items .sub-item-row').forEach(row => {
+                const prod = row.querySelector('.prod').value;
+                const op = row.querySelector('.op').value;
+                if(prod && op) {
+                    count++;
+                    appData.queue.push({
+                        wo_id: `${mwo}-Q${Date.now()}-${count}`,
+                        master: mwo,
+                        prod_zh: prod, prod_vn: prod, // 簡化：中越文相同
+                        op_zh: op, op_vn: op,
+                        rank: appData.queue.length + 1,
+                        st: 1.0
+                    });
+                }
+            });
+            saveStorage();
+            alert(`已發布 ${count} 張工單`);
+            document.getElementById('admin-mwo').value = '';
+            document.getElementById('admin-sub-items').innerHTML = '';
+            addAdminRow();
+        }
+        
+        function resetData() {
+            if(confirm("Reset all data?")) {
                 localStorage.clear();
                 location.reload();
             }
         }
 
-        function forceReload() {
-            // 手動強制重載數據
-            const storedQueue = localStorage.getItem('mes_lite_queue');
-            if (storedQueue) {
-                try {
-                   appQueue = JSON.parse(storedQueue);
-                } catch(e) {
-                   appQueue = [...defaultQueue];
-                   saveQueueToStorage();
-                }
-                loadQueue();
-                // 顯示輕量提示
-                const btn = document.querySelector('.refresh-btn');
-                const originalText = btn.textContent;
-                btn.textContent = "已刷新";
-                setTimeout(() => btn.textContent = originalText, 1000);
+        function showAdminTab(tab) {
+            if(tab === 'create') {
+                document.getElementById('admin-tab-create').style.display = 'block';
+                document.getElementById('admin-tab-history').style.display = 'none';
             } else {
-                initApp(); // 重新初始化
-                alert("資料已重置");
+                document.getElementById('admin-tab-create').style.display = 'none';
+                document.getElementById('admin-tab-history').style.display = 'block';
+                renderHistory();
             }
         }
 
-        // --- UI ---
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => screen.style.display = 'none');
-            document.getElementById(screenId).style.display = 'block';
-            state.currentScreen = screenId.replace('screen-', '');
-            
-            const navBar = document.getElementById('nav-bar');
-            if (state.currentScreen === 'login') {
-                navBar.style.display = 'none';
-                renderKeypad('keypad', 'PIN');
-                state.currentPIN = '';
-                document.getElementById('pin-input').textContent = '';
-            } else {
-                navBar.style.display = 'flex';
-                let title = "MES Lite";
-                if(state.currentScreen === 'queue') title = "待辦排程";
-                if(state.currentScreen === 'planner') title = "生管控制台";
-                if(state.currentScreen === 'working') title = "計時中";
-                
-                // V2.4 FIX: 安全檢查 nav-title-display 是否存在
-                const titleEl = document.getElementById('nav-title-display');
-                if(titleEl) titleEl.textContent = title;
-            }
-
-            if (state.currentScreen === 'queue') loadQueue();
-            if (state.currentScreen === 'planner') {
-                renderPlannerQueue(); updateMWOHistoryDropdown();
-                if (document.getElementById('sub-items-container').children.length === 0) addSubItemRow();
-            }
-            saveAll();
-        }
-
-        function updateUI() {
-            const currentLang = state.language;
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (i18n[currentLang] && i18n[currentLang][key]) el.textContent = i18n[currentLang][key];
-            });
-            if (state.currentUser && state.currentUser.name_zh) {
-                const greeting = currentLang === 'vn' ? `Chào Ông ${state.currentUser.name_vn}` : `你好，${state.currentUser.name_zh}`;
-                document.getElementById('queue-title').textContent = greeting;
-            }
-        }
-
-        function goHome() {
-            if (state.currentUser && state.currentUser.user_pin === '9999') { showScreen('screen-planner'); switchPlannerTab('tab-queue'); } 
-            else { backToQueue(); }
-        }
-
-        // --- Planner ---
-        function switchPlannerTab(tabId) {
-            document.querySelectorAll('.planner-tab-content').forEach(el => el.style.display = 'none');
-            document.getElementById(tabId).style.display = 'block';
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            
-            const activeBtnId = tabId === 'tab-queue' ? 'btn-tab-queue' : 'btn-tab-report';
-            document.getElementById(activeBtnId).classList.add('active');
-
-            if (tabId === 'tab-queue') { renderPlannerQueue(); updateMWOHistoryDropdown(); }
-            if (tabId === 'tab-report') renderPlannerReport();
-        }
-
-        function renderPlannerQueue() {
-            const tbody = document.getElementById('admin-queue-body');
-            tbody.innerHTML = '';
-            
-            const countEl = document.getElementById('queue-count');
-            if(countEl) countEl.textContent = appQueue.length;
-
-            if (appQueue.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">無資料</td></tr>';
-                return;
-            }
-            
-            const html = appQueue.map((job, index) => `
-                <tr>
-                    <td>${escapeHtml(job.master_wo_id)}</td>
-                    <td>${escapeHtml(job.product_name_zh)}</td>
-                    <td>${escapeHtml(job.operation_name_zh)}</td>
-                    <td><button class="btn-delete" onclick="deleteWorkOrder(${index})">刪除</button></td>
-                </tr>
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = appData.history.map(h => `
+                <div style="border-bottom:1px solid #333; padding:10px;">
+                    <div>${h.operation_name} - ${h.wo_id}</div>
+                    <div style="color:#666; font-size:0.8rem;">${h.start_time}</div>
+                </div>
             `).join('');
-            
-            tbody.innerHTML = html;
         }
 
-        function addSubItemRow(prod = '', op = '') {
-            const container = document.getElementById('sub-items-container');
-            const div = document.createElement('div');
-            div.className = 'sub-item-row';
-            div.innerHTML = `<input type="text" class="admin-input prod-input" placeholder="產品名稱" value="${escapeHtml(prod)}"><input type="text" class="admin-input op-input" placeholder="工序名稱" value="${escapeHtml(op)}"><button class="btn-delete" onclick="this.parentElement.remove()">X</button>`;
-            container.appendChild(div);
-        }
-
-        function updateMWOHistoryDropdown() {
-            const select = document.getElementById('mwo-history-select');
-            select.innerHTML = '<option value="">-- 選擇範本 --</option>';
-            [...mwoHistory].reverse().forEach(template => {
-                const option = document.createElement('option');
-                option.value = template.mwo_id;
-                option.textContent = `${template.mwo_id} (${template.items.length} 項)`;
-                select.appendChild(option);
+        // ================= HELPERS =================
+        function renderKeypad(id, handler) {
+            const el = document.getElementById(id);
+            el.innerHTML = '';
+            ['7','8','9','4','5','6','1','2','3','C','0','OK'].forEach(k => {
+                const btn = document.createElement('button');
+                btn.className = `key-btn ${k==='OK'?'key-confirm':''} ${k==='C'?'key-clear':''}`;
+                btn.textContent = k;
+                btn.onclick = () => handler(k);
+                el.appendChild(btn);
             });
         }
 
-        function loadMWOFromHistory() {
-            const selectedMWO = document.getElementById('mwo-history-select').value;
-            if (!selectedMWO) return;
-            const template = mwoHistory.find(t => t.mwo_id === selectedMWO);
-            if (!template) return;
-            document.getElementById('batch-mwo').value = template.mwo_id + "-" + Math.floor(Math.random()*1000); 
-            document.getElementById('sub-items-container').innerHTML = '';
-            template.items.forEach(item => addSubItemRow(item.prod, item.op));
+        // Start
+        init();
+        
+        function forceReload() {
+            location.reload();
         }
-
-        function deleteTemplate() {
-            const selectedMWO = document.getElementById('mwo-history-select').value;
-            if (!selectedMWO) { alert("請先選擇要刪除的範本"); return; }
-            if (confirm(`確定要刪除範本 ${selectedMWO} 嗎？`)) {
-                mwoHistory = mwoHistory.filter(t => t.mwo_id !== selectedMWO);
-                saveMWOHistoryToStorage();
-                updateMWOHistoryDropdown();
-                document.getElementById('mwo-history-select').value = "";
-            }
-        }
-
-        function saveBatchTemplateOnly() {
-            const mwo = document.getElementById('batch-mwo').value;
-            if (!mwo) { alert("請輸入總工單 ID"); return; }
-            const templateItems = [];
-            document.querySelectorAll('.sub-item-row').forEach((row) => {
-                const prod = row.querySelector('.prod-input').value;
-                const op = row.querySelector('.op-input').value;
-                if (prod && op) templateItems.push({ prod: prod, op: op });
-            });
-            if (templateItems.length > 0) {
-                const existIdx = mwoHistory.findIndex(x => x.mwo_id === mwo);
-                if (existIdx >= 0) {
-                    if(!confirm(`範本 ${mwo} 已存在，覆蓋？`)) return;
-                    mwoHistory[existIdx] = { mwo_id: mwo, items: templateItems };
-                } else {
-                    mwoHistory.push({ mwo_id: mwo, items: templateItems });
-                }
-                saveMWOHistoryToStorage(); updateMWOHistoryDropdown();
-                alert(`範本 ${mwo} 已儲存！`);
-            }
-        }
-
-        function saveBatchWorkOrder() {
-            const mwo = document.getElementById('batch-mwo').value;
-            if (!mwo) { alert("請輸入總工單 ID"); return; }
-            let addedCount = 0; const templateItems = [];
-            document.querySelectorAll('.sub-item-row').forEach((row, index) => {
-                const prod = row.querySelector('.prod-input').value;
-                const op = row.querySelector('.op-input').value;
-                if (prod && op) {
-                    const uniqueId = `${mwo}-Q${Date.now()}-${index}`;
-                    appQueue.push({
-                        wo_id: uniqueId, master_wo_id: mwo, 
-                        product_name_zh: prod, product_name_vn: prod, 
-                        operation_name_zh: op, operation_name_vn: op, 
-                        queue_rank: appQueue.length + 1, standard_time_hr: 1.0
-                    });
-                    templateItems.push({ prod: prod, op: op });
-                    addedCount++;
-                }
-            });
-            if (addedCount > 0) {
-                const existIdx = mwoHistory.findIndex(x => x.mwo_id === mwo);
-                if (existIdx < 0) mwoHistory.push({ mwo_id: mwo, items: templateItems });
-                saveAll(); renderPlannerQueue(); updateMWOHistoryDropdown();
-                alert(`成功新增 ${addedCount} 筆工單！`);
-                document.getElementById('batch-mwo').value = '';
-                document.getElementById('sub-items-container').innerHTML = '';
-                addSubItemRow(); 
-            } else { alert("請至少輸入一個項目"); }
-        }
-
-        function deleteWorkOrder(index) {
-            if (confirm("刪除此工單？")) { appQueue.splice(index, 1); saveAll(); renderPlannerQueue(); }
-        }
-
-        function renderPlannerReport() {
-            const tbody = document.getElementById('admin-report-body');
-            tbody.innerHTML = '';
-            [...completedLogs].reverse().forEach((log, index) => {
-                const time = new Date(log.endTime).toLocaleString();
-                const realIndex = completedLogs.length - 1 - index;
-                tbody.innerHTML += `<tr><td><input type="checkbox" class="report-checkbox" data-index="${realIndex}"></td><td>${time}</td><td>${escapeHtml(log.wo_id)}</td><td>${escapeHtml(log.operation_name)}</td><td>${parseFloat(log.totalManHours).toFixed(2)}</td></tr>`;
-            });
-        }
-
-        function toggleAllReports(source) { document.querySelectorAll('.report-checkbox').forEach(cb => cb.checked = source.checked); }
-
-        function calculateReport() {
-            const checkboxes = document.querySelectorAll('.report-checkbox:checked');
-            if (checkboxes.length === 0) { alert("請先勾選項目"); return; }
-            let totalHours = 0, totalGood = 0, totalReject = 0;
-            checkboxes.forEach(cb => {
-                const log = completedLogs[cb.getAttribute('data-index')];
-                totalHours += parseFloat(log.totalManHours || 0);
-                totalGood += parseFloat(log.qty_good || 0);
-                totalReject += parseFloat(log.qty_reject || 0);
-            });
-            document.getElementById('sum-manhours').textContent = totalHours.toFixed(2);
-            document.getElementById('sum-good').textContent = totalGood.toFixed(2);
-            document.getElementById('sum-reject').textContent = totalReject.toFixed(2);
-            document.getElementById('report-summary').style.display = 'block';
-        }
-
-        function clearCompletedLogs() {
-            if (confirm("清除紀錄？")) { completedLogs = []; saveAll(); renderPlannerReport(); document.getElementById('report-summary').style.display = 'none'; }
-        }
-
-        function logout() { state.currentUser = null; showScreen('screen-login'); }
-
-        // --- Keypad & Input ---
-        function renderKeypad(targetElementId, targetInputType) {
-            state.inputTarget = targetInputType;
-            const layout = ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', 'OK'];
-            const keypadDiv = document.getElementById(targetElementId);
-            keypadDiv.innerHTML = '';
-            layout.forEach(key => {
-                const btn = document.createElement('div');
-                btn.className = 'large-btn';
-                if (key === 'OK') { btn.className += ' btn-confirm'; btn.textContent = '確認'; } 
-                else { btn.textContent = key; }
-                btn.style.width = '100%'; 
-                btn.onclick = () => handleKeypadInput(key);
-                keypadDiv.appendChild(btn);
-            });
-        }
-
-        function handleKeypadInput(key) {
-            if (state.isSubmitting && key === 'OK') return;
-            if (state.finishStep === 7) { if (key === 'OK') handleConfirmKey(); return; }
-
-            let currentInput = (state.currentScreen === 'login') ? state.currentPIN : state.currentTypedValue;
-            let displayEl = document.getElementById((state.currentScreen === 'login') ? 'pin-input' : (state.currentScreen === 'manpower' ? 'manpower-input-display' : 'qty-input-display'));
-            document.getElementById('login-error').textContent = ''; 
-
-            if (key >= '0' && key <= '9') {
-                if (currentInput.length < 8) currentInput = (currentInput === '0' || currentInput === '') ? key : currentInput + key;
-            } else if (key === 'C') {
-                currentInput = (state.currentScreen === 'login') ? '' : '0';
-            } else if (key === 'OK') {
-                if (state.currentScreen === 'login') validateLogin(currentInput);
-                else if (state.currentScreen === 'manpower') confirmManpower(parseInt(currentInput));
-                else if (state.currentScreen === 'finish') processFinishStep(parseFloat(currentInput));
-                return;
-            }
-            
-            if (state.currentScreen === 'login') {
-                state.currentPIN = currentInput;
-                displayEl.textContent = '*'.repeat(currentInput.length);
-            } else {
-                state.currentTypedValue = currentInput;
-                displayEl.textContent = currentInput;
-            }
-        }
-
-        // --- Logic ---
-        function validateLogin(pin) {
-            if (pin === '9999') { showScreen('screen-planner'); switchPlannerTab('tab-queue'); return; }
-            if (pin.length !== 4) { document.getElementById('login-error').textContent = i18n[state.language].pin_error; return; }
-            let user = (pin === '1234') ? { user_pin: pin, name_zh: '阮氏美', name_vn: 'Nguyễn Thị Mỹ', language: 'vn' } : 
-                       (pin === '5678') ? { user_pin: pin, name_zh: '陳經理', name_vn: 'Trần Quản Lý', language: 'zh' } : null;
-            if (!user) { document.getElementById('login-error').textContent = i18n[state.language].pin_error; return; }
-            state.currentUser = user; state.language = user.language; updateUI(); showScreen('screen-queue');
-        }
-
-        function loadQueue() {
-            // 安全讀取
-            const storedQueue = localStorage.getItem('mes_lite_queue');
-            if (storedQueue) {
-                 try { appQueue = JSON.parse(storedQueue); } catch(e) { appQueue = []; }
-            }
-
-            const masterWOs = [...new Set(appQueue.map(item => item.master_wo_id))];
-            const select = document.getElementById('master-wo-select');
-            const currentSelection = select.value;
-            select.innerHTML = `<option value="ALL">${state.language === 'vn' ? 'Tất cả' : '全部顯示'}</option>`;
-            masterWOs.forEach(mwo => {
-                const option = document.createElement('option');
-                option.value = mwo; option.textContent = mwo; select.appendChild(option);
-            });
-            if (masterWOs.includes(currentSelection)) select.value = currentSelection;
-            filterQueue();
-        }
-
-        function filterQueue() {
-            const selected = document.getElementById('master-wo-select').value;
-            const list = document.getElementById('queue-list-container');
-            list.innerHTML = '';
-            
-            list.style.display = 'grid';
-
-            const filtered = appQueue.filter(job => selected === 'ALL' || job.master_wo_id === selected);
-            
-            if (filtered.length > 0) {
-                const html = filtered.map(job => {
-                    const prod = state.language === 'vn' ? job.product_name_vn : job.product_name_zh;
-                    const op = state.language === 'vn' ? job.operation_name_vn : job.operation_name_zh;
-                    const isActive = state.activeSessions[job.wo_id] !== undefined;
-                    const activeClass = isActive ? 'active-job' : '';
-                    const badge = isActive ? `<div class="status-badge">${i18n[state.language].running_status}</div>` : '';
-                    
-                    const safeWoId = escapeHtml(job.wo_id);
-                    const safeOp = escapeHtml(op);
-                    
-                    return `<div class="queue-item ${activeClass}" onclick="selectJob('${safeWoId}', '${safeOp}')">
-                        <span class="q-num">Q${job.queue_rank}</span>
-                        <div style="flex-grow:1;">
-                            <span class="main-lang">${escapeHtml(prod)}</span>
-                            <span class="aux-lang">${safeOp}</span>
-                        </div>
-                        <div class="wo-details">單號: ${escapeHtml(job.master_wo_id)}</div>
-                        <div class="wo-details" style="color:#b2dfdb;">工時: ${job.standard_time_hr} Hr | 狀態: ${isActive ? '進行中' : '待辦'}</div>
-                        ${badge}</div>`;
-                }).join('');
-                
-                list.innerHTML = html;
-            } else { 
-                list.innerHTML = `<div class="empty-message">${i18n[state.language].no_job_in_queue}</div>`;
-                list.style.display = 'block';
-            }
-            // 更新時間戳記
-            const timeEl = document.getElementById('last-update-time');
-            if(timeEl) timeEl.textContent = "Updated: " + new Date().toLocaleTimeString();
-        }
-
-        function selectJob(woId, operationName) {
-            state.currentViewingWoId = woId; state.currentWoOperationName = operationName;
-            
-            if (state.activeSessions[woId]) {
-                const session = state.activeSessions[woId];
-                state.currentManpower = session.manpower;
-                if (timerInterval) clearInterval(timerInterval);
-                timerInterval = setInterval(updateTimer, 1000);
-                document.getElementById('working-woid').textContent = woId;
-                document.getElementById('manpower-display').textContent = session.manpower;
-                saveAll(); 
-                showScreen('screen-working'); updateTimer();
-            } else {
-                state.currentTypedValue = '0';
-                document.getElementById('manpower-woid').textContent = woId;
-                document.getElementById('manpower-input-display').textContent = '0';
-                renderKeypad('manpower-keypad-container', 'MANPOWER_INPUT');
-                showScreen('screen-manpower');
-            }
-        }
-
-        function adjustManpower() {
-            state.currentTypedValue = '0';
-            document.getElementById('manpower-woid').textContent = state.currentViewingWoId;
-            document.getElementById('manpower-input-display').textContent = '0';
-            renderKeypad('manpower-keypad-container', 'MANPOWER_INPUT');
-            showScreen('screen-manpower');
-        }
-
-        function confirmManpower(value) {
-            if (value <= 0) { alert(i18n[state.language].manpower_error); return; }
-            if (state.activeSessions[state.currentViewingWoId]) {
-                const session = state.activeSessions[state.currentViewingWoId];
-                const now = Date.now();
-                session.accumulatedManHours = (session.accumulatedManHours || 0) + ((now - session.lastUpdateTime) / 3600000.0) * session.manpower;
-                session.lastUpdateTime = now; session.manpower = value;
-                state.currentManpower = value;
-                if (timerInterval) clearInterval(timerInterval);
-                timerInterval = setInterval(updateTimer, 1000);
-                document.getElementById('working-woid').textContent = state.currentViewingWoId;
-                document.getElementById('manpower-display').textContent = state.currentManpower;
-                saveAll(); 
-                showScreen('screen-working');
-            } else {
-                state.currentManpower = value;
-                startJobSession();
-            }
-        }
-
-        function startJobSession() {
-            const now = Date.now();
-            state.activeSessions[state.currentViewingWoId] = {
-                startTime: now, lastUpdateTime: now, startTimeISO: new Date(now).toISOString(),
-                manpower: state.currentManpower, operationName: state.currentWoOperationName, accumulatedManHours: 0
-            };
-            saveAll(); 
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(updateTimer, 1000);
-            document.getElementById('working-woid').textContent = state.currentViewingWoId;
-            document.getElementById('manpower-display').textContent = state.currentManpower;
-            showScreen('screen-working');
-        }
-
-        function backToQueue() {
-            if (timerInterval) clearInterval(timerInterval);
-            state.currentViewingWoId = null; showScreen('screen-queue');
-        }
-
-        function updateTimer() {
-            const session = state.activeSessions[state.currentViewingWoId];
-            if (!session) return;
-            const elapsed = Date.now() - session.startTime;
-            const seconds = Math.floor(elapsed / 1000);
-            const h = String(Math.floor(seconds/3600)).padStart(2,'0');
-            const m = String(Math.floor((seconds%3600)/60)).padStart(2,'0');
-            const s = String(seconds%60).padStart(2,'0');
-            document.getElementById('elapsed-time').textContent = `${h}:${m}:${s}`;
-        }
-
-        function endJob() { startFinishFlow(); }
-
-        function startFinishFlow() {
-            if (timerInterval) clearInterval(timerInterval);
-            state.currentTypedValue = '0';
-            document.getElementById('finish-woid').textContent = state.currentViewingWoId;
-            const isSlicing = state.currentWoOperationName && state.currentWoOperationName.includes('分切');
-            state.finishStep = isSlicing ? 1 : 5;
-            document.getElementById('finish-instruction').innerHTML = `<span class="main-lang">${i18n[state.language][isSlicing ? 'finish_step1' : 'finish_step5_good']}</span>`;
-            state.finishData = { qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0, qty_good: 0 };
-            document.getElementById('qty-input-display').textContent = '0';
-            renderKeypad('finish-keypad-container', 'QTY_INPUT');
-            showScreen('screen-finish');
-        }
-
-        function processFinishStep(value) {
-            const instruction = document.getElementById('finish-instruction');
-            const lang = state.language;
-            if (state.finishStep >= 1 && state.finishStep <= 4) {
-                if (state.finishStep === 1) { state.finishData.qty_reject = value; state.finishStep = 2; instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step2}</span>`; }
-                else if (state.finishStep === 2) { state.finishData.actual_collar_qty = value; state.finishStep = 3; instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step3}</span>`; }
-                else if (state.finishStep === 3) { state.finishData.actual_tail_qty = value; state.finishStep = 4; instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step4}</span>`; }
-                else if (state.finishStep === 4) { state.finishData.qty_good = value; state.finishStep = 7; showSummary(); return; }
-            } else if (state.finishStep === 5) {
-                state.finishData.qty_good = value; state.finishStep = 6; instruction.innerHTML = `<span class="main-lang">${i18n[lang].finish_step5_reject}</span>`;
-            } else if (state.finishStep === 6) {
-                state.finishData.qty_reject = value; state.finishStep = 7; showSummary(); return;
-            }
-            if (state.finishStep !== 7) { state.currentTypedValue = '0'; document.getElementById('qty-input-display').textContent = '0'; }
-        }
-
-        function showSummary() {
-            const instruction = document.getElementById('finish-instruction');
-            const lang = state.language;
-            let summaryHTML = `<div style="font-size:0.9rem; text-align:left; line-height:1.5; padding:10px; background:#112233; border-radius:10px;">
-                ${i18n[lang].confirm_summary_title}<br>
-                ----------------<br>
-                ${i18n[lang].finish_step5_good}: <b style="color:#4caf50; font-size:1.2rem;">${state.finishData.qty_good}</b><br>
-                ${i18n[lang].finish_step5_reject}: <b style="color:#ff5722; font-size:1.2rem;">${state.finishData.qty_reject}</b><br>`;
-            if (state.finishData.actual_collar_qty > 0) {
-                summaryHTML += `下巴: <b>${state.finishData.actual_collar_qty}</b> | 尾段: <b>${state.finishData.actual_tail_qty}</b><br>`;
-            }
-            summaryHTML += `----------------<br><span style="color:#00e676; font-weight:bold;">${i18n[lang].confirm_btn_text}</span></div>`;
-            instruction.innerHTML = summaryHTML;
-            document.getElementById('qty-input-display').textContent = '';
-        }
-
-        function handleConfirmKey() {
-            if (state.finishStep === 7) confirmFinishWithYields();
-        }
-
-        async function confirmFinishWithYields() {
-            if (GAS_WEBHOOK_URL === 'YOUR_GAS_WEBHOOK_URL') { alert("🚨 錯誤: 請替換 GAS URL!"); return; }
-            if (state.isSubmitting) return; 
-            
-            showLoading(); // 顯示轉圈圈
-            state.isSubmitting = true;
-            
-            const session = state.activeSessions[state.currentViewingWoId];
-            if (!session) { alert("錯誤：無工單資訊"); hideLoading(); state.isSubmitting = false; return; }
-
-            // 計算邏輯移到 try 內 (防止 NaN 崩潰)
-            try {
-                const now = Date.now();
-                // 防呆：確保數值有效
-                const lastUpdate = session.lastUpdateTime || now;
-                const manpower = session.manpower || 1;
-                
-                const totalManHours = (session.accumulatedManHours || 0) + ((now - lastUpdate) / 3600000.0) * manpower;
-                
-                const effectiveDurationMs = (totalManHours / manpower) * 3600000.0;
-                // 防呆：避免 Invalid Date
-                const effectiveStartTimeISO = !isNaN(effectiveDurationMs) ? new Date(now - effectiveDurationMs).toISOString() : new Date().toISOString();
-    
-                const postData = {
-                    token: SECURITY_TOKEN, supervisor_pin: state.currentUser.user_pin, operation_name: session.operationName,
-                    manpower_count: session.manpower, wo_id: state.currentViewingWoId,
-                    start_time: effectiveStartTimeISO, qty_good: state.finishData.qty_good, qty_reject: state.finishData.qty_reject,
-                    actual_collar_qty: state.finishData.actual_collar_qty, actual_tail_qty: state.finishData.actual_tail_qty
-                };
-
-                const response = await fetch(GAS_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(postData) });
-                const data = await response.json();
-                
-                if (data.success) {
-                    completedLogs.push({ ...postData, endTime: new Date().toISOString(), totalManHours: totalManHours });
-                    saveLogsToStorage();
-                    delete state.activeSessions[state.currentViewingWoId];
-                    saveAll();
-                    state.currentViewingWoId = null; state.finishData = {}; 
-                    showScreen('screen-queue');
-                } else { 
-                    alert(`提交失敗: ${data.message}`); 
-                }
-            } catch (error) { 
-                alert(`${i18n[state.language].api_error}: ${error.message}`); 
-                showScreen('screen-queue'); 
-            } finally { 
-                state.isSubmitting = false; 
-                hideLoading(); 
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => { initApp(); });
     </script>
 </body>
 </html>
