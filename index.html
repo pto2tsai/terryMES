@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V3.6</title>
+    <title>MES Lite V4.0 Cloud</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V3.6 總工單匯總版 */
+        /* CSS: V4.0 雲端同步版 (Cloud First) */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
@@ -148,6 +148,13 @@
         .report-table th { background: #333; color: var(--primary); padding: 8px; text-align: left; }
         .report-table td { border-bottom: 1px solid #444; padding: 8px; }
         .report-total { font-weight: bold; color: var(--success); }
+        
+        /* Checkbox */
+        .checkbox-wrapper {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 15px; 
+            padding: 10px; background: #222; border-radius: 5px; border: 1px solid #444;
+        }
+        .checkbox-wrapper input { width: 20px; height: 20px; accent-color: var(--success); }
 
         /* --- Loading --- */
         #loading-mask {
@@ -181,7 +188,7 @@
         <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V3.6</span></div>
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V4.0</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
                 
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
@@ -189,7 +196,9 @@
 
                 <div id="login-keypad"></div>
 
-                <div style="margin-top:20px; font-size:0.8rem; color:#444;">GAS: <span id="gas-status">Checking...</span></div>
+                <div style="margin-top:20px; font-size:0.8rem; color:#444;">
+                    Status: <span id="cloud-status">Connecting...</span>
+                </div>
             </div>
         </div>
 
@@ -201,13 +210,16 @@
                     <span id="user-name">User</span>
                 </div>
             </div>
+
+            <!-- 進行中區域 -->
             <div id="active-section" style="margin-bottom: 20px; display: none;">
                 <div style="font-size:0.9rem; color:var(--success); margin-bottom:5px; font-weight:bold;">🔥 進行中 (RUNNING)</div>
                 <div id="active-list"></div>
             </div>
+
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <div style="font-size:0.9rem; color:#888;">待辦事項 (To Do)</div>
-                <button onclick="syncQueue()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 刷新</button>
+                <div style="font-size:0.9rem; color:#888;">待辦事項 (To Do) <span id="last-sync-time" style="font-size:0.7rem; color:#555;"></span></div>
+                <button onclick="syncData()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 雲端同步</button>
             </div>
             <div id="queue-list"></div>
         </div>
@@ -224,10 +236,12 @@
         <!-- 4. 計時畫面 -->
         <div id="screen-working" class="screen" style="display: flex; flex-direction: column;">
             <div class="job-card-large">
-                <div style="color:#4caf50; font-size:0.9rem; font-weight:bold; letter-spacing:1px;">● 正在執行 (RUNNING)</div>
+                <div style="color:#4caf50; font-size:0.9rem; font-weight:bold; letter-spacing:1px;">● 正在執行 (CLOUD)</div>
                 <h2 id="work-prod" style="margin:10px 0; font-size:1.8rem; color:white;">產品名稱</h2>
                 <div id="work-op" style="color:var(--accent); font-size:1.4rem; font-weight:bold;">工序名稱</div>
                 <div id="work-id" style="color:#555; font-size:0.8rem; margin-top:10px;">ID</div>
+                <!-- 數據要求提示 -->
+                <div id="work-req-data" style="color:#ff9800; font-size:0.9rem; margin-top:5px; display:none;">⚠️ 結束時需輸入數據</div>
             </div>
             <div class="timer-box">
                 <div class="timer-val" id="timer">00:00:00</div>
@@ -250,7 +264,7 @@
             <div id="finish-keypad"></div>
         </div>
 
-        <!-- 6. 生管後台 (V3.6) -->
+        <!-- 6. 生管後台 -->
         <div id="screen-admin" class="screen">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="margin:0;">🛠️ 生管控制台</h2>
@@ -275,7 +289,15 @@
                         </div>
                     </div>
                     <h3>新增工單 (Batch)</h3>
+                    
                     <input id="admin-mwo" class="admin-input" placeholder="總工單號 (例: MWO-2025-A)">
+                    <input type="number" id="admin-weight" class="admin-input" placeholder="原料總重 (KG)">
+                    
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="admin-req-data">
+                        <label for="admin-req-data" style="color:#fff; font-size:0.9rem; cursor:pointer;">要求現場輸入生產數據 (Input Required)</label>
+                    </div>
+
                     <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px;">
                         <label style="color:#888; font-size:0.9rem;">工序清單</label>
                         <div id="admin-sub-items"></div>
@@ -285,18 +307,17 @@
                         <button class="large-btn btn-secondary" style="font-size:1rem;" onclick="saveTemplate()">💾 存為範本</button>
                         <button class="large-btn btn-confirm" style="font-size:1rem;" onclick="publishWorkOrders()">🚀 發布工單</button>
                     </div>
-                    <button class="large-btn btn-danger" style="margin-top:20px; font-size:1rem; background:#300; border-color:#500;" onclick="adminReset()">⚠️ 重置所有資料</button>
                 </div>
                 <div style="margin-top:20px;">
-                    <h3>目前排程</h3>
+                    <h3>雲端排程預覽</h3>
                     <div id="admin-list"></div>
                 </div>
             </div>
 
-            <!-- 匯出報表 Tab (新增: 統計模式切換) -->
+            <!-- 匯出報表 Tab -->
             <div id="admin-tab-history" style="display:none;">
                 <div class="admin-panel">
-                    <h3>📊 工時統計</h3>
+                    <h3>📊 人工時數總計表</h3>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <span style="color:#888; font-size:0.8rem;">統計維度:</span>
                         <select id="report-group-by" onchange="renderSummaryTable()" style="background:#222; color:white; border:1px solid #555; padding:5px; border-radius:4px;">
@@ -304,20 +325,14 @@
                             <option value="by-master">依總工單 (By Master WO)</option>
                         </select>
                     </div>
-                    
-                    <div id="summary-table-container" style="margin-top:15px;">
-                        <!-- JS 生成總計表 -->
-                    </div>
-                    
+                    <div id="summary-table-container" style="margin-top:15px;"></div>
                     <button class="large-btn btn-secondary" style="margin-top:20px;" onclick="renderSummaryTable()">🔄 刷新統計</button>
                 </div>
-
                 <div style="margin-top:20px;">
                     <h3>📜 詳細紀錄列表</h3>
                     <div id="history-list" style="font-size:0.8rem; color:#aaa;"></div>
                 </div>
             </div>
-
         </div>
 
     </div>
@@ -334,211 +349,417 @@
                 <span>登出</span>
             </button>
         </div>
-        <div class="version-tag">V3.6</div>
+        <div class="version-tag">V4.0</div>
     </div>
 
-    <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">處理中...</div></div>
+    <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">雲端同步中...</div></div>
 
     <script>
-        // ================= CONFIG =================
+        // 🚨 請務必替換為您的 GAS Webhook URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec";
         const TOKEN = "MES_LITE_2025";
 
+        // State
         let appData = { queue: [], activeJobs: {}, history: [], templates: [] }; 
         let uiState = { screen: 'login', pin: '', user: null, lang: 'zh', targetWoId: null, tempVal: '0', finishStep: 0, finishCache: {}, isAdjusting: false };
-        let timerInterval = null;
+        let syncTimer = null;
 
-        const DEMO_QUEUE = [{ wo_id: 'DEMO-1', master: 'SAMPLE', prod_zh: '測試品A', prod_vn: 'Test A', op_zh: '包裝', op_vn: 'Packing', rank: 1 }];
-        const I18N = { zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' }, vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' } };
+        const I18N = {
+            zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' },
+            vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' }
+        };
 
         function init() {
-            loadStorage();
-            if (!appData.queue || appData.queue.length === 0) { appData.queue = JSON.parse(JSON.stringify(DEMO_QUEUE)); saveStorage(); }
+            loadStorage(); // 先載入本地緩存以快速顯示
             renderATMKeypad('login-keypad', handleLoginInput);
             renderATMKeypad('manpower-keypad', handleManpowerInput);
             renderATMKeypad('finish-keypad', handleFinishInput);
-            if (GAS_URL.includes("YOUR")) document.getElementById('gas-status').textContent = "URL 未設定";
-            else document.getElementById('gas-status').textContent = "Ready";
+            
+            if (GAS_URL.includes("YOUR")) alert("請設定 GAS URL!");
+            
             showScreen('login');
+            // 啟動即刻同步
+            syncData(true);
+            
+            // 自動同步 (每10秒)
+            syncTimer = setInterval(() => {
+                // 只有在登入後才自動同步，避免在登入頁面一直轉
+                if (uiState.user) syncData(true); 
+            }, 10000);
+
             setInterval(() => { if(uiState.screen === 'working') updateTimerDisplay(); }, 1000);
         }
 
         function loadStorage() {
             try {
-                const raw = localStorage.getItem('mes_v3_data');
+                const raw = localStorage.getItem('mes_v4_data');
                 if (raw) appData = JSON.parse(raw);
-                if (!appData.templates) appData.templates = []; 
+                if (!appData.templates) appData.templates = [];
+                if (!appData.history) appData.history = [];
+                // 確保 activeJobs 是物件
+                if (Array.isArray(appData.activeJobs)) appData.activeJobs = {};
             } catch(e) { console.error(e); }
         }
 
-        function saveStorage() { localStorage.setItem('mes_v3_data', JSON.stringify(appData)); }
+        function saveStorage() { localStorage.setItem('mes_v4_data', JSON.stringify(appData)); }
 
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(el => el.style.display = 'none');
-            document.getElementById('screen-' + id).style.display = 'block';
-            uiState.screen = id;
-            if (id === 'queue') renderQueue();
-            if (id === 'admin') { renderAdminCreate(); renderSummaryTable(); }
-            const nav = document.querySelector('.nav-bar');
-            if (id === 'login') nav.style.display = 'none'; else nav.style.display = 'flex';
+        // --- CLOUD SYNC ---
+        async function syncData(silent = false) {
+            if (!silent) document.getElementById('loading-mask').style.display = 'flex';
+            document.getElementById('cloud-state').textContent = "Syncing...";
+
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'GET_STATE', token: TOKEN })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    // 更新本地數據 (以雲端為準)
+                    appData.queue = data.queue || [];
+                    
+                    // Active Jobs 需要特殊處理：保留本地的計時狀態，但同步雲端列表
+                    // 這裡簡化：直接使用雲端列表，但如果本地正在計時，則嘗試合併
+                    // 為了多機同步，我們信任雲端的 Active 列表
+                    // 但為了計時準確，我們需要一個本地的基準時間
+                    
+                    const cloudActiveMap = {};
+                    if (data.active) {
+                        data.active.forEach(job => {
+                            cloudActiveMap[job.wo_id] = job;
+                            // 如果本地沒有這個任務的狀態，則初始化
+                            if (!appData.activeJobs[job.wo_id]) {
+                                appData.activeJobs[job.wo_id] = {
+                                    ...job,
+                                    lastUpdate: Date.now(),
+                                    accTime: job.accTime || 0
+                                };
+                            } else {
+                                // 如果本地有，更新來自雲端的資訊 (如人數變更)
+                                appData.activeJobs[job.wo_id].manpower = job.manpower;
+                                appData.activeJobs[job.wo_id].req_data = job.req_data; // 同步設定
+                            }
+                        });
+                    }
+                    
+                    // 清除本地有但雲端沒有的任務 (可能已被其他裝置完成)
+                    Object.keys(appData.activeJobs).forEach(id => {
+                        if (!cloudActiveMap[id]) delete appData.activeJobs[id];
+                    });
+
+                    saveStorage();
+                    document.getElementById('cloud-state').textContent = "Connected ✅";
+                    document.getElementById('last-sync-time').textContent = new Date().toLocaleTimeString();
+                    
+                    if (uiState.screen === 'queue') renderQueue();
+                    if (uiState.screen === 'admin') renderAdminList();
+                }
+            } catch (e) {
+                console.error("Sync failed", e);
+                document.getElementById('cloud-state').textContent = "Offline ⚠️";
+            } finally {
+                if (!silent) document.getElementById('loading-mask').style.display = 'none';
+            }
         }
 
-        function logout() { if(confirm("確定登出？")) { uiState.user = null; showScreen('login'); } }
+        async function sendAction(payload, silent = false) {
+            if(!silent) document.getElementById('loading-mask').style.display = 'flex';
+            payload.token = TOKEN;
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // 立即觸發一次同步以更新狀態
+                    await syncData(true);
+                    return true;
+                } else {
+                    alert("Server Error: " + data.message);
+                    return false;
+                }
+            } catch (e) {
+                alert("連線錯誤 (Network Error)");
+                return false;
+            } finally {
+                if(!silent) document.getElementById('loading-mask').style.display = 'none';
+            }
+        }
 
+        // --- Navigation ---
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(e => e.style.display = 'none');
+            document.getElementById('screen-' + id).style.display = 'block';
+            uiState.screen = id;
+            
+            const nav = document.querySelector('.nav-bar');
+            if (id === 'login') nav.style.display = 'none'; else nav.style.display = 'flex';
+
+            if (id === 'queue') {
+                renderQueue();
+                syncData(true); 
+            }
+            if (id === 'admin') renderAdminCreate();
+        }
+
+        function logout() { if(confirm("登出?")) { uiState.user = null; showScreen('login'); } }
+
+        // --- Login ---
         function handleLoginInput(key) {
-            if(key === 'C') uiState.pin = '';
-            else if(key === 'OK') {
-                if(uiState.pin === '9999') { uiState.user = { name: 'Admin', role: 'admin' }; showScreen('admin'); } 
-                else if(['1234', '5678'].includes(uiState.pin)) {
+            if (key === 'C') uiState.pin = '';
+            else if (key === 'OK') {
+                if (uiState.pin === '9999') {
+                    uiState.user = { name: 'Admin', role: 'admin' }; showScreen('admin');
+                } else if (['1234', '5678'].includes(uiState.pin)) {
                     uiState.lang = (uiState.pin === '1234') ? 'vn' : 'zh';
-                    uiState.user = { name: uiState.lang==='vn'?'Nguyễn':'主管', role: 'op' }; // 修正稱謂
+                    uiState.user = { name: '主管', pin: uiState.pin };
                     document.getElementById('user-name').textContent = uiState.user.name;
                     showScreen('queue');
-                } else { document.getElementById('login-msg').textContent = "密碼錯誤"; uiState.pin = ''; }
-            } else { if(uiState.pin.length < 4) uiState.pin += key; }
+                } else {
+                    alert("密碼錯誤"); uiState.pin = '';
+                }
+            } else { if (uiState.pin.length < 4) uiState.pin += key; }
             document.getElementById('pin-display').textContent = uiState.pin.length > 0 ? '● '.repeat(uiState.pin.length) : '_ _ _ _';
         }
 
+        // --- Queue ---
         function renderQueue() {
             const list = document.getElementById('queue-list');
             const activeList = document.getElementById('active-list');
             const activeSec = document.getElementById('active-section');
-            list.innerHTML = ''; activeList.innerHTML = ''; let hasActive = false;
+            list.innerHTML = ''; activeList.innerHTML = '';
+            
+            let hasActive = false;
             Object.keys(appData.activeJobs).forEach(id => {
-                const job = appData.queue.find(q => q.wo_id === id);
-                if(job) {
-                    const session = appData.activeJobs[id];
-                    const div = document.createElement('div');
-                    div.className = 'queue-item active-job';
-                    div.innerHTML = `<div class="q-info"><h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3><p>👥 ${session.manpower} | ${job.master}</p></div><div style="font-size:1.5rem;">▶️</div>`;
-                    div.onclick = () => openWorkingScreen(id);
-                    activeList.appendChild(div); hasActive = true;
-                }
+                const session = appData.activeJobs[id]; // Use session data directly
+                const div = document.createElement('div');
+                div.className = 'queue-item active-job';
+                div.innerHTML = `<div class="q-info"><h3>${session.prod} - ${session.op}</h3><p>👥 ${session.manpower} | ${session.master}</p></div><div style="font-size:1.5rem;">▶️</div>`;
+                div.onclick = () => openWorkingScreen(id);
+                activeList.appendChild(div);
+                hasActive = true;
             });
             activeSec.style.display = hasActive ? 'block' : 'none';
-            const todo = appData.queue.filter(q => !appData.activeJobs[q.wo_id]);
-            if(todo.length === 0) list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">無待辦工單</div>';
-            todo.forEach(job => {
+
+            if (appData.queue.length === 0) list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">無待辦工單</div>';
+            appData.queue.forEach(job => {
                 const div = document.createElement('div');
                 div.className = 'queue-item';
-                div.innerHTML = `<div class="q-info"><h3>${uiState.lang==='vn'?job.prod_vn:job.prod_zh} - ${uiState.lang==='vn'?job.op_vn:job.op_zh}</h3><p>${job.master}</p></div>`;
+                div.innerHTML = `<div class="q-info"><h3>${uiState.lang==='vn'?job.prod_zh:job.prod_zh} - ${uiState.lang==='vn'?job.op_zh:job.op_zh}</h3><p>${job.master}</p></div>`;
                 div.onclick = () => prepareJob(job.wo_id);
                 list.appendChild(div);
             });
         }
-        function syncQueue() { loadStorage(); renderQueue(); alert("列表已刷新"); }
 
+        // --- Work Flow ---
         function prepareJob(id) {
-            uiState.targetWoId = id; uiState.isAdjusting = false; uiState.tempVal = '0';
+            uiState.targetWoId = id;
+            uiState.isAdjusting = false;
+            uiState.tempVal = '0';
             document.querySelector('#screen-manpower h2').textContent = "👥 開工設定";
             document.getElementById('manpower-display').textContent = '0';
             showScreen('manpower');
         }
+
         function adjustManpower() {
             uiState.isAdjusting = true; uiState.tempVal = '0';
             document.querySelector('#screen-manpower h2').textContent = "👥 調整人數";
             document.getElementById('manpower-display').textContent = '0';
             showScreen('manpower');
         }
-        function cancelManpower() { if(uiState.isAdjusting) showScreen('working'); else showScreen('queue'); }
+
+        function cancelManpower() {
+            if (uiState.isAdjusting) showScreen('working'); else showScreen('queue');
+        }
+
         function handleManpowerInput(key) {
-            if(key === 'C') uiState.tempVal = '0';
-            else if(key === 'OK') {
+            if (key === 'C') uiState.tempVal = '0';
+            else if (key === 'OK') {
                 const val = parseInt(uiState.tempVal);
-                if(val > 0) { if(uiState.isAdjusting) updateManpowerSession(val); else startSession(uiState.targetWoId, val); }
-                else alert("人數需大於 0");
-            } else { uiState.tempVal = (uiState.tempVal === '0' ? key : uiState.tempVal + key); }
+                if (val > 0) {
+                    if (uiState.isAdjusting) doUpdateManpower(val);
+                    else doStartJob(val);
+                } else alert("> 0");
+            } else {
+                uiState.tempVal = (uiState.tempVal === '0' ? key : uiState.tempVal + key);
+            }
             document.getElementById('manpower-display').textContent = uiState.tempVal;
         }
 
-        function startSession(woId, manpower) {
-            const now = Date.now();
-            appData.activeJobs[woId] = { startISO: new Date().toISOString(), lastUpdate: now, accTime: 0, manpower: manpower };
-            saveStorage(); openWorkingScreen(woId);
-        }
-        function updateManpowerSession(newVal) {
-            const now = Date.now();
-            const session = appData.activeJobs[uiState.targetWoId];
-            const duration = now - session.lastUpdate;
-            session.accTime += duration * session.manpower;
-            session.lastUpdate = now; session.manpower = newVal;
-            saveStorage();
-            document.getElementById('work-man').textContent = session.manpower; showScreen('working');
+        async function doStartJob(manpower) {
+            const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
+            const success = await sendAction({
+                action: 'START_JOB',
+                wo_id: uiState.targetWoId,
+                master: job.master,
+                prod: job.prod_zh,
+                op: job.op_zh,
+                pin: uiState.user.pin,
+                manpower: manpower,
+                start_time: new Date().toISOString(),
+                req_data: job.req_data // 傳送設定
+            });
+            if (success) openWorkingScreen(uiState.targetWoId);
         }
 
-        function openWorkingScreen(woId) {
-            uiState.targetWoId = woId;
-            const job = appData.queue.find(j => j.wo_id === woId);
-            const session = appData.activeJobs[woId];
-            if(!job || !session) { showScreen('queue'); return; }
-            document.getElementById('work-prod').textContent = uiState.lang==='vn' ? job.prod_vn : job.prod_zh;
-            document.getElementById('work-op').textContent = uiState.lang==='vn' ? job.op_vn : job.op_zh;
-            document.getElementById('work-id').textContent = woId;
-            document.getElementById('work-man').textContent = session.manpower;
-            updateTimerDisplay(); showScreen('working');
+        async function doUpdateManpower(newManpower) {
+            const job = appData.activeJobs[uiState.targetWoId];
+            const now = Date.now();
+            const start = new Date(job.lastUpdate || job.startISO); 
+            const segmentMs = now - start;
+            const segmentHours = (segmentMs / 3600000.0) * job.manpower;
+            const newAcc = (job.accTime || 0) + segmentHours;
+
+            const success = await sendAction({
+                action: 'UPDATE_JOB',
+                wo_id: uiState.targetWoId,
+                manpower: newManpower,
+                start_time: new Date(now).toISOString(), 
+                acc_time: newAcc
+            });
+            
+            if(success) openWorkingScreen(uiState.targetWoId);
         }
+
+        function openWorkingScreen(id) {
+            uiState.targetWoId = id;
+            const job = appData.activeJobs[id];
+            if (!job) { showScreen('queue'); return; }
+
+            document.getElementById('work-prod').textContent = job.prod;
+            document.getElementById('work-op').textContent = job.op;
+            document.getElementById('work-id').textContent = id;
+            document.getElementById('work-man').textContent = job.manpower;
+            
+            // 顯示是否需要數據
+            const reqEl = document.getElementById('work-req-data');
+            reqEl.style.display = job.req_data ? 'block' : 'none';
+
+            updateTimerDisplay();
+            showScreen('working');
+        }
+
         function updateTimerDisplay() {
-            if(uiState.screen !== 'working' || !uiState.targetWoId) return;
-            const session = appData.activeJobs[uiState.targetWoId];
-            if(!session) return;
-            const diff = Date.now() - session.lastUpdate; 
-            const sec = Math.floor(diff / 1000);
-            const h = String(Math.floor(sec/3600)).padStart(2,'0');
-            const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
-            const s = String(sec%60).padStart(2,'0');
+            if (uiState.screen !== 'working') return;
+            const job = appData.activeJobs[uiState.targetWoId];
+            if (!job) return;
+
+            const lastUpdate = new Date(job.startISO); 
+            const now = new Date();
+            const diff = Math.floor((now - lastUpdate) / 1000);
+            
+            const h = String(Math.floor(diff/3600)).padStart(2,'0');
+            const m = String(Math.floor((diff%3600)/60)).padStart(2,'0');
+            const s = String(diff%60).padStart(2,'0');
             document.getElementById('timer').textContent = `${h}:${m}:${s}`;
         }
+
         function backToQueue() { showScreen('queue'); }
 
+        // ================= FINISH =================
         function endJob() {
-            uiState.finishStep = 99; uiState.finishCache = { reject:0, collar:0, tail:0, good:0 }; uiState.tempVal = '0';
-            updateFinishUI(); showScreen('finish');
+            const session = appData.activeJobs[uiState.targetWoId];
+            // 1. 判斷是否要求數據
+            // 2. 判斷是否為分切工序 (保留舊邏輯作為 fallback)
+            const isSlicing = session.op.indexOf('分切') >= 0;
+            
+            if (session.req_data || isSlicing) {
+                uiState.finishStep = 1; 
+            } else {
+                uiState.finishStep = 99; 
+            }
+
+            uiState.finishCache = { reject:0, collar:0, tail:0, good:0 };
+            uiState.tempVal = '0';
+            updateFinishUI();
+            showScreen('finish');
         }
+
         function updateFinishUI() {
             const step = uiState.finishStep;
             const instr = document.getElementById('finish-instruction');
             const display = document.getElementById('qty-display');
             const summary = document.getElementById('finish-summary');
             const keypad = document.getElementById('finish-keypad');
-            summary.style.display = 'none'; keypad.style.display = 'grid'; display.style.display = 'none';
-            if (step === 99) {
+
+            summary.style.display = 'none'; keypad.style.display = 'grid'; display.style.display = 'block';
+
+            if (step === 1) instr.textContent = I18N[uiState.lang].step_reject;
+            else if (step === 2) instr.textContent = I18N[uiState.lang].step_collar;
+            else if (step === 3) instr.textContent = I18N[uiState.lang].step_tail;
+            else if (step === 4) instr.textContent = I18N[uiState.lang].step_total;
+            else if (step === 99) {
                 instr.textContent = I18N[uiState.lang].summary;
+                display.style.display = 'none';
                 summary.style.display = 'block';
-                summary.innerHTML = `<div style="text-align:center; padding:20px;"><div style="font-size:1.2rem; color:var(--success); margin-bottom:10px;">確認結束工單？</div><div style="color:#888;">(本次紀錄僅包含工時)</div></div><div style="text-align:center; margin-top:10px; color:var(--accent);">按 OK 送出</div>`;
+                summary.innerHTML = `
+                    <div style="text-align:center; padding:20px;">
+                        <div style="font-size:1.2rem; color:var(--success); margin-bottom:10px;">確認結束工單？</div>
+                        <div style="color:#888;">${uiState.finishCache.good > 0 ? '(包含生產數據)' : '(僅工時)'}</div>
+                    </div>
+                    <div style="text-align:center; margin-top:10px; color:var(--accent);">按 OK 送出</div>
+                `;
             }
-        }
-        function handleFinishInput(key) { if (key === 'OK' && uiState.finishStep === 99) submitData(); }
-
-        async function submitData() {
-            document.getElementById('loading-mask').style.display = 'flex';
-            const session = appData.activeJobs[uiState.targetWoId];
-            const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
-            const now = Date.now();
-            const totalMs = session.accTime + ((now - session.lastUpdate) * session.manpower);
-            const effectiveDuration = totalMs / session.manpower;
-            const effectiveStart = new Date(now - effectiveDuration).toISOString();
-            const payload = {
-                token: TOKEN, action: 'LOG_WORK', wo_id: uiState.targetWoId, operation_name: job.op_zh,
-                supervisor_pin: uiState.pin, manpower_count: session.manpower, start_time: effectiveStart,
-                master_wo_id: job.master, // 新增：紀錄總工單號
-                qty_good: 0, qty_reject: 0, actual_collar_qty: 0, actual_tail_qty: 0
-            };
-            try {
-                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(payload) });
-                delete appData.activeJobs[uiState.targetWoId];
-                appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
-                appData.history.push({ ...payload, end_time: new Date().toISOString() });
-                saveStorage();
-                document.getElementById('loading-mask').style.display = 'none';
-                showScreen('queue');
-            } catch(e) {
-                alert("連線失敗 (已存本地)");
-                document.getElementById('loading-mask').style.display = 'none';
-                showScreen('queue');
-            }
+            if (step !== 99) display.textContent = uiState.tempVal;
         }
 
-        // ================= ADMIN LOGIC =================
+        function handleFinishInput(key) {
+            if (key === 'C') { uiState.tempVal = '0'; updateFinishUI(); return; }
+            if (key === 'OK') {
+                const val = parseFloat(uiState.tempVal);
+                const step = uiState.finishStep;
+                if (step === 99) { doFinishJob(); return; }
+
+                if (step === 1) uiState.finishCache.reject = val;
+                else if (step === 2) uiState.finishCache.collar = val;
+                else if (step === 3) uiState.finishCache.tail = val;
+                else if (step === 4) uiState.finishCache.good = val;
+
+                uiState.tempVal = '0';
+                // 簡單邏輯：若 op 是分切，走4步；否則若有 req_data，只走 1(損耗) & 4(良品)
+                // 這裡為了簡化代碼，統一走 4 步，非分切時下巴/尾段填 0 即可
+                if (step === 1) uiState.finishStep = 2;
+                else if (step === 2) uiState.finishStep = 3;
+                else if (step === 3) uiState.finishStep = 4;
+                else if (step === 4) uiState.finishStep = 99;
+                updateFinishUI();
+                return;
+            }
+            uiState.tempVal = (uiState.tempVal === '0' ? key : uiState.tempVal + key);
+            updateFinishUI();
+        }
+
+        async function doFinishJob() {
+            const job = appData.activeJobs[uiState.targetWoId];
+            const now = new Date();
+            const start = new Date(job.startISO); 
+            const segmentMs = now - start;
+            const segmentHours = (segmentMs / 3600000.0) * job.manpower;
+            const finalTotalHours = (job.accTime || 0) + segmentHours;
+
+            await sendAction({
+                action: 'FINISH_JOB',
+                wo_id: uiState.targetWoId,
+                op: job.op,
+                pin: job.pin,
+                manpower: job.manpower,
+                total_hours: finalTotalHours.toFixed(3),
+                qty_good: uiState.finishCache.good,
+                qty_reject: uiState.finishCache.reject,
+                collar: uiState.finishCache.collar,
+                tail: uiState.finishCache.tail
+            });
+            
+            delete appData.activeJobs[uiState.targetWoId];
+            saveStorage();
+            showScreen('queue');
+        }
+
+        // ================= ADMIN =================
         function renderAdminCreate() {
             const container = document.getElementById('admin-sub-items');
             if (!container.innerHTML) addAdminRow();
@@ -595,67 +816,52 @@
         }
         function publishWorkOrders() {
             const mwo = document.getElementById('admin-mwo').value;
+            const weight = document.getElementById('admin-weight').value;
+            const reqData = document.getElementById('admin-req-data').checked;
             if(!mwo) return alert("缺單號");
+            const jobs = [];
             let count = 0;
             document.querySelectorAll('#admin-sub-items .sub-item-row').forEach(row => {
                 const prod = row.querySelector('.prod').value; const op = row.querySelector('.op').value;
                 if(prod && op) {
                     count++;
-                    appData.queue.push({
+                    jobs.push({
                         wo_id: `${mwo}-Q${Date.now()}-${count}`,
-                        master: mwo, prod_zh: prod, prod_vn: prod, op_zh: op, op_vn: op, rank: appData.queue.length+1
+                        master: mwo, prod_zh: prod, op_zh: op, rank: count, st: 1.0,
+                        total_weight: weight, req_data: reqData
                     });
                 }
             });
-            saveStorage(); renderAdminList(); alert(`已發布 ${count} 張工單`);
+            
+            sendAction({ action: 'ADD_JOBS', jobs: jobs });
+            alert(`已送出發布請求 (${count}筆)`);
+            
             document.getElementById('admin-mwo').value = '';
             document.getElementById('admin-sub-items').innerHTML = '';
             addAdminRow();
         }
+        
         function renderAdminList() {
             const div = document.getElementById('admin-list');
             div.innerHTML = appData.queue.map(q => `<div style="border-bottom:1px solid #333; padding:5px;">${q.master} - ${q.prod_zh} - ${q.op_zh}</div>`).join('');
         }
-        function adminReset() { if(confirm("重置所有資料？")) { localStorage.clear(); location.reload(); } }
+        function adminReset() { if(confirm("重置資料？")) { localStorage.clear(); location.reload(); } }
 
-        // --- 2. 人工時數總計表邏輯 (V3.6) ---
         function renderSummaryTable() {
             const container = document.getElementById('summary-table-container');
-            const groupBy = document.getElementById('report-group-by').value; // by-op or by-master
+            const groupBy = document.getElementById('report-group-by').value; 
             container.innerHTML = '';
-
             if (!appData.history || appData.history.length === 0) {
-                container.innerHTML = '<div style="color:#666; text-align:center;">尚無歷史資料</div>';
-                return;
+                container.innerHTML = '<div style="color:#666; text-align:center;">尚無歷史資料</div>'; return;
             }
-
             const summary = {};
             appData.history.forEach(log => {
-                // 決定分組鍵值
-                let key = (groupBy === 'by-master') ? (log.master_wo_id || '未知工單') : (log.operation_name || '未知工序');
-                
+                let key = (groupBy === 'by-master') ? (log.wo_id.split('-')[0] || '未知工單') : (log.operation_name || '未知工序'); 
                 if (!summary[key]) { summary[key] = { count: 0, totalHours: 0 }; }
                 summary[key].count++;
-                
-                const start = new Date(log.start_time);
-                const end = new Date(log.end_time || new Date());
-                const durationMs = end - start;
-                const hours = (durationMs / 3600000) * log.manpower_count;
-                summary[key].totalHours += hours;
+                summary[key].totalHours += parseFloat(log.total_hours || 0);
             });
-
-            let html = `
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>${groupBy === 'by-master' ? '總工單號' : '工序名稱'}</th>
-                            <th>次數</th>
-                            <th style="text-align:right;">總人時 (Hr)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
+            let html = `<table class="report-table"><thead><tr><th>${groupBy === 'by-master' ? '總工單號' : '工序名稱'}</th><th>次數</th><th style="text-align:right;">總人時 (Hr)</th></tr></thead><tbody>`;
             let grandTotal = 0;
             for (const [key, data] of Object.entries(summary)) {
                 html += `<tr><td>${key}</td><td>${data.count}</td><td style="text-align:right; color:#4caf50;">${data.totalHours.toFixed(2)}</td></tr>`;
@@ -673,9 +879,9 @@
                 document.getElementById('admin-tab-create').style.display = 'none';
                 document.getElementById('admin-tab-history').style.display = 'block';
                 const histList = document.getElementById('history-list');
+                // 為了顯示歷史，我們需要從 Server 拉取 Log，這裡暫時顯示本地 History (實際應透過 sync 拉取)
                 histList.innerHTML = appData.history.slice().reverse().map(h => {
-                    const time = new Date(h.end_time).toLocaleString();
-                    return `<div style="border-bottom:1px solid #333; padding:5px;">${time} | ${h.master_wo_id || '?'} - ${h.operation_name}</div>`;
+                    return `<div style="border-bottom:1px solid #333; padding:5px;">${h.wo_id} - ${h.operation_name} (${h.total_hours}hr)</div>`;
                 }).join('');
                 renderSummaryTable();
             }
@@ -689,7 +895,7 @@
             ['1','2','3','4','5','6','7','8','9','C','0','OK'].forEach(k => {
                 const btn = document.createElement('div');
                 btn.textContent = k;
-                if(k === 'C') btn.className = 'circle-btn clear'; else if(k === 'OK') btn.className = 'circle-btn ok'; else btn.className = 'circle-btn';
+                if(k==='C') btn.className='circle-btn clear'; else if(k==='OK') btn.className='circle-btn ok'; else btn.className = 'circle-btn';
                 btn.addEventListener('click', (e) => { e.preventDefault(); callback(k); });
                 el.appendChild(btn);
             });
