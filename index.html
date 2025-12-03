@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V4.2 Admin Layout</title>
+    <title>MES Lite V4.5 Scroll Fix</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V4.2 生管雙欄佈局優化版 */
+        /* CSS: V4.5 滾軸修復版 (Scroll Fix) */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
             --bg-card: #1e1e1e;
-            --text-main: #ffffff;
-            --text-sub: #b0b0b0;
+            --text-main: #e0e0e0;
+            --text-sub: #a0a0a0;
             
             --primary: #2196f3; 
             --accent: #00bcd4;  
@@ -25,6 +25,12 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
+        /* 捲軸美化 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0; padding: 0;
@@ -32,7 +38,7 @@
             color: var(--text-main);
             height: 100vh;
             display: flex; flex-direction: row;
-            overflow: hidden;
+            overflow: hidden; /* Body 不捲動，由 Container 捲動 */
         }
 
         /* --- 導航列 --- */
@@ -62,13 +68,14 @@
 
         /* --- 主容器 --- */
         .container {
-            flex: 1; padding: 10px; overflow-y: auto;
+            flex: 1; padding: 10px; 
+            overflow-y: auto; /* 確保這裡可以捲動 */
             display: flex; flex-direction: column; align-items: center;
             position: relative;
         }
         
         .screen { 
-            display: none; width: 100%; max-width: 100%; 
+            display: none; width: 100%; max-width: 600px; padding-bottom: 20px;
         }
 
         /* --- 統一 ATM 圓形鍵盤 --- */
@@ -136,38 +143,43 @@
         }
 
         /* --- 生管後台 --- */
-        .admin-dashboard-layout {
-            display: flex; flex-direction: column; gap: 20px;
-        }
-
-        .admin-panel, .admin-list-panel { 
-            width: 100%; background: #111; padding: 15px; border-radius: 10px; 
-            border: 1px solid #333;
-        }
-        /* 生管右側列表專用樣式 */
-        .admin-list-panel {
-            max-height: 70vh; 
-            overflow-y: auto;
-        }
-
-        .admin-input { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; margin-bottom: 10px; font-size: 1rem; border-radius: 5px;}
+        .admin-dashboard-layout { display: flex; flex-direction: column; gap: 20px; height: 100%; }
         
-        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 8px; }
-        .btn-row-delete { background: #444; border: 1px solid #666; color: #ccc; border-radius: 4px; cursor: pointer; }
-        .template-area { background: #222; padding: 10px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 15px; }
+        /* 修改：允許生管面板滾動 */
+        .admin-panel { 
+            background-color: var(--bg-card); padding: 20px; border-radius: 12px; 
+            border: 1px solid #333; flex: 1; display: flex; flex-direction: column;
+            overflow-y: auto; /* 關鍵修正 */
+        }
+        
+        .admin-input { 
+            width: 100%; padding: 12px 15px; 
+            background: #2b2b2b; border: 1px solid #555; 
+            color: white; font-size: 1.1rem; border-radius: 6px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .admin-input:focus { border-color: var(--accent); background: #333; outline: none; }
+        
+        .sub-items-wrapper {
+            flex: 1; overflow-y: auto; margin: 15px 0; min-height: 150px;
+            border: 1px dashed #444; padding: 10px; border-radius: 8px;
+        }
+        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 50px; gap: 10px; margin-bottom: 10px; animation: fadeIn 0.2s ease; }
+        .btn-row-delete { background: #333; border: 1px solid #555; color: #ff5252; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-row-delete:hover { background: #444; }
 
-        /* 報表表格 */
+        .template-area { background: #151515; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; border-left: 4px solid var(--primary); }
+        .template-select { flex: 1; }
+        
+        .admin-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-top: auto; padding-top: 10px;}
+
         .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
-        .report-table th { background: #333; color: var(--primary); padding: 8px; text-align: left; }
-        .report-table td { border-bottom: 1px solid #444; padding: 8px; }
+        .report-table th { background: #333; color: var(--primary); padding: 10px; text-align: left; }
+        .report-table td { border-bottom: 1px solid #444; padding: 10px; }
         .report-total { font-weight: bold; color: var(--success); }
         
-        /* Checkbox */
-        .checkbox-wrapper {
-            display: flex; align-items: center; gap: 10px; margin-bottom: 15px; 
-            padding: 10px; background: #222; border-radius: 5px; border: 1px solid #444;
-        }
-        .checkbox-wrapper input { width: 20px; height: 20px; accent-color: var(--success); }
+        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #2a2a2a; border-radius: 5px; border: 1px solid #444; cursor: pointer; }
+        .checkbox-wrapper input { width: 20px; height: 20px; accent-color: var(--success); cursor: pointer; }
 
         /* --- Loading --- */
         #loading-mask {
@@ -189,55 +201,45 @@
             .nav-btn { margin-bottom: 0; flex-direction: column; padding: 5px; }
             .nav-icons { flex-direction: row; justify-content: space-around; width: 100%; gap: 0; }
             .version-tag { display: none; }
-            .sub-item-row { grid-template-columns: 1fr; gap: 5px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-            .btn-row-delete { grid-column: 1 / -1; padding: 8px; margin-top: 2px; }
-            /* 手機版堆疊顯示 */
+            .sub-item-row { grid-template-columns: 1fr; gap: 5px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+            .btn-row-delete { grid-column: 1 / -1; padding: 10px; margin-top: 5px; background: #422; border-color: #f44336; }
             .admin-dashboard-layout { display: flex; flex-direction: column; }
         }
 
-        /* RWD 電腦版優化 (V4.2 新增) */
+        /* RWD 電腦版 */
         @media (min-width: 769px) {
             .container {
-                max-width: 1000px; /* 加寬容器 */
-                background-color: var(--bg-color);
-                box-shadow: 0 0 30px rgba(0,0,0,0.8); 
-                margin: 20px 0;
-                height: calc(100vh - 40px); 
+                max-width: 1200px; background-color: var(--bg-color);
+                box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
+                /* height: calc(100vh - 40px); */ /* 移除強制高度限制 */
+                height: 95vh; /* 給予固定高度，但允許內部捲動 */
                 border-radius: 20px;
+                overflow: hidden; padding-left: 80px; width: 100%;
+            }
+            .nav-bar { position: absolute; left: 0; top: 0; height: 100%; width: 80px; border-radius: 20px 0 0 20px; }
+            
+            .admin-dashboard-layout { 
+                display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; 
+                height: 100%; 
                 overflow: hidden; 
-                padding-left: 80px; /* 避開導航列 */
-                width: 100%;
             }
-            .nav-bar {
-                position: absolute; left: 0; top: 0; height: 100%; width: 80px;
-                border-radius: 20px 0 0 20px;
+            
+            /* 修正：確保面板可以獨立捲動 */
+            .admin-panel { 
+                height: 100%; 
+                overflow-y: auto; /* 關鍵 */
+                display: flex; flex-direction: column;
             }
-            /* 生管控制台雙欄佈局 */
-            .admin-dashboard-layout {
-                display: grid;
-                grid-template-columns: 1fr 1fr; /* 左右各半 */
-                gap: 20px;
-                height: 100%;
-                overflow: hidden;
+            
+            .admin-list-panel { 
+                height: 100%; 
+                overflow-y: auto; 
+                border-left: 1px solid #333; padding-left: 20px;
             }
-            .admin-panel {
-                height: 100%;
-                overflow-y: auto;
-            }
-            .admin-list-panel {
-                height: 100%;
-                max-height: none; /* 移除高度限制，跟隨父容器 */
-            }
-            /* 一般操作畫面限制寬度，保持居中美觀 */
-            .login-box, #screen-queue, #screen-manpower, #screen-working, #screen-finish {
-                max-width: 600px;
-                margin: 0 auto;
-                width: 100%;
-            }
+            
+            .login-box, #screen-queue, #screen-manpower, #screen-working, #screen-finish { max-width: 600px; margin: 0 auto; width: 100%; }
             .keypad { max-width: 500px; gap: 15px; }
             .key-btn { font-size: 2rem; padding: 25px 0; }
-            .job-item { padding: 20px; }
-            .job-title { font-size: 1.5rem; }
         }
     </style>
 </head>
@@ -248,7 +250,7 @@
         <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V4.2</span></div>
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V4.5</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
                 
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
@@ -270,7 +272,7 @@
                     <span id="user-name">User</span>
                 </div>
             </div>
-            <div class="cloud-status" id="last-sync-time"></div>
+            <div class="cloud-status" id="last-sync-time" style="color:#666; font-size:0.8rem; margin-bottom:5px;"></div>
 
             <div id="active-section" style="margin-bottom: 20px; display: none;">
                 <div style="font-size:0.9rem; color:var(--success); margin-bottom:5px; font-weight:bold;">🔥 進行中 (RUNNING)</div>
@@ -278,7 +280,7 @@
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <div style="font-size:0.9rem; color:#888;">待辦事項 (To Do) <span id="last-sync-time" style="font-size:0.7rem; color:#555;"></span></div>
+                <div style="font-size:0.9rem; color:#888;">待辦事項 (To Do)</div>
                 <button onclick="syncData()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 雲端同步</button>
             </div>
             <div id="queue-list"></div>
@@ -324,8 +326,8 @@
             <div id="finish-keypad"></div>
         </div>
 
-        <!-- 6. 生管後台 (V4.2 雙欄佈局) -->
-        <div id="screen-admin" class="screen" style="width: 100%; max-width: none;">
+        <!-- 6. 生管後台 (V4.5 優化版) -->
+        <div id="screen-admin" class="screen" style="width: 100%; max-width: none; height: 100%;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="margin:0;">🛠️ 生管控制台</h2>
                 <button onclick="logout()" style="background:#333; color:#ccc; border:none; padding:5px 10px; border-radius:4px;">退出</button>
@@ -336,11 +338,11 @@
                 <button class="admin-tab" onclick="showAdminTab('history')">工時報表</button>
             </div>
             
-            <!-- 建立工單 Tab (雙欄佈局容器) -->
-            <div id="admin-tab-create">
+            <!-- 建立工單 Tab (雙欄佈局) -->
+            <div id="admin-tab-create" style="height: calc(100% - 60px);">
                 <div class="admin-dashboard-layout">
                     
-                    <!-- 左欄：輸入與設定 -->
+                    <!-- 左欄：輸入與設定 (可捲動) -->
                     <div class="admin-panel">
                         <div class="template-area">
                             <label style="color:#aaa; font-size:0.8rem;">📂 範本管理</label>
@@ -361,21 +363,26 @@
                             <label for="admin-req-data" style="color:#fff; font-size:0.9rem; cursor:pointer;">要求現場輸入生產數據 (Input Required)</label>
                         </div>
 
-                        <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px;">
+                        <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px; flex: 1; display: flex; flex-direction: column;">
                             <label style="color:#888; font-size:0.9rem;">工序清單</label>
-                            <div id="admin-sub-items"></div>
+                            <div id="admin-sub-items" class="sub-items-wrapper">
+                                <!-- JS 動態生成 -->
+                            </div>
                             <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; border:1px dashed #555; color:#ccc; margin-top:10px; cursor:pointer;">+ 新增一行</button>
                         </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
-                            <button class="large-btn btn-secondary" style="font-size:1rem;" onclick="saveTemplate()">💾 存為範本</button>
-                            <button class="large-btn btn-confirm" style="font-size:1rem;" onclick="publishWorkOrders()">🚀 發布工單</button>
+
+                        <div class="admin-actions">
+                            <button class="large-btn btn-secondary" style="font-size:1rem; margin:0;" onclick="saveTemplate()">💾 存為範本</button>
+                            <button class="large-btn btn-confirm" style="font-size:1.2rem; margin:0;" onclick="publishWorkOrders()">🚀 立即發布工單</button>
                         </div>
                         <button class="large-btn btn-danger" style="margin-top:20px; font-size:1rem; background:#300; border-color:#500;" onclick="adminReset()">⚠️ 重置所有資料</button>
                     </div>
 
-                    <!-- 右欄：目前排程列表 -->
+                    <!-- 右欄：目前排程列表 (可捲動) -->
                     <div class="admin-list-panel">
-                        <h3>目前排程預覽 (<span id="queue-count">0</span> 筆)</h3>
+                        <h3 style="margin-top:0; color:#aaa; border-bottom:1px solid #333; padding-bottom:10px;">
+                            雲端排程預覽 (<span id="queue-count">0</span>)
+                        </h3>
                         <div id="admin-list"></div>
                     </div>
                 </div>
@@ -416,7 +423,7 @@
                 <span>登出</span>
             </button>
         </div>
-        <div class="version-tag">V4.2</div>
+        <div class="version-tag">V4.5</div>
     </div>
 
     <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">雲端同步中...</div></div>
@@ -430,21 +437,24 @@
         let uiState = { screen: 'login', pin: '', user: null, lang: 'zh', targetWoId: null, tempVal: '0', finishStep: 0, finishCache: {}, isAdjusting: false };
         let syncTimer = null;
 
-        const I18N = {
-            zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' },
-            vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' }
-        };
+        const DEMO_QUEUE = [{ wo_id: 'DEMO-1', master: 'SAMPLE', prod_zh: '測試品A', prod_vn: 'Test A', op_zh: '包裝', op_vn: 'Packing', rank: 1 }];
+        const I18N = { zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' }, vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' } };
 
         function init() {
-            loadStorage(); // 先載入本地緩存
+            loadStorage();
+            if (!appData.queue || appData.queue.length === 0) { appData.queue = JSON.parse(JSON.stringify(DEMO_QUEUE)); saveStorage(); }
             renderATMKeypad('login-keypad', handleLoginInput);
             renderATMKeypad('manpower-keypad', handleManpowerInput);
             renderATMKeypad('finish-keypad', handleFinishInput);
             
-            if (GAS_URL.includes("YOUR")) alert("請設定 GAS URL!");
+            const gasStatusEl = document.getElementById('gas-status');
+            if(gasStatusEl) {
+                if (GAS_URL.includes("YOUR")) gasStatusEl.textContent = "URL 未設定";
+                else gasStatusEl.textContent = "Ready";
+            }
             
             showScreen('login');
-            syncData(true); // 啟動即刻同步
+            syncData(true); 
             
             syncTimer = setInterval(() => {
                 if (uiState.user) syncData(true); 
@@ -465,15 +475,14 @@
 
         function saveStorage() { localStorage.setItem('mes_v4_data', JSON.stringify(appData)); }
 
-        // --- CLOUD SYNC ---
         async function syncData(silent = false) {
             if (!silent) document.getElementById('loading-mask').style.display = 'flex';
-            document.getElementById('cloud-status').textContent = "Syncing...";
+            const cloudStatus = document.getElementById('cloud-status');
+            if(cloudStatus) cloudStatus.textContent = "Syncing...";
 
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
-                    // 使用 text/plain 避免 CORS preflight
                     headers: { 'Content-Type': 'text/plain' }, 
                     body: JSON.stringify({ action: 'GET_STATE', token: TOKEN })
                 });
@@ -504,21 +513,16 @@
                     });
 
                     saveStorage();
-                    document.getElementById('cloud-status').textContent = "Connected ✅";
-                    document.getElementById('last-sync-time').textContent = new Date().toLocaleTimeString();
+                    if(cloudStatus) cloudStatus.textContent = "Connected ✅";
+                    const lastSync = document.getElementById('last-sync-time');
+                    if(lastSync) lastSync.textContent = new Date().toLocaleTimeString();
                     
                     if (uiState.screen === 'queue') renderQueue();
                     if (uiState.screen === 'admin') renderAdminList();
-                } else {
-                    throw new Error(data.message || "Unknown Error");
                 }
             } catch (e) {
                 console.error("Sync failed", e);
-                document.getElementById('cloud-status').textContent = "Offline ⚠️";
-                if (!silent) {
-                    // 如果不是靜默同步，顯示錯誤訊息
-                    alert("連線錯誤: " + e.message);
-                }
+                if(cloudStatus) cloudStatus.textContent = "Offline ⚠️";
             } finally {
                 if (!silent) document.getElementById('loading-mask').style.display = 'none';
             }
@@ -533,13 +537,9 @@
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload)
                 });
-                const text = await res.text(); // 先讀取為文字，避免 JSON 解析錯誤
+                const text = await res.text();
                 let data;
-                try {
-                    data = JSON.parse(text);
-                } catch (e) {
-                    throw new Error("Server response not JSON: " + text.substring(0, 50));
-                }
+                try { data = JSON.parse(text); } catch(e) { throw new Error("Server response error"); }
 
                 if (data.success) {
                     await syncData(true);
@@ -669,7 +669,7 @@
                 pin: uiState.user.pin,
                 manpower: manpower,
                 start_time: new Date().toISOString(),
-                req_data: job.req_data // 傳送設定
+                req_data: job.req_data 
             });
             if (success) openWorkingScreen(uiState.targetWoId);
         }
@@ -731,8 +731,7 @@
         function endJob() {
             const session = appData.activeJobs[uiState.targetWoId];
             const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
-            // fallback logic in case job is not in queue (already in active)
-            // We need to trust session data for req_data
+            // 判斷是否為分切或要求數據
             const isSlicing = session.op.indexOf('分切') >= 0;
             
             if (session.req_data || isSlicing) {
@@ -789,8 +788,7 @@
 
                 uiState.tempVal = '0';
                 // Logic: if slicing (4 steps) else if req_data (1 step + total)
-                // Simplified: Always follow sequence 1->2->3->4->99 for now.
-                // If not slicing, user enters 0 for collar/tail
+                // Simplified for now, always sequence 1->2->3->4->99
                 if (step === 1) uiState.finishStep = 2;
                 else if (step === 2) uiState.finishStep = 3;
                 else if (step === 3) uiState.finishStep = 4;
@@ -828,29 +826,49 @@
             showScreen('queue');
         }
 
-        // ================= ADMIN =================
+        // ================= ADMIN LOGIC =================
         function renderAdminCreate() {
             const container = document.getElementById('admin-sub-items');
             if (!container.innerHTML) addAdminRow();
             updateTemplateDropdown();
             renderAdminList();
+            setTimeout(() => document.getElementById('admin-mwo').focus(), 100);
         }
         function updateTemplateDropdown() {
             const sel = document.getElementById('admin-template');
-            sel.innerHTML = '<option value="">-- 選擇載入 --</option>';
-            appData.templates.forEach((t, i) => {
-                const opt = document.createElement('option');
-                opt.value = i; opt.textContent = t.name;
-                sel.appendChild(opt);
-            });
+            sel.innerHTML = '<option value="">-- 載入範本 --</option>';
+            appData.templates.forEach((t, i) => { const opt = document.createElement('option'); opt.value = i; opt.textContent = t.name; sel.appendChild(opt); });
         }
         function addAdminRow(prod='', op='') {
             const container = document.getElementById('admin-sub-items');
             const div = document.createElement('div');
             div.className = 'sub-item-row';
-            div.innerHTML = `<input class="admin-input prod" placeholder="產品" value="${prod}"><input class="admin-input op" placeholder="工序" value="${op}"><button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>`;
+            div.innerHTML = `
+                <input class="admin-input prod" placeholder="產品" value="${prod}" onkeypress="handleAdminInputKey(event, 'prod', this)">
+                <input class="admin-input op" placeholder="工序" value="${op}" onkeypress="handleAdminInputKey(event, 'op', this)">
+                <button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>
+            `;
             container.appendChild(div);
+            if(prod === '') div.querySelector('.prod').focus();
         }
+
+        function handleAdminInputKey(e, type, el) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const row = el.parentElement;
+                if (type === 'mwo' || type === 'weight') {
+                    const firstRow = document.querySelector('.sub-item-row .prod');
+                    if(firstRow) firstRow.focus();
+                } else if (type === 'prod') {
+                    row.querySelector('.op').focus();
+                } else if (type === 'op') {
+                    addAdminRow();
+                }
+            }
+        }
+        document.getElementById('admin-mwo').addEventListener('keypress', (e) => handleAdminInputKey(e, 'mwo', e.target));
+        document.getElementById('admin-weight').addEventListener('keypress', (e) => handleAdminInputKey(e, 'weight', e.target));
+
         function saveTemplate() {
             const mwo = document.getElementById('admin-mwo').value;
             if(!mwo) return alert("需輸入總工單號做為範本名");
@@ -874,6 +892,7 @@
             document.getElementById('admin-mwo').value = tmpl.name;
             document.getElementById('admin-sub-items').innerHTML = '';
             tmpl.items.forEach(i => addAdminRow(i.prod, i.op));
+            document.getElementById('admin-mwo').focus();
         }
         function deleteTemplate() {
             const idx = document.getElementById('admin-template').value;
@@ -906,12 +925,15 @@
             alert(`已送出發布請求 (${count}筆)`);
             
             document.getElementById('admin-mwo').value = '';
+            document.getElementById('admin-weight').value = '';
             document.getElementById('admin-sub-items').innerHTML = '';
             addAdminRow();
+            document.getElementById('admin-mwo').focus();
         }
         function renderAdminList() {
             const div = document.getElementById('admin-list');
             div.innerHTML = appData.queue.map(q => `<div style="border-bottom:1px solid #333; padding:5px;">${q.master} - ${q.prod_zh} - ${q.op_zh}</div>`).join('');
+            document.getElementById('queue-count').textContent = appData.queue.length;
         }
         function adminReset() { if(confirm("重置資料？")) { localStorage.clear(); location.reload(); } }
 
