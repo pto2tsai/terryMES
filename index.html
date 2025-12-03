@@ -1,12 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V4.1 Cloud Fix</title>
+    <title>MES Lite V4.2 Admin Layout</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V4.1 連線除錯版 */
+        /* CSS: V4.2 生管雙欄佈局優化版 */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
@@ -68,7 +68,7 @@
         }
         
         .screen { 
-            display: none; width: 100%; max-width: 600px; 
+            display: none; width: 100%; max-width: 100%; 
         }
 
         /* --- 統一 ATM 圓形鍵盤 --- */
@@ -136,7 +136,20 @@
         }
 
         /* --- 生管後台 --- */
-        .admin-panel { width: 100%; background: #111; padding: 15px; border-radius: 10px; }
+        .admin-dashboard-layout {
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        .admin-panel, .admin-list-panel { 
+            width: 100%; background: #111; padding: 15px; border-radius: 10px; 
+            border: 1px solid #333;
+        }
+        /* 生管右側列表專用樣式 */
+        .admin-list-panel {
+            max-height: 70vh; 
+            overflow-y: auto;
+        }
+
         .admin-input { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; margin-bottom: 10px; font-size: 1rem; border-radius: 5px;}
         
         .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 5px; margin-bottom: 8px; }
@@ -178,6 +191,53 @@
             .version-tag { display: none; }
             .sub-item-row { grid-template-columns: 1fr; gap: 5px; border-bottom: 1px solid #333; padding-bottom: 5px; }
             .btn-row-delete { grid-column: 1 / -1; padding: 8px; margin-top: 2px; }
+            /* 手機版堆疊顯示 */
+            .admin-dashboard-layout { display: flex; flex-direction: column; }
+        }
+
+        /* RWD 電腦版優化 (V4.2 新增) */
+        @media (min-width: 769px) {
+            .container {
+                max-width: 1000px; /* 加寬容器 */
+                background-color: var(--bg-color);
+                box-shadow: 0 0 30px rgba(0,0,0,0.8); 
+                margin: 20px 0;
+                height: calc(100vh - 40px); 
+                border-radius: 20px;
+                overflow: hidden; 
+                padding-left: 80px; /* 避開導航列 */
+                width: 100%;
+            }
+            .nav-bar {
+                position: absolute; left: 0; top: 0; height: 100%; width: 80px;
+                border-radius: 20px 0 0 20px;
+            }
+            /* 生管控制台雙欄佈局 */
+            .admin-dashboard-layout {
+                display: grid;
+                grid-template-columns: 1fr 1fr; /* 左右各半 */
+                gap: 20px;
+                height: 100%;
+                overflow: hidden;
+            }
+            .admin-panel {
+                height: 100%;
+                overflow-y: auto;
+            }
+            .admin-list-panel {
+                height: 100%;
+                max-height: none; /* 移除高度限制，跟隨父容器 */
+            }
+            /* 一般操作畫面限制寬度，保持居中美觀 */
+            .login-box, #screen-queue, #screen-manpower, #screen-working, #screen-finish {
+                max-width: 600px;
+                margin: 0 auto;
+                width: 100%;
+            }
+            .keypad { max-width: 500px; gap: 15px; }
+            .key-btn { font-size: 2rem; padding: 25px 0; }
+            .job-item { padding: 20px; }
+            .job-title { font-size: 1.5rem; }
         }
     </style>
 </head>
@@ -188,7 +248,7 @@
         <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V4.1</span></div>
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V4.2</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
                 
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
@@ -264,8 +324,8 @@
             <div id="finish-keypad"></div>
         </div>
 
-        <!-- 6. 生管後台 -->
-        <div id="screen-admin" class="screen">
+        <!-- 6. 生管後台 (V4.2 雙欄佈局) -->
+        <div id="screen-admin" class="screen" style="width: 100%; max-width: none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="margin:0;">🛠️ 生管控制台</h2>
                 <button onclick="logout()" style="background:#333; color:#ccc; border:none; padding:5px 10px; border-radius:4px;">退出</button>
@@ -276,41 +336,48 @@
                 <button class="admin-tab" onclick="showAdminTab('history')">工時報表</button>
             </div>
             
-            <!-- 建立工單 Tab -->
+            <!-- 建立工單 Tab (雙欄佈局容器) -->
             <div id="admin-tab-create">
-                <div class="admin-panel">
-                    <div class="template-area">
-                        <label style="color:#aaa; font-size:0.8rem;">📂 範本管理</label>
-                        <div style="display:flex; gap:10px; margin-top:5px;">
-                            <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()">
-                                <option value="">-- 載入範本 --</option>
-                            </select>
-                            <button class="btn-danger" style="padding:0 15px; border-radius:4px; border:none; cursor:pointer;" onclick="deleteTemplate()">🗑️</button>
+                <div class="admin-dashboard-layout">
+                    
+                    <!-- 左欄：輸入與設定 -->
+                    <div class="admin-panel">
+                        <div class="template-area">
+                            <label style="color:#aaa; font-size:0.8rem;">📂 範本管理</label>
+                            <div style="display:flex; gap:10px; margin-top:5px;">
+                                <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()">
+                                    <option value="">-- 載入範本 --</option>
+                                </select>
+                                <button class="btn-danger" style="padding:0 15px; border-radius:4px; border:none; cursor:pointer;" onclick="deleteTemplate()">🗑️</button>
+                            </div>
                         </div>
-                    </div>
-                    <h3>新增工單 (Batch)</h3>
-                    
-                    <input id="admin-mwo" class="admin-input" placeholder="總工單號 (例: MWO-2025-A)">
-                    <input type="number" id="admin-weight" class="admin-input" placeholder="原料總重 (KG)">
-                    
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" id="admin-req-data">
-                        <label for="admin-req-data" style="color:#fff; font-size:0.9rem; cursor:pointer;">要求現場輸入生產數據 (Input Required)</label>
+                        <h3>新增工單 (Batch)</h3>
+                        
+                        <input id="admin-mwo" class="admin-input" placeholder="總工單號 (例: MWO-2025-A)">
+                        <input type="number" id="admin-weight" class="admin-input" placeholder="原料總重 (KG)">
+                        
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="admin-req-data">
+                            <label for="admin-req-data" style="color:#fff; font-size:0.9rem; cursor:pointer;">要求現場輸入生產數據 (Input Required)</label>
+                        </div>
+
+                        <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px;">
+                            <label style="color:#888; font-size:0.9rem;">工序清單</label>
+                            <div id="admin-sub-items"></div>
+                            <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; border:1px dashed #555; color:#ccc; margin-top:10px; cursor:pointer;">+ 新增一行</button>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
+                            <button class="large-btn btn-secondary" style="font-size:1rem;" onclick="saveTemplate()">💾 存為範本</button>
+                            <button class="large-btn btn-confirm" style="font-size:1rem;" onclick="publishWorkOrders()">🚀 發布工單</button>
+                        </div>
+                        <button class="large-btn btn-danger" style="margin-top:20px; font-size:1rem; background:#300; border-color:#500;" onclick="adminReset()">⚠️ 重置所有資料</button>
                     </div>
 
-                    <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px;">
-                        <label style="color:#888; font-size:0.9rem;">工序清單</label>
-                        <div id="admin-sub-items"></div>
-                        <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; border:1px dashed #555; color:#ccc; margin-top:10px; cursor:pointer;">+ 新增一行</button>
+                    <!-- 右欄：目前排程列表 -->
+                    <div class="admin-list-panel">
+                        <h3>目前排程預覽 (<span id="queue-count">0</span> 筆)</h3>
+                        <div id="admin-list"></div>
                     </div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
-                        <button class="large-btn btn-secondary" style="font-size:1rem;" onclick="saveTemplate()">💾 存為範本</button>
-                        <button class="large-btn btn-confirm" style="font-size:1rem;" onclick="publishWorkOrders()">🚀 發布工單</button>
-                    </div>
-                </div>
-                <div style="margin-top:20px;">
-                    <h3>雲端排程預覽</h3>
-                    <div id="admin-list"></div>
                 </div>
             </div>
 
@@ -349,7 +416,7 @@
                 <span>登出</span>
             </button>
         </div>
-        <div class="version-tag">V4.1</div>
+        <div class="version-tag">V4.2</div>
     </div>
 
     <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">雲端同步中...</div></div>
@@ -438,6 +505,7 @@
 
                     saveStorage();
                     document.getElementById('cloud-status').textContent = "Connected ✅";
+                    document.getElementById('last-sync-time').textContent = new Date().toLocaleTimeString();
                     
                     if (uiState.screen === 'queue') renderQueue();
                     if (uiState.screen === 'admin') renderAdminList();
