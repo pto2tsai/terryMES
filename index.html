@@ -1,12 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V4.5 Scroll Fix</title>
+    <title>MES Lite V5.0 Diagnostic</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V4.5 滾軸修復版 (Scroll Fix) */
+        /* CSS: V5.0 診斷修復版 */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
@@ -38,7 +38,7 @@
             color: var(--text-main);
             height: 100vh;
             display: flex; flex-direction: row;
-            overflow: hidden; /* Body 不捲動，由 Container 捲動 */
+            overflow: hidden;
         }
 
         /* --- 導航列 --- */
@@ -69,7 +69,7 @@
         /* --- 主容器 --- */
         .container {
             flex: 1; padding: 10px; 
-            overflow-y: auto; /* 確保這裡可以捲動 */
+            overflow-y: auto;
             display: flex; flex-direction: column; align-items: center;
             position: relative;
         }
@@ -144,12 +144,10 @@
 
         /* --- 生管後台 --- */
         .admin-dashboard-layout { display: flex; flex-direction: column; gap: 20px; height: 100%; }
-        
-        /* 修改：允許生管面板滾動 */
         .admin-panel { 
             background-color: var(--bg-card); padding: 20px; border-radius: 12px; 
             border: 1px solid #333; flex: 1; display: flex; flex-direction: column;
-            overflow-y: auto; /* 關鍵修正 */
+            overflow-y: auto;
         }
         
         .admin-input { 
@@ -211,8 +209,7 @@
             .container {
                 max-width: 1200px; background-color: var(--bg-color);
                 box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
-                /* height: calc(100vh - 40px); */ /* 移除強制高度限制 */
-                height: 95vh; /* 給予固定高度，但允許內部捲動 */
+                height: 95vh;
                 border-radius: 20px;
                 overflow: hidden; padding-left: 80px; width: 100%;
             }
@@ -220,20 +217,15 @@
             
             .admin-dashboard-layout { 
                 display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; 
-                height: 100%; 
-                overflow: hidden; 
+                height: 100%; overflow: hidden; 
             }
             
-            /* 修正：確保面板可以獨立捲動 */
             .admin-panel { 
-                height: 100%; 
-                overflow-y: auto; /* 關鍵 */
-                display: flex; flex-direction: column;
+                height: 100%; overflow-y: auto; display: flex; flex-direction: column;
             }
             
             .admin-list-panel { 
-                height: 100%; 
-                overflow-y: auto; 
+                height: 100%; overflow-y: auto; 
                 border-left: 1px solid #333; padding-left: 20px;
             }
             
@@ -250,7 +242,7 @@
         <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
             <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V4.5</span></div>
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V5.0</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
                 
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
@@ -259,8 +251,10 @@
                 <div id="login-keypad"></div>
 
                 <div style="margin-top:20px; font-size:0.8rem; color:#444;">
-                    Status: <span id="cloud-status">Connecting...</span>
+                    Status: <span id="cloud-status">Checking...</span>
                 </div>
+                <!-- 新增測試按鈕 -->
+                <button onclick="testConnection()" style="margin-top:10px; background:none; border:1px solid #444; color:#888; border-radius:4px; padding:5px 10px; cursor:pointer;">☁️ 測試連線</button>
             </div>
         </div>
 
@@ -326,7 +320,7 @@
             <div id="finish-keypad"></div>
         </div>
 
-        <!-- 6. 生管後台 (V4.5 優化版) -->
+        <!-- 6. 生管後台 -->
         <div id="screen-admin" class="screen" style="width: 100%; max-width: none; height: 100%;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="margin:0;">🛠️ 生管控制台</h2>
@@ -423,7 +417,7 @@
                 <span>登出</span>
             </button>
         </div>
-        <div class="version-tag">V4.5</div>
+        <div class="version-tag">V5.0</div>
     </div>
 
     <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">雲端同步中...</div></div>
@@ -447,15 +441,18 @@
             renderATMKeypad('manpower-keypad', handleManpowerInput);
             renderATMKeypad('finish-keypad', handleFinishInput);
             
-            const gasStatusEl = document.getElementById('gas-status');
-            if(gasStatusEl) {
-                if (GAS_URL.includes("YOUR")) gasStatusEl.textContent = "URL 未設定";
-                else gasStatusEl.textContent = "Ready";
-            }
+            if (GAS_URL.includes("YOUR")) alert("請設定 GAS URL!");
+            else document.getElementById('cloud-status').textContent = "Ready";
             
             showScreen('login');
-            syncData(true); 
             
+            // Sync immediately on load if user already logged in (e.g. refresh)
+            if (localStorage.getItem('mes_v4_user')) {
+                uiState.user = JSON.parse(localStorage.getItem('mes_v4_user'));
+                if (uiState.user.role === 'admin') showScreen('admin');
+                else showScreen('queue');
+            }
+
             syncTimer = setInterval(() => {
                 if (uiState.user) syncData(true); 
             }, 10000);
@@ -475,6 +472,7 @@
 
         function saveStorage() { localStorage.setItem('mes_v4_data', JSON.stringify(appData)); }
 
+        // --- CLOUD SYNC (V5.0 Fix) ---
         async function syncData(silent = false) {
             if (!silent) document.getElementById('loading-mask').style.display = 'flex';
             const cloudStatus = document.getElementById('cloud-status');
@@ -483,6 +481,7 @@
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
+                    // 使用 text/plain 是 GAS 最穩定的方式，避免 CORS preflight
                     headers: { 'Content-Type': 'text/plain' }, 
                     body: JSON.stringify({ action: 'GET_STATE', token: TOKEN })
                 });
@@ -490,7 +489,6 @@
 
                 if (data.success) {
                     appData.queue = data.queue || [];
-                    
                     const cloudActiveMap = {};
                     if (data.active) {
                         data.active.forEach(job => {
@@ -507,7 +505,6 @@
                             }
                         });
                     }
-                    
                     Object.keys(appData.activeJobs).forEach(id => {
                         if (!cloudActiveMap[id]) delete appData.activeJobs[id];
                     });
@@ -523,6 +520,7 @@
             } catch (e) {
                 console.error("Sync failed", e);
                 if(cloudStatus) cloudStatus.textContent = "Offline ⚠️";
+                if (!silent) alert("連線錯誤: " + e.message);
             } finally {
                 if (!silent) document.getElementById('loading-mask').style.display = 'none';
             }
@@ -539,7 +537,8 @@
                 });
                 const text = await res.text();
                 let data;
-                try { data = JSON.parse(text); } catch(e) { throw new Error("Server response error"); }
+                try { data = JSON.parse(text); } 
+                catch(e) { throw new Error("Server response invalid: " + text.substring(0, 50)); }
 
                 if (data.success) {
                     await syncData(true);
@@ -554,6 +553,11 @@
             } finally {
                 if(!silent) document.getElementById('loading-mask').style.display = 'none';
             }
+        }
+        
+        async function testConnection() {
+            alert("正在測試連線...");
+            await syncData(false);
         }
 
         // --- Navigation ---
@@ -572,17 +576,26 @@
             if (id === 'admin') renderAdminCreate();
         }
 
-        function logout() { if(confirm("登出?")) { uiState.user = null; showScreen('login'); } }
+        function logout() { 
+            if(confirm("登出?")) { 
+                uiState.user = null; 
+                localStorage.removeItem('mes_v4_user');
+                showScreen('login'); 
+            } 
+        }
 
         // --- Login ---
         function handleLoginInput(key) {
             if (key === 'C') uiState.pin = '';
             else if (key === 'OK') {
                 if (uiState.pin === '9999') {
-                    uiState.user = { name: 'Admin', role: 'admin' }; showScreen('admin');
+                    uiState.user = { name: 'Admin', role: 'admin' }; 
+                    localStorage.setItem('mes_v4_user', JSON.stringify(uiState.user));
+                    showScreen('admin');
                 } else if (['1234', '5678'].includes(uiState.pin)) {
                     uiState.lang = (uiState.pin === '1234') ? 'vn' : 'zh';
                     uiState.user = { name: '主管', pin: uiState.pin };
+                    localStorage.setItem('mes_v4_user', JSON.stringify(uiState.user));
                     document.getElementById('user-name').textContent = uiState.user.name;
                     showScreen('queue');
                 } else {
@@ -787,8 +800,6 @@
                 else if (step === 4) uiState.finishCache.good = val;
 
                 uiState.tempVal = '0';
-                // Logic: if slicing (4 steps) else if req_data (1 step + total)
-                // Simplified for now, always sequence 1->2->3->4->99
                 if (step === 1) uiState.finishStep = 2;
                 else if (step === 2) uiState.finishStep = 3;
                 else if (step === 3) uiState.finishStep = 4;
@@ -843,11 +854,7 @@
             const container = document.getElementById('admin-sub-items');
             const div = document.createElement('div');
             div.className = 'sub-item-row';
-            div.innerHTML = `
-                <input class="admin-input prod" placeholder="產品" value="${prod}" onkeypress="handleAdminInputKey(event, 'prod', this)">
-                <input class="admin-input op" placeholder="工序" value="${op}" onkeypress="handleAdminInputKey(event, 'op', this)">
-                <button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>
-            `;
+            div.innerHTML = `<input class="admin-input prod" placeholder="產品" value="${prod}" onkeypress="handleAdminInputKey(event, 'prod', this)"><input class="admin-input op" placeholder="工序" value="${op}" onkeypress="handleAdminInputKey(event, 'op', this)"><button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>`;
             container.appendChild(div);
             if(prod === '') div.querySelector('.prod').focus();
         }
