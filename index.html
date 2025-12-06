@@ -1,999 +1,548 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V5.0 Diagnostic</title>
+    <title>MES Lite V5.8 Config</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V5.0 診斷修復版 */
+        /* CSS: V5.8 設定與連線修復版 */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
             --bg-card: #1e1e1e;
             --text-main: #e0e0e0;
             --text-sub: #a0a0a0;
-            
-            --primary: #2196f3; 
-            --accent: #00bcd4;  
-            --success: #4caf50; 
-            --warning: #ff9800; 
-            --danger: #f44336;  
-            
+            --primary: #2196f3; --accent: #00bcd4; --success: #4caf50; --warning: #ff9800; --danger: #f44336;
             --nav-height: 60px;
         }
-
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-
-        /* 捲軸美化 */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #111; }
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #666; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0; padding: 0;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex; flex-direction: row;
-            overflow: hidden;
-        }
-
-        /* --- 導航列 --- */
-        .nav-bar {
-            width: 80px;
-            height: 100vh;
-            background-color: #000;
-            display: flex; flex-direction: column; align-items: center;
-            padding-top: 20px; z-index: 1000;
-            border-right: 1px solid #333;
-            flex-shrink: 0;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: row; overflow: hidden; }
         
-        .nav-btn {
-            background: none; border: none; cursor: pointer; 
-            padding: 15px 5px; margin-bottom: 20px;
-            color: var(--text-sub); 
-            display: flex; flex-direction: column; align-items: center; gap: 5px;
-            width: 100%;
-        }
-        
+        .nav-bar { width: 80px; height: 100vh; background-color: #000; display: flex; flex-direction: column; align-items: center; padding-top: 20px; z-index: 1000; border-right: 1px solid #333; flex-shrink: 0; }
+        .nav-btn { background: none; border: none; cursor: pointer; padding: 15px 5px; margin-bottom: 20px; color: var(--text-sub); display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
         .nav-btn svg { width: 32px; height: 32px; fill: currentColor; }
         .nav-btn span { font-size: 0.75rem; font-weight: bold; }
         .nav-btn:active { color: var(--accent); background: #222; }
-
         .version-tag { font-size: 0.6rem; color: #444; margin-top: auto; margin-bottom: 10px; writing-mode: vertical-lr; }
 
-        /* --- 主容器 --- */
-        .container {
-            flex: 1; padding: 10px; 
-            overflow-y: auto;
-            display: flex; flex-direction: column; align-items: center;
-            position: relative;
-        }
+        .container { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .screen { display: none; width: 100%; max-width: 600px; padding-bottom: 20px; }
         
-        .screen { 
-            display: none; width: 100%; max-width: 600px; padding-bottom: 20px;
-        }
-
-        /* --- 統一 ATM 圓形鍵盤 --- */
-        .pin-display {
-            font-size: 3rem; letter-spacing: 10px; color: var(--accent);
-            margin-bottom: 20px; height: 60px; line-height: 60px;
-            text-align: center; border-bottom: 2px solid #333; width: 100%;
-        }
-        
-        .circle-keypad {
-            display: grid; grid-template-columns: repeat(3, 1fr); 
-            gap: 15px; margin: 0 auto 20px auto; width: 100%; max-width: 350px;
-        }
-        .circle-btn {
-            width: 80px; height: 80px; border-radius: 50%;
-            background-color: #2a2a2a; color: white;
-            font-size: 2rem; font-weight: bold;
-            border: 2px solid #444;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; user-select: none;
-            margin: 0 auto;
-        }
+        .pin-display { font-size: 3rem; letter-spacing: 10px; color: var(--accent); margin-bottom: 20px; height: 60px; line-height: 60px; text-align: center; border-bottom: 2px solid #333; width: 100%; }
+        .circle-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 0 auto 20px auto; width: 100%; max-width: 350px; }
+        .circle-btn { width: 80px; height: 80px; border-radius: 50%; background-color: #2a2a2a; color: white; font-size: 2rem; font-weight: bold; border: 2px solid #444; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0 auto; }
         .circle-btn:active { background-color: #555; border-color: #888; transform: translateY(2px); }
-        .circle-btn.clear { color: var(--danger); border-color: var(--danger); font-size: 1.2rem; }
-        .circle-btn.ok { background-color: var(--success); color: #000; border-color: var(--success); font-size: 1.2rem; }
+        .circle-btn.ok { background-color: var(--success); color: #000; }
+        .circle-btn.clear { color: var(--danger); }
 
-        /* --- 一般按鈕 --- */
-        .large-btn {
-            width: 100%; padding: 15px; margin: 8px 0;
-            font-size: 1.3rem; font-weight: bold;
-            border-radius: 10px; border: none; cursor: pointer;
-            color: white; background-color: var(--btn-bg);
-            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
-            position: relative;
-        }
+        .large-btn { width: 100%; padding: 15px; margin: 8px 0; font-size: 1.3rem; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background-color: var(--bg-card); box-shadow: 0 4px 0 rgba(0,0,0,0.5); position: relative; }
         .large-btn:active { transform: translateY(4px); box-shadow: none; }
         .btn-confirm { background-color: var(--success); color: #000; }
         .btn-danger { background-color: var(--danger); }
         .btn-secondary { background-color: #424242; border: 1px solid #555; }
 
-        /* --- 排程列表 --- */
-        .queue-item {
-            background: #1e1e1e; border: 1px solid #444; border-left: 6px solid #444;
-            padding: 15px; border-radius: 10px; margin-bottom: 10px;
-            display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer;
-        }
-        .queue-item:active { background: #333; }
-        .queue-item.active-job { 
-            background: #1b5e20; border-color: #66bb6a; border-left-color: #00e676;
-        }
+        .queue-item { background: #1e1e1e; border: 1px solid #444; border-left: 6px solid #444; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .queue-item.active-job { background: #1b5e20; border-color: #66bb6a; border-left-color: #00e676; }
         .q-info h3 { margin: 0 0 5px 0; font-size: 1.3rem; color: white; }
         .q-info p { margin: 0; color: #bbb; font-size: 1rem; }
-        
-        /* --- 計時畫面 --- */
-        .timer-box {
-            text-align: center; margin: 20px 0; padding: 20px;
-            background: #000; border-radius: 15px; border: 1px solid #333;
-        }
-        .timer-val { font-size: 4rem; font-weight: bold; color: var(--accent); font-variant-numeric: tabular-nums; }
-        
-        .job-card-large {
-            background: #222; padding: 15px; border-radius: 15px;
-            text-align: center; border: 1px solid #444; margin-bottom: 10px;
-        }
 
-        /* --- 生管後台 --- */
+        /* Config Modal */
+        #config-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: none; flex-direction: column; justify-content: center; padding: 20px; }
+        .config-box { background: #222; padding: 20px; border-radius: 10px; border: 1px solid #555; max-width: 500px; margin: 0 auto; width: 100%; }
+        .config-input { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #555; color: #00e676; font-family: monospace; font-size: 0.9rem; }
+
+        /* Admin Styles */
+        .admin-panel { background-color: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid #333; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         .admin-dashboard-layout { display: flex; flex-direction: column; gap: 20px; height: 100%; }
-        .admin-panel { 
-            background-color: var(--bg-card); padding: 20px; border-radius: 12px; 
-            border: 1px solid #333; flex: 1; display: flex; flex-direction: column;
-            overflow-y: auto;
-        }
-        
-        .admin-input { 
-            width: 100%; padding: 12px 15px; 
-            background: #2b2b2b; border: 1px solid #555; 
-            color: white; font-size: 1.1rem; border-radius: 6px;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .admin-input:focus { border-color: var(--accent); background: #333; outline: none; }
-        
-        .sub-items-wrapper {
-            flex: 1; overflow-y: auto; margin: 15px 0; min-height: 150px;
-            border: 1px dashed #444; padding: 10px; border-radius: 8px;
-        }
-        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 50px; gap: 10px; margin-bottom: 10px; animation: fadeIn 0.2s ease; }
-        .btn-row-delete { background: #333; border: 1px solid #555; color: #ff5252; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-row-delete:hover { background: #444; }
+        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 50px; gap: 10px; margin-bottom: 8px; }
+        .admin-input { width: 100%; padding: 12px 15px; background: #2b2b2b; border: 1px solid #555; color: white; font-size: 1.1rem; border-radius: 6px; margin-bottom: 10px;}
 
-        .template-area { background: #151515; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; border-left: 4px solid var(--primary); }
-        .template-select { flex: 1; }
-        
-        .admin-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-top: auto; padding-top: 10px;}
-
-        .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
-        .report-table th { background: #333; color: var(--primary); padding: 10px; text-align: left; }
-        .report-table td { border-bottom: 1px solid #444; padding: 10px; }
-        .report-total { font-weight: bold; color: var(--success); }
-        
-        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #2a2a2a; border-radius: 5px; border: 1px solid #444; cursor: pointer; }
-        .checkbox-wrapper input { width: 20px; height: 20px; accent-color: var(--success); cursor: pointer; }
-
-        /* --- Loading --- */
-        #loading-mask {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 3000;
-            display: none; align-items: center; justify-content: center; flex-direction: column;
-        }
+        #loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; flex-direction: column; }
         .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s infinite linear; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* RWD 手機版 */
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            .nav-bar { 
-                width: 100%; height: 65px; flex-direction: row; padding: 0 10px; 
-                border-right: none; border-top: 1px solid #333; order: 2;
-            }
-            .container { order: 1; padding-bottom: 10px; }
-            .nav-btn { margin-bottom: 0; flex-direction: column; padding: 5px; }
-            .nav-icons { flex-direction: row; justify-content: space-around; width: 100%; gap: 0; }
-            .version-tag { display: none; }
-            .sub-item-row { grid-template-columns: 1fr; gap: 5px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-            .btn-row-delete { grid-column: 1 / -1; padding: 10px; margin-top: 5px; background: #422; border-color: #f44336; }
-            .admin-dashboard-layout { display: flex; flex-direction: column; }
-        }
-
-        /* RWD 電腦版 */
         @media (min-width: 769px) {
-            .container {
-                max-width: 1200px; background-color: var(--bg-color);
-                box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
-                height: 95vh;
-                border-radius: 20px;
-                overflow: hidden; padding-left: 80px; width: 100%;
-            }
+            .container { max-width: 1200px; margin: 20px 0; height: 95vh; border-radius: 20px; padding-left: 80px; width: 100%; background-color: var(--bg-card); box-shadow: 0 0 30px rgba(0,0,0,0.8); }
             .nav-bar { position: absolute; left: 0; top: 0; height: 100%; width: 80px; border-radius: 20px 0 0 20px; }
-            
-            .admin-dashboard-layout { 
-                display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; 
-                height: 100%; overflow: hidden; 
-            }
-            
-            .admin-panel { 
-                height: 100%; overflow-y: auto; display: flex; flex-direction: column;
-            }
-            
-            .admin-list-panel { 
-                height: 100%; overflow-y: auto; 
-                border-left: 1px solid #333; padding-left: 20px;
-            }
-            
+            .admin-dashboard-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; height: 100%; overflow: hidden; }
             .login-box, #screen-queue, #screen-manpower, #screen-working, #screen-finish { max-width: 600px; margin: 0 auto; width: 100%; }
-            .keypad { max-width: 500px; gap: 15px; }
-            .key-btn { font-size: 2rem; padding: 25px 0; }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        
-        <!-- 1. 登入 (ATM 風格) -->
+        <!-- Login -->
         <div id="screen-login" class="screen" style="display: block;">
-            <div class="login-wrapper">
-                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V5.0</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+                <h2 style="color:var(--accent); letter-spacing:2px;">MES LITE <span style="font-size:0.8rem; color:#555;">V5.8</span></h2>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
-                
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
                 <div id="login-msg" style="color: var(--danger); height: 20px; margin-bottom:10px;"></div>
-
                 <div id="login-keypad"></div>
-
-                <div style="margin-top:20px; font-size:0.8rem; color:#444;">
-                    Status: <span id="cloud-status">Checking...</span>
-                </div>
-                <!-- 新增測試按鈕 -->
-                <button onclick="testConnection()" style="margin-top:10px; background:none; border:1px solid #444; color:#888; border-radius:4px; padding:5px 10px; cursor:pointer;">☁️ 測試連線</button>
+                <div style="margin-top:20px; font-size:0.8rem; color:#444;">Status: <span id="cloud-status">Init...</span></div>
+                <button onclick="openConfig()" style="margin-top:15px; background:none; border:1px solid #555; color:#888; border-radius:4px; padding:5px 10px; cursor:pointer;">⚙️ 設定連線</button>
             </div>
         </div>
 
-        <!-- 2. 工單列表 (Queue) -->
-        <div id="screen-queue" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="margin:0; color:var(--primary);">📋 待辦工單</h2>
-                <div style="color: var(--accent); font-weight: bold;">
-                    <span id="user-name">User</span>
+        <!-- Config Modal -->
+        <div id="config-modal">
+            <div class="config-box">
+                <h3>⚙️ 設定後端網址</h3>
+                <p style="font-size:0.8rem; color:#aaa;">請貼上 Google Apps Script 部署網址 (以 /exec 結尾)</p>
+                <textarea id="config-url-input" class="config-input" rows="3"></textarea>
+                <div style="display:flex; gap:10px;">
+                    <button class="large-btn btn-secondary" onclick="closeConfig()">取消</button>
+                    <button class="large-btn btn-confirm" onclick="saveConfig()">💾 保存並測試</button>
                 </div>
             </div>
-            <div class="cloud-status" id="last-sync-time" style="color:#666; font-size:0.8rem; margin-bottom:5px;"></div>
+        </div>
 
-            <div id="active-section" style="margin-bottom: 20px; display: none;">
-                <div style="font-size:0.9rem; color:var(--success); margin-bottom:5px; font-weight:bold;">🔥 進行中 (RUNNING)</div>
+        <!-- Queue -->
+        <div id="screen-queue" class="screen">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <h2 style="margin:0; color:var(--primary);">📋 待辦工單</h2>
+                <div style="color:var(--accent); font-weight:bold;"><span id="user-name">User</span></div>
+            </div>
+            <div id="active-section" style="margin-bottom:20px; display:none;">
+                <div style="font-size:0.9rem; color:var(--success); margin-bottom:5px; font-weight:bold;">🔥 進行中</div>
                 <div id="active-list"></div>
             </div>
-
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <div style="font-size:0.9rem; color:#888;">待辦事項 (To Do)</div>
-                <button onclick="syncData()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 雲端同步</button>
+                <div style="font-size:0.9rem; color:#888;">待辦事項</div>
+                <button onclick="syncData()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 同步</button>
             </div>
             <div id="queue-list"></div>
         </div>
 
-        <!-- 3. 人數輸入 -->
+        <!-- Manpower -->
         <div id="screen-manpower" class="screen">
-            <h2 id="manpower-title" style="text-align:center; color:var(--accent);">👥 開工設定</h2>
-            <p id="manpower-desc" style="text-align:center; color:#aaa;">本次投入多少人力？</p>
+            <h2 style="text-align:center; color:var(--accent);">👥 開工設定</h2>
             <div id="manpower-display" class="pin-display">0</div>
             <div id="manpower-keypad"></div>
-            <button class="large-btn btn-secondary" onclick="cancelManpower()">取消 (Cancel)</button>
+            <button class="large-btn btn-secondary" onclick="showScreen('queue')">取消</button>
         </div>
 
-        <!-- 4. 計時畫面 -->
-        <div id="screen-working" class="screen" style="display: flex; flex-direction: column;">
-            <div class="job-card-large">
-                <div style="color:#4caf50; font-size:0.9rem; font-weight:bold; letter-spacing:1px;">● 正在執行 (CLOUD)</div>
-                <h2 id="work-prod" style="margin:10px 0; font-size:1.8rem; color:white;">產品名稱</h2>
-                <div id="work-op" style="color:var(--accent); font-size:1.4rem; font-weight:bold;">工序名稱</div>
-                <div id="work-id" style="color:#555; font-size:0.8rem; margin-top:10px;">ID</div>
-                <!-- 數據要求提示 -->
-                <div id="work-req-data" style="color:#ff9800; font-size:0.9rem; margin-top:5px; display:none;">⚠️ 結束時需輸入數據</div>
+        <!-- Working -->
+        <div id="screen-working" class="screen" style="display:flex; flex-direction:column;">
+            <div style="background:#222; padding:15px; border-radius:15px; text-align:center; border:1px solid #444; margin-bottom:10px;">
+                <h2 id="work-prod" style="margin:10px 0; font-size:1.8rem; color:white;">Product</h2>
+                <div id="work-op" style="color:var(--accent); font-size:1.4rem; font-weight:bold;">Op</div>
             </div>
-            <div class="timer-box">
-                <div class="timer-val" id="timer">00:00:00</div>
-                <div style="color:#888; margin-top:10px;">目前人數: <span id="work-man" style="color:white; font-weight:bold; font-size:1.2rem;">4</span></div>
+            <div style="text-align:center; margin:20px 0;">
+                <div id="timer" style="font-size:4rem; font-weight:bold; color:var(--accent);">00:00:00</div>
+                <div style="color:#888; margin-top:10px;">人數: <span id="work-man" style="color:white; font-weight:bold;">4</span></div>
             </div>
             <div style="margin-top:auto;">
-                <button class="large-btn btn-confirm" style="height: 80px; font-size: 1.8rem;" onclick="endJob()">🏁 完成 (Finish)</button>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                    <button class="large-btn btn-secondary" onclick="adjustManpower()">👥 調整人數</button>
+                <button class="large-btn btn-confirm" onclick="endJob()" style="height:80px; font-size:1.8rem;">🏁 完成</button>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                    <button class="large-btn btn-secondary" onclick="adjustManpower()">👥 調整</button>
                     <button class="large-btn btn-secondary" onclick="showScreen('queue')">⬅ 暫離</button>
                 </div>
             </div>
         </div>
 
-        <!-- 5. 數量輸入/確認 -->
+        <!-- Finish -->
         <div id="screen-finish" class="screen">
-            <div id="finish-instruction" style="font-size: 1.5rem; text-align: center; margin-bottom: 10px; color: var(--accent); font-weight: bold;"></div>
+            <div id="finish-instruction" style="font-size:1.5rem; text-align:center; margin-bottom:10px; color:var(--accent); font-weight:bold;"></div>
             <div id="qty-display" class="pin-display">0</div>
-            <div id="finish-summary" style="text-align: left; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;"></div>
+            <div id="finish-summary" style="text-align:left; background:#222; padding:15px; border-radius:8px; margin-bottom:20px; display:none;"></div>
             <div id="finish-keypad"></div>
         </div>
 
-        <!-- 6. 生管後台 -->
-        <div id="screen-admin" class="screen" style="width: 100%; max-width: none; height: 100%;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h2 style="margin:0;">🛠️ 生管控制台</h2>
-                <button onclick="logout()" style="background:#333; color:#ccc; border:none; padding:5px 10px; border-radius:4px;">退出</button>
-            </div>
-
-            <div class="admin-header">
-                <button class="admin-tab active" onclick="showAdminTab('create')">建立工單</button>
-                <button class="admin-tab" onclick="showAdminTab('history')">工時報表</button>
-            </div>
-            
-            <!-- 建立工單 Tab (雙欄佈局) -->
-            <div id="admin-tab-create" style="height: calc(100% - 60px);">
-                <div class="admin-dashboard-layout">
-                    
-                    <!-- 左欄：輸入與設定 (可捲動) -->
-                    <div class="admin-panel">
-                        <div class="template-area">
-                            <label style="color:#aaa; font-size:0.8rem;">📂 範本管理</label>
-                            <div style="display:flex; gap:10px; margin-top:5px;">
-                                <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()">
-                                    <option value="">-- 載入範本 --</option>
-                                </select>
-                                <button class="btn-danger" style="padding:0 15px; border-radius:4px; border:none; cursor:pointer;" onclick="deleteTemplate()">🗑️</button>
-                            </div>
-                        </div>
-                        <h3>新增工單 (Batch)</h3>
-                        
-                        <input id="admin-mwo" class="admin-input" placeholder="總工單號 (例: MWO-2025-A)">
-                        <input type="number" id="admin-weight" class="admin-input" placeholder="原料總重 (KG)">
-                        
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" id="admin-req-data">
-                            <label for="admin-req-data" style="color:#fff; font-size:0.9rem; cursor:pointer;">要求現場輸入生產數據 (Input Required)</label>
-                        </div>
-
-                        <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px; flex: 1; display: flex; flex-direction: column;">
-                            <label style="color:#888; font-size:0.9rem;">工序清單</label>
-                            <div id="admin-sub-items" class="sub-items-wrapper">
-                                <!-- JS 動態生成 -->
-                            </div>
-                            <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; border:1px dashed #555; color:#ccc; margin-top:10px; cursor:pointer;">+ 新增一行</button>
-                        </div>
-
-                        <div class="admin-actions">
-                            <button class="large-btn btn-secondary" style="font-size:1rem; margin:0;" onclick="saveTemplate()">💾 存為範本</button>
-                            <button class="large-btn btn-confirm" style="font-size:1.2rem; margin:0;" onclick="publishWorkOrders()">🚀 立即發布工單</button>
-                        </div>
-                        <button class="large-btn btn-danger" style="margin-top:20px; font-size:1rem; background:#300; border-color:#500;" onclick="adminReset()">⚠️ 重置所有資料</button>
-                    </div>
-
-                    <!-- 右欄：目前排程列表 (可捲動) -->
-                    <div class="admin-list-panel">
-                        <h3 style="margin-top:0; color:#aaa; border-bottom:1px solid #333; padding-bottom:10px;">
-                            雲端排程預覽 (<span id="queue-count">0</span>)
-                        </h3>
-                        <div id="admin-list"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 匯出報表 Tab -->
-            <div id="admin-tab-history" style="display:none;">
+        <!-- Admin -->
+        <div id="screen-admin" class="screen" style="width:100%; max-width:none; height:100%;">
+            <div class="admin-dashboard-layout">
                 <div class="admin-panel">
-                    <h3>📊 人工時數總計表</h3>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="color:#888; font-size:0.8rem;">統計維度:</span>
-                        <select id="report-group-by" onchange="renderSummaryTable()" style="background:#222; color:white; border:1px solid #555; padding:5px; border-radius:4px;">
-                            <option value="by-op">依工序 (By Operation)</option>
-                            <option value="by-master">依總工單 (By Master WO)</option>
-                        </select>
+                    <h3>➕ 建立工單</h3>
+                    <input id="admin-mwo" class="admin-input" placeholder="總工單號">
+                    <div id="admin-sub-items" class="sub-items-wrapper"></div>
+                    <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; color:#ccc; border:1px dashed #555;">+ 新增</button>
+                    <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <button class="large-btn btn-secondary" onclick="saveTemplate()">💾 範本</button>
+                        <button class="large-btn btn-confirm" onclick="publishWorkOrders()">🚀 發布</button>
                     </div>
-                    <div id="summary-table-container" style="margin-top:15px;"></div>
-                    <button class="large-btn btn-secondary" style="margin-top:20px;" onclick="renderSummaryTable()">🔄 刷新統計</button>
+                    <button class="large-btn btn-danger" style="margin-top:20px;" onclick="adminReset()">⚠️ 重置</button>
                 </div>
-                <div style="margin-top:20px;">
-                    <h3>📜 詳細紀錄列表</h3>
-                    <div id="history-list" style="font-size:0.8rem; color:#aaa;"></div>
+                <div class="admin-panel" style="border-left:1px solid #333;">
+                    <h3>雲端預覽</h3>
+                    <div id="admin-list"></div>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- 導航列 -->
     <div class="nav-bar">
-        <div class="nav-icons">
-            <button class="nav-btn" onclick="showScreen('queue')">
-                <svg viewBox="0 0 24 24"><path d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z"/></svg>
-                <span>工單</span>
-            </button>
-            <button class="nav-btn" onclick="logout()">
-                <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-                <span>登出</span>
-            </button>
-        </div>
-        <div class="version-tag">V5.0</div>
+        <button class="nav-btn" onclick="showScreen('queue')"><svg viewBox="0 0 24 24"><path d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z"/></svg><span>工單</span></button>
+        <button class="nav-btn" onclick="logout()"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg><span>登出</span></button>
     </div>
 
-    <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">雲端同步中...</div></div>
+    <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">處理中...</div></div>
 
     <script>
-        // 🚨 請務必替換為您的 GAS Webhook URL
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyP9sYjwQ3pM7MMkrbiWTaUKmIeUcWhtWzPEqyhBlpHds7NfK6I49TTbEg4DWGsutBytA/exec";
+        // 預設 URL，會被 LocalStorage 覆蓋
+        let GAS_URL = "YOUR_GAS_WEBHOOK_URL_HERE"; 
         const TOKEN = "MES_LITE_2025";
 
-        let appData = { queue: [], activeJobs: {}, history: [], templates: [] }; 
-        let uiState = { screen: 'login', pin: '', user: null, lang: 'zh', targetWoId: null, tempVal: '0', finishStep: 0, finishCache: {}, isAdjusting: false };
+        let appData = { queue: [], activeJobs: [], history: [], templates: [] };
+        let uiState = { screen: 'login', pin: '', user: null, targetWoId: null, tempVal: '0', finishStep: 0, finishCache: {}, isAdjusting: false };
         let syncTimer = null;
 
-        const DEMO_QUEUE = [{ wo_id: 'DEMO-1', master: 'SAMPLE', prod_zh: '測試品A', prod_vn: 'Test A', op_zh: '包裝', op_vn: 'Packing', rank: 1 }];
-        const I18N = { zh: { welcome: '你好', running: '進行中', waiting: '待辦', finish: '完成', back: '暫離', confirm: '確認送出', step_reject: '❌ 輸入損耗 (KG)', step_collar: '下巴重量 (KG)', step_tail: '尾段重量 (KG)', step_total: '✅ 良品/總重 (KG)', summary: '📋 請確認資料' }, vn: { welcome: 'Xin chào', running: 'Đang chạy', waiting: 'Chờ', finish: 'Hoàn tất', back: 'Quay lại', confirm: 'Xác nhận', step_reject: '❌ Hỏng (KG)', step_collar: 'Cằm (KG)', step_tail: 'Đuôi (KG)', step_total: '✅ Tổng (KG)', summary: '📋 Xác nhận' } };
-
         function init() {
-            loadStorage();
-            if (!appData.queue || appData.queue.length === 0) { appData.queue = JSON.parse(JSON.stringify(DEMO_QUEUE)); saveStorage(); }
+            // 載入儲存的 URL
+            const savedUrl = localStorage.getItem('mes_gas_url');
+            if (savedUrl) GAS_URL = savedUrl;
+            
+            // UI Init
             renderATMKeypad('login-keypad', handleLoginInput);
             renderATMKeypad('manpower-keypad', handleManpowerInput);
             renderATMKeypad('finish-keypad', handleFinishInput);
             
-            if (GAS_URL.includes("YOUR")) alert("請設定 GAS URL!");
-            else document.getElementById('cloud-status').textContent = "Ready";
-            
+            // 初始載入本地數據
+            const localData = localStorage.getItem('mes_v5_data');
+            if(localData) appData = JSON.parse(localData);
+
             showScreen('login');
-            
-            // Sync immediately on load if user already logged in (e.g. refresh)
-            if (localStorage.getItem('mes_v4_user')) {
-                uiState.user = JSON.parse(localStorage.getItem('mes_v4_user'));
-                if (uiState.user.role === 'admin') showScreen('admin');
-                else showScreen('queue');
-            }
+            updateStatusDisplay();
 
-            syncTimer = setInterval(() => {
-                if (uiState.user) syncData(true); 
-            }, 10000);
-
+            // 自動同步
+            syncTimer = setInterval(() => { if(uiState.user) syncData(true); }, 10000);
             setInterval(() => { if(uiState.screen === 'working') updateTimerDisplay(); }, 1000);
         }
 
-        function loadStorage() {
-            try {
-                const raw = localStorage.getItem('mes_v4_data');
-                if (raw) appData = JSON.parse(raw);
-                if (!appData.templates) appData.templates = [];
-                if (!appData.history) appData.history = [];
-                if (Array.isArray(appData.activeJobs)) appData.activeJobs = {};
-            } catch(e) { console.error(e); }
+        // --- Config Functions ---
+        function openConfig() {
+            document.getElementById('config-url-input').value = GAS_URL;
+            document.getElementById('config-modal').style.display = 'flex';
+        }
+        function closeConfig() { document.getElementById('config-modal').style.display = 'none'; }
+        
+        async function saveConfig() {
+            const newUrl = document.getElementById('config-url-input').value.trim();
+            if(!newUrl.startsWith("http")) return alert("網址格式錯誤");
+            
+            GAS_URL = newUrl;
+            localStorage.setItem('mes_gas_url', newUrl);
+            closeConfig();
+            updateStatusDisplay();
+            
+            // Test Connection
+            alert("設定已儲存，正在測試連線...");
+            await syncData(false);
         }
 
-        function saveStorage() { localStorage.setItem('mes_v4_data', JSON.stringify(appData)); }
+        function updateStatusDisplay() {
+            const el = document.getElementById('cloud-status');
+            if(GAS_URL.includes("YOUR_GAS")) { el.textContent = "未設定URL"; el.style.color = "orange"; }
+            else el.textContent = "Ready";
+        }
 
-        // --- CLOUD SYNC (V5.0 Fix) ---
+        // --- Sync ---
         async function syncData(silent = false) {
             if (!silent) document.getElementById('loading-mask').style.display = 'flex';
-            const cloudStatus = document.getElementById('cloud-status');
-            if(cloudStatus) cloudStatus.textContent = "Syncing...";
+            if(GAS_URL.includes("YOUR_GAS")) {
+                 if(!silent) { alert("請先設定後端網址！"); openConfig(); }
+                 document.getElementById('loading-mask').style.display = 'none';
+                 return;
+            }
 
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
-                    // 使用 text/plain 是 GAS 最穩定的方式，避免 CORS preflight
-                    headers: { 'Content-Type': 'text/plain' }, 
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({ action: 'GET_STATE', token: TOKEN })
                 });
+                
+                if(!res.ok) throw new Error("HTTP " + res.status);
                 const data = await res.json();
-
-                if (data.success) {
+                
+                if(data.success) {
                     appData.queue = data.queue || [];
-                    const cloudActiveMap = {};
-                    if (data.active) {
-                        data.active.forEach(job => {
-                            cloudActiveMap[job.wo_id] = job;
-                            if (!appData.activeJobs[job.wo_id]) {
-                                appData.activeJobs[job.wo_id] = {
-                                    ...job,
-                                    lastUpdate: Date.now(),
-                                    accTime: job.accTime || 0
-                                };
-                            } else {
-                                appData.activeJobs[job.wo_id].manpower = job.manpower;
-                                appData.activeJobs[job.wo_id].req_data = job.req_data;
+                    // Map Active Jobs
+                    const cloudMap = {};
+                    if(data.active) {
+                        data.active.forEach(j => {
+                            cloudMap[j.wo_id] = j;
+                            // Preserve local specific start time if needed, or sync fully
+                            if(!appData.activeJobs[j.wo_id]) appData.activeJobs[j.wo_id] = { ...j, lastUpdate: Date.now(), accTime: j.accTime || 0 };
+                            else {
+                                appData.activeJobs[j.wo_id].manpower = j.manpower;
+                                appData.activeJobs[j.wo_id].req_data = j.req_data;
                             }
                         });
                     }
-                    Object.keys(appData.activeJobs).forEach(id => {
-                        if (!cloudActiveMap[id]) delete appData.activeJobs[id];
-                    });
+                    // Cleanup local
+                    Object.keys(appData.activeJobs).forEach(k => { if(!cloudMap[k]) delete appData.activeJobs[k]; });
 
                     saveStorage();
-                    if(cloudStatus) cloudStatus.textContent = "Connected ✅";
-                    const lastSync = document.getElementById('last-sync-time');
-                    if(lastSync) lastSync.textContent = new Date().toLocaleTimeString();
-                    
-                    if (uiState.screen === 'queue') renderQueue();
-                    if (uiState.screen === 'admin') renderAdminList();
+                    if(document.getElementById('cloud-status')) {
+                        document.getElementById('cloud-status').textContent = "Connected ✅";
+                        document.getElementById('cloud-status').style.color = "#4caf50";
+                    }
+                    if(uiState.screen === 'queue') renderQueue();
+                    if(uiState.screen === 'admin') renderAdminList();
                 }
-            } catch (e) {
-                console.error("Sync failed", e);
-                if(cloudStatus) cloudStatus.textContent = "Offline ⚠️";
-                if (!silent) alert("連線錯誤: " + e.message);
+            } catch(e) {
+                console.error(e);
+                if(document.getElementById('cloud-status')) {
+                    document.getElementById('cloud-status').textContent = "Offline ⚠️";
+                    document.getElementById('cloud-status').style.color = "red";
+                }
+                if(!silent) alert("連線失敗: " + e.message + "\n請檢查 GAS 部署設定 (Anyone)");
             } finally {
                 if (!silent) document.getElementById('loading-mask').style.display = 'none';
             }
         }
 
-        async function sendAction(payload, silent = false) {
-            if(!silent) document.getElementById('loading-mask').style.display = 'flex';
+        async function sendAction(payload) {
+            document.getElementById('loading-mask').style.display = 'flex';
             payload.token = TOKEN;
             try {
                 const res = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify(payload)
+                    method: 'POST', redirect: 'follow', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(payload)
                 });
-                const text = await res.text();
-                let data;
-                try { data = JSON.parse(text); } 
-                catch(e) { throw new Error("Server response invalid: " + text.substring(0, 50)); }
-
-                if (data.success) {
-                    await syncData(true);
-                    return true;
-                } else {
-                    alert("Server Error: " + data.message);
-                    return false;
-                }
-            } catch (e) {
-                alert("連線錯誤: " + e.message);
-                return false;
-            } finally {
-                if(!silent) document.getElementById('loading-mask').style.display = 'none';
-            }
-        }
-        
-        async function testConnection() {
-            alert("正在測試連線...");
-            await syncData(false);
+                const data = await res.json();
+                if(data.success) { await syncData(true); return true; }
+                else { alert("Server Error: " + data.message); return false; }
+            } catch(e) { alert("Network Error: " + e.message); return false; }
+            finally { document.getElementById('loading-mask').style.display = 'none'; }
         }
 
-        // --- Navigation ---
+        function saveStorage() { localStorage.setItem('mes_v5_data', JSON.stringify(appData)); }
+
+        // --- Screens & Logic ---
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(e => e.style.display = 'none');
             document.getElementById('screen-' + id).style.display = 'block';
             uiState.screen = id;
-            
             const nav = document.querySelector('.nav-bar');
-            if (id === 'login') nav.style.display = 'none'; else nav.style.display = 'flex';
-
-            if (id === 'queue') {
-                renderQueue();
-                syncData(true); 
-            }
-            if (id === 'admin') renderAdminCreate();
+            if(id === 'login') nav.style.display = 'none'; else nav.style.display = 'flex';
+            if(id === 'queue') { renderQueue(); syncData(true); }
+            if(id === 'admin') renderAdminCreate();
         }
 
-        function logout() { 
-            if(confirm("登出?")) { 
-                uiState.user = null; 
-                localStorage.removeItem('mes_v4_user');
-                showScreen('login'); 
-            } 
-        }
-
-        // --- Login ---
-        function handleLoginInput(key) {
-            if (key === 'C') uiState.pin = '';
-            else if (key === 'OK') {
-                if (uiState.pin === '9999') {
-                    uiState.user = { name: 'Admin', role: 'admin' }; 
-                    localStorage.setItem('mes_v4_user', JSON.stringify(uiState.user));
-                    showScreen('admin');
-                } else if (['1234', '5678'].includes(uiState.pin)) {
-                    uiState.lang = (uiState.pin === '1234') ? 'vn' : 'zh';
-                    uiState.user = { name: '主管', pin: uiState.pin };
-                    localStorage.setItem('mes_v4_user', JSON.stringify(uiState.user));
+        function handleLoginInput(k) {
+            if(k === 'C') uiState.pin = '';
+            else if(k === 'OK') {
+                if(uiState.pin === '9999') { uiState.user = {name:'Admin'}; showScreen('admin'); }
+                else if(['1234','5678'].includes(uiState.pin)) {
+                    uiState.user = {name:'主管', pin:uiState.pin};
                     document.getElementById('user-name').textContent = uiState.user.name;
                     showScreen('queue');
-                } else {
-                    alert("密碼錯誤"); uiState.pin = '';
-                }
-            } else {
-                if (uiState.pin.length < 4) uiState.pin += key;
-            }
-            document.getElementById('pin-display').textContent = uiState.pin.length > 0 ? '● '.repeat(uiState.pin.length) : '_ _ _ _';
+                } else { alert("密碼錯誤"); uiState.pin = ''; }
+            } else if(uiState.pin.length < 4) uiState.pin += k;
+            document.getElementById('pin-display').textContent = uiState.pin.length > 0 ? '●'.repeat(uiState.pin.length) : '_ _ _ _';
         }
 
-        // --- Queue ---
         function renderQueue() {
             const list = document.getElementById('queue-list');
             const activeList = document.getElementById('active-list');
-            const activeSec = document.getElementById('active-section');
             list.innerHTML = ''; activeList.innerHTML = '';
-            
             let hasActive = false;
-            Object.keys(appData.activeJobs).forEach(id => {
-                const session = appData.activeJobs[id]; 
+
+            // Active
+            Object.values(appData.activeJobs).forEach(job => {
                 const div = document.createElement('div');
                 div.className = 'queue-item active-job';
-                div.innerHTML = `<div class="q-info"><h3>${session.prod} - ${session.op}</h3><p>👥 ${session.manpower} | ${session.master}</p></div><div style="font-size:1.5rem;">▶️</div>`;
-                div.onclick = () => openWorkingScreen(id);
-                activeList.appendChild(div);
-                hasActive = true;
+                div.innerHTML = `<div class="q-info"><h3>${job.prod} - ${job.op}</h3><p>👥 ${job.manpower} | ${job.master}</p></div><div style="font-size:1.5rem;">▶️</div>`;
+                div.onclick = () => openWorkingScreen(job.wo_id);
+                activeList.appendChild(div); hasActive = true;
             });
-            activeSec.style.display = hasActive ? 'block' : 'none';
+            document.getElementById('active-section').style.display = hasActive ? 'block' : 'none';
 
-            if (appData.queue.length === 0) list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">無待辦工單</div>';
+            // Queue
             appData.queue.forEach(job => {
                 const div = document.createElement('div');
                 div.className = 'queue-item';
-                div.innerHTML = `<div class="q-info"><h3>${uiState.lang==='vn'?job.prod_zh:job.prod_zh} - ${uiState.lang==='vn'?job.op_zh:job.op_zh}</h3><p>${job.master}</p></div>`;
+                div.innerHTML = `<div class="q-info"><h3>${job.prod_zh} - ${job.op_zh}</h3><p>${job.master}</p></div>`;
                 div.onclick = () => prepareJob(job.wo_id);
                 list.appendChild(div);
             });
         }
 
-        // --- Work Flow ---
         function prepareJob(id) {
-            uiState.targetWoId = id;
-            uiState.isAdjusting = false;
-            uiState.tempVal = '0';
-            document.querySelector('#screen-manpower h2').textContent = "👥 開工設定";
+            uiState.targetWoId = id; uiState.isAdjusting = false; uiState.tempVal = '0';
             document.getElementById('manpower-display').textContent = '0';
             showScreen('manpower');
         }
-
+        
         function adjustManpower() {
             uiState.isAdjusting = true; uiState.tempVal = '0';
-            document.querySelector('#screen-manpower h2').textContent = "👥 調整人數";
             document.getElementById('manpower-display').textContent = '0';
             showScreen('manpower');
         }
 
-        function cancelManpower() {
-            if (uiState.isAdjusting) showScreen('working'); else showScreen('queue');
-        }
-
-        function handleManpowerInput(key) {
-            if (key === 'C') uiState.tempVal = '0';
-            else if (key === 'OK') {
+        function handleManpowerInput(k) {
+            if(k === 'C') uiState.tempVal = '0';
+            else if(k === 'OK') {
                 const val = parseInt(uiState.tempVal);
-                if (val > 0) {
-                    if (uiState.isAdjusting) doUpdateManpower(val);
-                    else doStartJob(val);
+                if(val > 0) {
+                    if(uiState.isAdjusting) doUpdateManpower(val); else doStartJob(val);
                 } else alert("> 0");
-            } else {
-                uiState.tempVal = (uiState.tempVal === '0' ? key : uiState.tempVal + key);
-            }
+            } else uiState.tempVal = (uiState.tempVal === '0' ? k : uiState.tempVal + k);
             document.getElementById('manpower-display').textContent = uiState.tempVal;
         }
 
-        async function doStartJob(manpower) {
+        async function doStartJob(mp) {
             const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
-            const success = await sendAction({
-                action: 'START_JOB',
-                wo_id: uiState.targetWoId,
-                master: job.master,
-                prod: job.prod_zh,
-                op: job.op_zh,
-                pin: uiState.user.pin,
-                manpower: manpower,
-                start_time: new Date().toISOString(),
-                req_data: job.req_data 
+            const ok = await sendAction({
+                action: 'START_JOB', wo_id: uiState.targetWoId, master: job.master, prod: job.prod_zh, op: job.op_zh,
+                pin: uiState.user.pin, manpower: mp, start_time: new Date().toISOString(), req_data: job.req_data
             });
-            if (success) openWorkingScreen(uiState.targetWoId);
+            if(ok) openWorkingScreen(uiState.targetWoId);
         }
 
-        async function doUpdateManpower(newManpower) {
+        async function doUpdateManpower(mp) {
             const job = appData.activeJobs[uiState.targetWoId];
+            // 簡易計算累積
             const now = Date.now();
-            const start = new Date(job.lastUpdate || job.startISO); 
-            const segmentMs = now - start;
-            const segmentHours = (segmentMs / 3600000.0) * job.manpower;
-            const newAcc = (job.accTime || 0) + segmentHours;
-
-            const success = await sendAction({
-                action: 'UPDATE_JOB',
-                wo_id: uiState.targetWoId,
-                manpower: newManpower,
-                start_time: new Date(now).toISOString(), 
-                acc_time: newAcc
+            const newAcc = (job.accTime||0) + ((now - (job.lastUpdate||Date.parse(job.startISO)))/3600000 * job.manpower);
+            const ok = await sendAction({
+                action: 'UPDATE_JOB', wo_id: uiState.targetWoId, manpower: mp, start_time: new Date().toISOString(), acc_time: newAcc
             });
-            
-            if(success) openWorkingScreen(uiState.targetWoId);
+            if(ok) openWorkingScreen(uiState.targetWoId);
         }
 
         function openWorkingScreen(id) {
             uiState.targetWoId = id;
             const job = appData.activeJobs[id];
-            if (!job) { showScreen('queue'); return; }
-
+            if(!job) { showScreen('queue'); return; }
             document.getElementById('work-prod').textContent = job.prod;
             document.getElementById('work-op').textContent = job.op;
             document.getElementById('work-id').textContent = id;
             document.getElementById('work-man').textContent = job.manpower;
-            
-            const reqEl = document.getElementById('work-req-data');
-            reqEl.style.display = job.req_data ? 'block' : 'none';
-
-            updateTimerDisplay();
-            showScreen('working');
+            document.getElementById('work-req-data').style.display = job.req_data ? 'block' : 'none';
+            updateTimerDisplay(); showScreen('working');
         }
 
         function updateTimerDisplay() {
-            if (uiState.screen !== 'working') return;
             const job = appData.activeJobs[uiState.targetWoId];
-            if (!job) return;
-
-            const lastUpdate = new Date(job.startISO); 
-            const now = new Date();
-            const diff = Math.floor((now - lastUpdate) / 1000);
-            
+            if(!job) return;
+            const last = new Date(job.startISO).getTime(); // 簡化：顯示從開始到現在的時間
+            const diff = Math.floor((Date.now() - last)/1000);
             const h = String(Math.floor(diff/3600)).padStart(2,'0');
             const m = String(Math.floor((diff%3600)/60)).padStart(2,'0');
             const s = String(diff%60).padStart(2,'0');
             document.getElementById('timer').textContent = `${h}:${m}:${s}`;
         }
 
-        function backToQueue() { showScreen('queue'); }
-
-        // ================= FINISH =================
         function endJob() {
-            const session = appData.activeJobs[uiState.targetWoId];
-            const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
-            // 判斷是否為分切或要求數據
-            const isSlicing = session.op.indexOf('分切') >= 0;
+            const job = appData.activeJobs[uiState.targetWoId];
+            const qJob = appData.queue.find(q => q.wo_id === uiState.targetWoId);
+            // 判斷邏輯：分切 或 req_data
+            const isSlicing = job.op.indexOf('分切') >= 0;
+            const isReq = job.req_data || (qJob && qJob.req_data);
             
-            if (session.req_data || isSlicing) {
-                uiState.finishStep = 1; 
-            } else {
-                uiState.finishStep = 99; 
-            }
-
-            uiState.finishCache = { reject:0, collar:0, tail:0, good:0 };
+            uiState.finishStep = (isSlicing || isReq) ? 1 : 99;
+            uiState.finishCache = { good:0, reject:0, collar:0, tail:0 };
             uiState.tempVal = '0';
-            updateFinishUI();
-            showScreen('finish');
+            updateFinishUI(); showScreen('finish');
         }
 
         function updateFinishUI() {
-            const step = uiState.finishStep;
+            const s = uiState.finishStep;
             const instr = document.getElementById('finish-instruction');
-            const display = document.getElementById('qty-display');
-            const summary = document.getElementById('finish-summary');
-            const keypad = document.getElementById('finish-keypad');
+            const disp = document.getElementById('qty-display');
+            const sum = document.getElementById('finish-summary');
+            const kbd = document.getElementById('finish-keypad');
+            
+            sum.style.display = 'none'; kbd.style.display = 'grid'; disp.style.display = 'block';
 
-            summary.style.display = 'none'; keypad.style.display = 'grid'; display.style.display = 'block';
-
-            if (step === 1) instr.textContent = I18N[uiState.lang].step_reject;
-            else if (step === 2) instr.textContent = I18N[uiState.lang].step_collar;
-            else if (step === 3) instr.textContent = I18N[uiState.lang].step_tail;
-            else if (step === 4) instr.textContent = I18N[uiState.lang].step_total;
-            else if (step === 99) {
-                instr.textContent = I18N[uiState.lang].summary;
-                display.style.display = 'none';
-                summary.style.display = 'block';
-                summary.innerHTML = `
-                    <div style="text-align:center; padding:20px;">
-                        <div style="font-size:1.2rem; color:var(--success); margin-bottom:10px;">確認結束工單？</div>
-                        <div style="color:#888;">${uiState.finishCache.good > 0 ? '(包含生產數據)' : '(僅工時)'}</div>
-                    </div>
-                    <div style="text-align:center; margin-top:10px; color:var(--accent);">按 OK 送出</div>
-                `;
+            if (s===1) instr.textContent = "❌ 損耗 (KG)";
+            else if (s===2) instr.textContent = "下巴重量 (KG)";
+            else if (s===3) instr.textContent = "尾段重量 (KG)";
+            else if (s===4) instr.textContent = "✅ 良品/總重 (KG)";
+            else if (s===99) {
+                instr.textContent = "確認送出?";
+                disp.style.display = 'none'; sum.style.display = 'block';
+                sum.innerHTML = `<div style='text-align:center;color:#4caf50;'>良品: ${uiState.finishCache.good} | 損耗: ${uiState.finishCache.reject}</div><div style='text-align:center;margin-top:10px;'>按 OK 結束</div>`;
             }
-            if (step !== 99) display.textContent = uiState.tempVal;
+            if (s!==99) disp.textContent = uiState.tempVal;
         }
 
-        function handleFinishInput(key) {
-            if (key === 'C') { uiState.tempVal = '0'; updateFinishUI(); return; }
-            if (key === 'OK') {
+        function handleFinishInput(k) {
+            if (k==='C') { uiState.tempVal = '0'; updateFinishUI(); return; }
+            if (k==='OK') {
                 const val = parseFloat(uiState.tempVal);
-                const step = uiState.finishStep;
-                if (step === 99) { doFinishJob(); return; }
+                const s = uiState.finishStep;
+                if (s===99) { doFinish(); return; }
 
-                if (step === 1) uiState.finishCache.reject = val;
-                else if (step === 2) uiState.finishCache.collar = val;
-                else if (step === 3) uiState.finishCache.tail = val;
-                else if (step === 4) uiState.finishCache.good = val;
+                if (s===1) uiState.finishCache.reject = val;
+                if (s===2) uiState.finishCache.collar = val;
+                if (s===3) uiState.finishCache.tail = val;
+                if (s===4) uiState.finishCache.good = val;
 
                 uiState.tempVal = '0';
-                if (step === 1) uiState.finishStep = 2;
-                else if (step === 2) uiState.finishStep = 3;
-                else if (step === 3) uiState.finishStep = 4;
-                else if (step === 4) uiState.finishStep = 99;
-                updateFinishUI();
-                return;
+                // 流程控制
+                if (s===1) uiState.finishStep = 2; // 這裡簡化邏輯，一律走完流程，非分切可填0
+                else if (s===2) uiState.finishStep = 3;
+                else if (s===3) uiState.finishStep = 4;
+                else if (s===4) uiState.finishStep = 99;
+                updateFinishUI(); return;
             }
-            uiState.tempVal = (uiState.tempVal === '0' ? key : uiState.tempVal + key);
-            updateFinishUI();
+            uiState.tempVal = (uiState.tempVal==='0'?k:uiState.tempVal+k); updateFinishUI();
         }
 
-        async function doFinishJob() {
+        async function doFinish() {
             const job = appData.activeJobs[uiState.targetWoId];
-            const now = new Date();
-            const start = new Date(job.startISO); 
-            const segmentMs = now - start;
-            const segmentHours = (segmentMs / 3600000.0) * job.manpower;
-            const finalTotalHours = (job.accTime || 0) + segmentHours;
-
-            await sendAction({
-                action: 'FINISH_JOB',
-                wo_id: uiState.targetWoId,
-                op: job.op,
-                pin: job.pin,
-                manpower: job.manpower,
-                total_hours: finalTotalHours.toFixed(3),
-                qty_good: uiState.finishCache.good,
-                qty_reject: uiState.finishCache.reject,
-                collar: uiState.finishCache.collar,
-                tail: uiState.finishCache.tail
-            });
+            const now = Date.now();
+            const totalMs = (job.accTime||0) + ((now - (job.lastUpdate||Date.parse(job.startISO))) * job.manpower);
+            const totalHrs = totalMs / 3600000.0;
             
-            delete appData.activeJobs[uiState.targetWoId];
-            saveStorage();
-            showScreen('queue');
-        }
-
-        // ================= ADMIN LOGIC =================
-        function renderAdminCreate() {
-            const container = document.getElementById('admin-sub-items');
-            if (!container.innerHTML) addAdminRow();
-            updateTemplateDropdown();
-            renderAdminList();
-            setTimeout(() => document.getElementById('admin-mwo').focus(), 100);
-        }
-        function updateTemplateDropdown() {
-            const sel = document.getElementById('admin-template');
-            sel.innerHTML = '<option value="">-- 載入範本 --</option>';
-            appData.templates.forEach((t, i) => { const opt = document.createElement('option'); opt.value = i; opt.textContent = t.name; sel.appendChild(opt); });
-        }
-        function addAdminRow(prod='', op='') {
-            const container = document.getElementById('admin-sub-items');
-            const div = document.createElement('div');
-            div.className = 'sub-item-row';
-            div.innerHTML = `<input class="admin-input prod" placeholder="產品" value="${prod}" onkeypress="handleAdminInputKey(event, 'prod', this)"><input class="admin-input op" placeholder="工序" value="${op}" onkeypress="handleAdminInputKey(event, 'op', this)"><button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>`;
-            container.appendChild(div);
-            if(prod === '') div.querySelector('.prod').focus();
-        }
-
-        function handleAdminInputKey(e, type, el) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const row = el.parentElement;
-                if (type === 'mwo' || type === 'weight') {
-                    const firstRow = document.querySelector('.sub-item-row .prod');
-                    if(firstRow) firstRow.focus();
-                } else if (type === 'prod') {
-                    row.querySelector('.op').focus();
-                } else if (type === 'op') {
-                    addAdminRow();
-                }
-            }
-        }
-        document.getElementById('admin-mwo').addEventListener('keypress', (e) => handleAdminInputKey(e, 'mwo', e.target));
-        document.getElementById('admin-weight').addEventListener('keypress', (e) => handleAdminInputKey(e, 'weight', e.target));
-
-        function saveTemplate() {
-            const mwo = document.getElementById('admin-mwo').value;
-            if(!mwo) return alert("需輸入總工單號做為範本名");
-            const items = [];
-            document.querySelectorAll('#admin-sub-items .sub-item-row').forEach(row => {
-                const prod = row.querySelector('.prod').value; const op = row.querySelector('.op').value;
-                if(prod && op) items.push({prod, op});
+            await sendAction({
+                action: 'FINISH_JOB', wo_id: uiState.targetWoId, op: job.op, pin: job.pin, manpower: job.manpower,
+                total_hours: totalHrs.toFixed(3), 
+                qty_good: uiState.finishCache.good, qty_reject: uiState.finishCache.reject,
+                collar: uiState.finishCache.collar, tail: uiState.finishCache.tail
             });
-            if(items.length === 0) return alert("至少需一項工序");
-            const existIdx = appData.templates.findIndex(t => t.name === mwo);
-            if(existIdx >= 0) {
-                if(!confirm(`範本 ${mwo} 已存在，覆蓋？`)) return;
-                appData.templates[existIdx] = { name: mwo, items: items };
-            } else { appData.templates.push({ name: mwo, items: items }); }
-            saveStorage(); updateTemplateDropdown(); alert("範本已儲存");
+            delete appData.activeJobs[uiState.targetWoId];
+            appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
+            saveStorage(); showScreen('queue');
         }
-        function loadTemplate() {
-            const idx = document.getElementById('admin-template').value;
-            if(idx === "") return;
-            const tmpl = appData.templates[idx];
-            document.getElementById('admin-mwo').value = tmpl.name;
-            document.getElementById('admin-sub-items').innerHTML = '';
-            tmpl.items.forEach(i => addAdminRow(i.prod, i.op));
-            document.getElementById('admin-mwo').focus();
+
+        function cancelManpower() { showScreen('queue'); }
+        function logout() { if(confirm("登出?")) { uiState.user=null; showScreen('login'); } }
+        function backToQueue() { showScreen('queue'); }
+
+        // --- Admin ---
+        function renderAdminCreate() {
+            if(!document.getElementById('admin-sub-items').innerHTML) addAdminRow();
+            renderAdminList();
         }
-        function deleteTemplate() {
-            const idx = document.getElementById('admin-template').value;
-            if(idx === "") return alert("請選擇要刪除的範本");
-            if(confirm("確定刪除此範本？")) {
-                appData.templates.splice(idx, 1); saveStorage(); updateTemplateDropdown();
-                document.getElementById('admin-template').value = "";
-            }
+        function addAdminRow() {
+            const div = document.createElement('div'); div.className='sub-item-row';
+            div.innerHTML = `<input class="admin-input prod" placeholder="產品"><input class="admin-input op" placeholder="工序"><button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>`;
+            document.getElementById('admin-sub-items').appendChild(div);
+        }
+        function adminReset() { if(confirm("Reset?")) { localStorage.clear(); location.reload(); } }
+        function renderAdminList() {
+            document.getElementById('admin-list').innerHTML = appData.queue.map(q => `<div>${q.master} - ${q.op_zh}</div>`).join('');
         }
         function publishWorkOrders() {
             const mwo = document.getElementById('admin-mwo').value;
-            const weight = document.getElementById('admin-weight').value;
-            const reqData = document.getElementById('admin-req-data').checked;
-            if(!mwo) return alert("缺單號");
+            if(!mwo) return alert("No ID");
             const jobs = [];
-            let count = 0;
-            document.querySelectorAll('#admin-sub-items .sub-item-row').forEach(row => {
+            document.querySelectorAll('.sub-item-row').forEach((row, i) => {
                 const prod = row.querySelector('.prod').value; const op = row.querySelector('.op').value;
-                if(prod && op) {
-                    count++;
-                    jobs.push({
-                        wo_id: `${mwo}-Q${Date.now()}-${count}`,
-                        master: mwo, prod_zh: prod, op_zh: op, rank: count, st: 1.0,
-                        total_weight: weight, req_data: reqData
-                    });
-                }
+                if(prod && op) jobs.push({ wo_id: `${mwo}-${i+1}`, master: mwo, prod_zh: prod, op_zh: op, rank: i+1, st: 1, req_data: document.getElementById('admin-req-data').checked });
             });
-            
             sendAction({ action: 'ADD_JOBS', jobs: jobs });
-            alert(`已送出發布請求 (${count}筆)`);
-            
-            document.getElementById('admin-mwo').value = '';
-            document.getElementById('admin-weight').value = '';
-            document.getElementById('admin-sub-items').innerHTML = '';
-            addAdminRow();
-            document.getElementById('admin-mwo').focus();
-        }
-        function renderAdminList() {
-            const div = document.getElementById('admin-list');
-            div.innerHTML = appData.queue.map(q => `<div style="border-bottom:1px solid #333; padding:5px;">${q.master} - ${q.prod_zh} - ${q.op_zh}</div>`).join('');
-            document.getElementById('queue-count').textContent = appData.queue.length;
-        }
-        function adminReset() { if(confirm("重置資料？")) { localStorage.clear(); location.reload(); } }
-
-        function renderSummaryTable() {
-            const container = document.getElementById('summary-table-container');
-            const groupBy = document.getElementById('report-group-by').value; 
-            container.innerHTML = '';
-            if (!appData.history || appData.history.length === 0) {
-                container.innerHTML = '<div style="color:#666; text-align:center;">尚無歷史資料</div>'; return;
-            }
-            const summary = {};
-            appData.history.forEach(log => {
-                let key = (groupBy === 'by-master') ? (log.wo_id.split('-')[0] || '未知工單') : (log.operation_name || '未知工序'); 
-                if (!summary[key]) { summary[key] = { count: 0, totalHours: 0 }; }
-                summary[key].count++;
-                summary[key].totalHours += parseFloat(log.total_hours || 0);
-            });
-            let html = `<table class="report-table"><thead><tr><th>${groupBy === 'by-master' ? '總工單號' : '工序名稱'}</th><th>次數</th><th style="text-align:right;">總人時 (Hr)</th></tr></thead><tbody>`;
-            let grandTotal = 0;
-            for (const [key, data] of Object.entries(summary)) {
-                html += `<tr><td>${key}</td><td>${data.count}</td><td style="text-align:right; color:#4caf50;">${data.totalHours.toFixed(2)}</td></tr>`;
-                grandTotal += data.totalHours;
-            }
-            html += `<tr style="border-top: 2px solid #555;"><td colspan="2" style="text-align:right; font-weight:bold;">總計:</td><td style="text-align:right; font-weight:bold; color:#00bcd4; font-size:1.1rem;">${grandTotal.toFixed(2)}</td></tr></tbody></table>`;
-            container.innerHTML = html;
+            alert("Sent");
         }
 
-        function showAdminTab(tab) {
-            if(tab === 'create') {
-                document.getElementById('admin-tab-create').style.display = 'block';
-                document.getElementById('admin-tab-history').style.display = 'none';
-            } else {
-                document.getElementById('admin-tab-create').style.display = 'none';
-                document.getElementById('admin-tab-history').style.display = 'block';
-                const histList = document.getElementById('history-list');
-                histList.innerHTML = appData.history.slice().reverse().map(h => {
-                    return `<div style="border-bottom:1px solid #333; padding:5px;">${h.wo_id} - ${h.operation_name} (${h.total_hours}hr)</div>`;
-                }).join('');
-                renderSummaryTable();
-            }
-            document.querySelectorAll('.admin-tab').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-        }
-
-        function renderATMKeypad(elementId, callback) {
-            const el = document.getElementById(elementId);
-            el.innerHTML = ''; el.className = 'circle-keypad';
+        function renderATMKeypad(id, cb) {
+            const el = document.getElementById(id); el.innerHTML=''; el.className='circle-keypad';
             ['1','2','3','4','5','6','7','8','9','C','0','OK'].forEach(k => {
-                const btn = document.createElement('div');
-                btn.textContent = k;
-                if(k==='C') btn.className='circle-btn clear'; else if(k==='OK') btn.className='circle-btn ok'; else btn.className = 'circle-btn';
-                btn.addEventListener('click', (e) => { e.preventDefault(); callback(k); });
-                el.appendChild(btn);
+                const b = document.createElement('div'); b.textContent=k;
+                b.className = `circle-btn ${k==='OK'?'ok':(k==='C'?'clear':'')}`;
+                b.onclick = () => cb(k); el.appendChild(b);
             });
         }
 
