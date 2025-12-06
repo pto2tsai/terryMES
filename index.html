@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V5.8 Config</title>
+    <title>MES Lite V6.3 Config Fix</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V5.8 設定與連線修復版 */
+        /* CSS: V6.3 設定修復版 */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
@@ -23,7 +23,7 @@
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: row; overflow: hidden; }
         
-        .nav-bar { width: 80px; height: 100vh; background-color: #000; display: flex; flex-direction: column; align-items: center; padding-top: 20px; z-index: 1000; border-right: 1px solid #333; flex-shrink: 0; }
+        .nav-bar { width: var(--nav-width); height: 100vh; background-color: #000; display: flex; flex-direction: column; align-items: center; padding-top: 20px; z-index: 1000; border-right: 1px solid #333; flex-shrink: 0; }
         .nav-btn { background: none; border: none; cursor: pointer; padding: 15px 5px; margin-bottom: 20px; color: var(--text-sub); display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
         .nav-btn svg { width: 32px; height: 32px; fill: currentColor; }
         .nav-btn span { font-size: 0.75rem; font-weight: bold; }
@@ -51,17 +51,22 @@
         .q-info h3 { margin: 0 0 5px 0; font-size: 1.3rem; color: white; }
         .q-info p { margin: 0; color: #bbb; font-size: 1rem; }
 
-        /* Config Modal */
+        .admin-dashboard-layout { display: flex; flex-direction: column; gap: 20px; height: 100%; }
+        .admin-panel { background-color: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid #333; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .admin-input { width: 100%; padding: 12px 15px; background: #2b2b2b; border: 1px solid #555; color: white; font-size: 1.1rem; border-radius: 6px; margin-bottom: 10px;}
+        .sub-items-wrapper { flex: 1; overflow-y: auto; margin: 15px 0; min-height: 150px; border: 1px dashed #444; padding: 10px; border-radius: 8px; }
+        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 50px; gap: 10px; margin-bottom: 8px; }
+        .btn-row-delete { background: #333; border: 1px solid #555; color: #ff5252; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .template-area { background: #151515; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; border-left: 4px solid var(--primary); }
+        .template-select { flex: 1; }
+        .admin-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-top: auto; padding-top: 10px;}
+
+        /* Modal */
         #config-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: none; flex-direction: column; justify-content: center; padding: 20px; }
         .config-box { background: #222; padding: 20px; border-radius: 10px; border: 1px solid #555; max-width: 500px; margin: 0 auto; width: 100%; }
         .config-input { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #555; color: #00e676; font-family: monospace; font-size: 0.9rem; }
 
-        /* Admin Styles */
-        .admin-panel { background-color: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid #333; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        .admin-dashboard-layout { display: flex; flex-direction: column; gap: 20px; height: 100%; }
-        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 50px; gap: 10px; margin-bottom: 8px; }
-        .admin-input { width: 100%; padding: 12px 15px; background: #2b2b2b; border: 1px solid #555; color: white; font-size: 1.1rem; border-radius: 6px; margin-bottom: 10px;}
-
+        /* Loading */
         #loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; flex-direction: column; }
         .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s infinite linear; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -80,13 +85,16 @@
         <!-- Login -->
         <div id="screen-login" class="screen" style="display: block;">
             <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
-                <h2 style="color:var(--accent); letter-spacing:2px;">MES LITE <span style="font-size:0.8rem; color:#555;">V5.8</span></h2>
+                <h2 style="color:var(--accent); letter-spacing:2px;">MES LITE <span style="font-size:0.8rem; color:#555;">V6.3</span></h2>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
                 <div id="login-msg" style="color: var(--danger); height: 20px; margin-bottom:10px;"></div>
                 <div id="login-keypad"></div>
                 <div style="margin-top:20px; font-size:0.8rem; color:#444;">Status: <span id="cloud-status">Init...</span></div>
-                <button onclick="openConfig()" style="margin-top:15px; background:none; border:1px solid #555; color:#888; border-radius:4px; padding:5px 10px; cursor:pointer;">⚙️ 設定連線</button>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button onclick="testConnection()" style="background:none; border:1px solid #444; color:#888; border-radius:4px; padding:5px 10px; cursor:pointer;">☁️ 測試連線 (Open URL)</button>
+                    <button onclick="openConfig()" style="background:none; border:1px solid #444; color:var(--primary); border-radius:4px; padding:5px 10px; cursor:pointer;">⚙️ 設定網址</button>
+                </div>
             </div>
         </div>
 
@@ -109,6 +117,7 @@
                 <h2 style="margin:0; color:var(--primary);">📋 待辦工單</h2>
                 <div style="color:var(--accent); font-weight:bold;"><span id="user-name">User</span></div>
             </div>
+            <div class="cloud-status" id="last-sync-time" style="color:#666; font-size:0.8rem; margin-bottom:5px;"></div>
             <div id="active-section" style="margin-bottom:20px; display:none;">
                 <div style="font-size:0.9rem; color:var(--success); margin-bottom:5px; font-weight:bold;">🔥 進行中</div>
                 <div id="active-list"></div>
@@ -122,7 +131,7 @@
 
         <!-- Manpower -->
         <div id="screen-manpower" class="screen">
-            <h2 style="text-align:center; color:var(--accent);">👥 開工設定</h2>
+            <h2 id="manpower-title" style="text-align:center; color:var(--accent);">👥 開工設定</h2>
             <div id="manpower-display" class="pin-display">0</div>
             <div id="manpower-keypad"></div>
             <button class="large-btn btn-secondary" onclick="showScreen('queue')">取消</button>
@@ -133,6 +142,8 @@
             <div style="background:#222; padding:15px; border-radius:15px; text-align:center; border:1px solid #444; margin-bottom:10px;">
                 <h2 id="work-prod" style="margin:10px 0; font-size:1.8rem; color:white;">Product</h2>
                 <div id="work-op" style="color:var(--accent); font-size:1.4rem; font-weight:bold;">Op</div>
+                <div id="work-id" style="color:#555; font-size:0.8rem; margin-top:10px;">ID</div>
+                <div id="work-req-data" style="color:#ff9800; font-size:0.9rem; margin-top:5px; display:none;">⚠️ 結束時需輸入數據</div>
             </div>
             <div style="text-align:center; margin:20px 0;">
                 <div id="timer" style="font-size:4rem; font-weight:bold; color:var(--accent);">00:00:00</div>
@@ -159,23 +170,34 @@
         <div id="screen-admin" class="screen" style="width:100%; max-width:none; height:100%;">
             <div class="admin-dashboard-layout">
                 <div class="admin-panel">
+                    <div class="template-area">
+                        <label style="color:#aaa; font-size:0.8rem;">📂 範本管理</label>
+                        <div style="display:flex; gap:10px; margin-top:5px;">
+                            <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()"><option value="">-- 載入範本 --</option></select>
+                            <button class="btn-row-delete" style="width:50px; background:var(--danger); border:none;" onclick="deleteTemplate()">🗑️</button>
+                        </div>
+                    </div>
                     <h3>➕ 建立工單</h3>
                     <input id="admin-mwo" class="admin-input" placeholder="總工單號">
-                    <div id="admin-sub-items" class="sub-items-wrapper"></div>
-                    <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; color:#ccc; border:1px dashed #555;">+ 新增</button>
-                    <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                        <button class="large-btn btn-secondary" onclick="saveTemplate()">💾 範本</button>
+                    <input type="number" id="admin-weight" class="admin-input" placeholder="原料總重 (KG)">
+                    <div class="checkbox-wrapper"><input type="checkbox" id="admin-req-data"><label for="admin-req-data" style="color:#fff; font-size:0.9rem; cursor:pointer;">要求現場輸入生產數據</label></div>
+                    <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px; flex:1; display:flex; flex-direction:column;">
+                        <label style="color:#888; font-size:0.9rem;">工序清單</label>
+                        <div id="admin-sub-items" class="sub-items-wrapper"></div>
+                        <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; color:#ccc; border:1px dashed #555; margin-top:10px;">+ 新增</button>
+                    </div>
+                    <div class="admin-actions">
+                        <button class="large-btn btn-secondary" onclick="saveTemplate()">💾 存範本</button>
                         <button class="large-btn btn-confirm" onclick="publishWorkOrders()">🚀 發布</button>
                     </div>
                     <button class="large-btn btn-danger" style="margin-top:20px;" onclick="adminReset()">⚠️ 重置</button>
                 </div>
                 <div class="admin-panel" style="border-left:1px solid #333;">
-                    <h3>雲端預覽</h3>
+                    <h3>☁️ 雲端排程預覽 (<span id="queue-count">0</span>)</h3>
                     <div id="admin-list"></div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <div class="nav-bar">
@@ -183,46 +205,51 @@
         <button class="nav-btn" onclick="logout()"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg><span>登出</span></button>
     </div>
 
-    <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">處理中...</div></div>
+    <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">雲端同步中...</div></div>
 
     <script>
-        // 預設 URL，會被 LocalStorage 覆蓋
-        let GAS_URL = "YOUR_GAS_WEBHOOK_URL_HERE"; 
+        // 預設 URL
+        let GAS_URL = "YOUR_GAS_WEBHOOK_URL"; 
         const TOKEN = "MES_LITE_2025";
 
-        let appData = { queue: [], activeJobs: [], history: [], templates: [] };
+        let appData = { queue: [], activeJobs: {}, templates: [] };
         let uiState = { screen: 'login', pin: '', user: null, targetWoId: null, tempVal: '0', finishStep: 0, finishCache: {}, isAdjusting: false };
         let syncTimer = null;
+        let offlineMode = false;
 
         function init() {
-            // 載入儲存的 URL
+            // 1. 載入儲存的 URL
             const savedUrl = localStorage.getItem('mes_gas_url');
             if (savedUrl) GAS_URL = savedUrl;
             
-            // UI Init
+            loadStorage();
             renderATMKeypad('login-keypad', handleLoginInput);
             renderATMKeypad('manpower-keypad', handleManpowerInput);
             renderATMKeypad('finish-keypad', handleFinishInput);
             
-            // 初始載入本地數據
-            const localData = localStorage.getItem('mes_v5_data');
-            if(localData) appData = JSON.parse(localData);
-
+            const statusEl = document.getElementById('cloud-status');
+            if (!savedUrl || GAS_URL.includes("YOUR")) {
+                statusEl.textContent = "URL 未設定";
+                statusEl.style.color = "orange";
+            } else {
+                statusEl.textContent = "Ready";
+            }
+            
             showScreen('login');
-            updateStatusDisplay();
-
-            // 自動同步
-            syncTimer = setInterval(() => { if(uiState.user) syncData(true); }, 10000);
+            
+            // 嘗試首次同步
+            if (savedUrl && !GAS_URL.includes("YOUR")) syncData(true);
+            
+            syncTimer = setInterval(() => { if (uiState.user) syncData(true); }, 10000);
             setInterval(() => { if(uiState.screen === 'working') updateTimerDisplay(); }, 1000);
         }
 
-        // --- Config Functions ---
+        // --- Config ---
         function openConfig() {
             document.getElementById('config-url-input').value = GAS_URL;
             document.getElementById('config-modal').style.display = 'flex';
         }
         function closeConfig() { document.getElementById('config-modal').style.display = 'none'; }
-        
         async function saveConfig() {
             const newUrl = document.getElementById('config-url-input').value.trim();
             if(!newUrl.startsWith("http")) return alert("網址格式錯誤");
@@ -230,124 +257,139 @@
             GAS_URL = newUrl;
             localStorage.setItem('mes_gas_url', newUrl);
             closeConfig();
-            updateStatusDisplay();
             
-            // Test Connection
+            const statusEl = document.getElementById('cloud-status');
+            statusEl.textContent = "Testing...";
+            
             alert("設定已儲存，正在測試連線...");
             await syncData(false);
         }
 
-        function updateStatusDisplay() {
-            const el = document.getElementById('cloud-status');
-            if(GAS_URL.includes("YOUR_GAS")) { el.textContent = "未設定URL"; el.style.color = "orange"; }
-            else el.textContent = "Ready";
-        }
-
-        // --- Sync ---
+        // --- CORE SYNC ---
         async function syncData(silent = false) {
+            if(offlineMode && silent) return; 
+            if(GAS_URL.includes("YOUR")) return;
+
             if (!silent) document.getElementById('loading-mask').style.display = 'flex';
-            if(GAS_URL.includes("YOUR_GAS")) {
-                 if(!silent) { alert("請先設定後端網址！"); openConfig(); }
-                 document.getElementById('loading-mask').style.display = 'none';
-                 return;
-            }
+            const cloudStatus = document.getElementById('cloud-status');
+            if(cloudStatus) cloudStatus.textContent = "Syncing...";
 
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     redirect: 'follow',
-                    headers: { 'Content-Type': 'text/plain' },
+                    headers: { 'Content-Type': 'text/plain' }, 
                     body: JSON.stringify({ action: 'GET_STATE', token: TOKEN })
                 });
                 
-                if(!res.ok) throw new Error("HTTP " + res.status);
+                if(!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                
-                if(data.success) {
+
+                if (data.success) {
                     appData.queue = data.queue || [];
-                    // Map Active Jobs
                     const cloudMap = {};
-                    if(data.active) {
+                    if (data.active) {
                         data.active.forEach(j => {
                             cloudMap[j.wo_id] = j;
-                            // Preserve local specific start time if needed, or sync fully
-                            if(!appData.activeJobs[j.wo_id]) appData.activeJobs[j.wo_id] = { ...j, lastUpdate: Date.now(), accTime: j.accTime || 0 };
-                            else {
-                                appData.activeJobs[j.wo_id].manpower = j.manpower;
-                                appData.activeJobs[j.wo_id].req_data = j.req_data;
+                            if (!appData.activeJobs[j.wo_id]) {
+                                appData.activeJobs[j.wo_id] = { ...j, lastUpdate: Date.now(), accTime: j.accTime || 0 };
                             }
                         });
                     }
-                    // Cleanup local
-                    Object.keys(appData.activeJobs).forEach(k => { if(!cloudMap[k]) delete appData.activeJobs[k]; });
+                    Object.keys(appData.activeJobs).forEach(id => { if(!cloudMap[id]) delete appData.activeJobs[id]; });
 
                     saveStorage();
-                    if(document.getElementById('cloud-status')) {
-                        document.getElementById('cloud-status').textContent = "Connected ✅";
-                        document.getElementById('cloud-status').style.color = "#4caf50";
-                    }
-                    if(uiState.screen === 'queue') renderQueue();
-                    if(uiState.screen === 'admin') renderAdminList();
+                    if(cloudStatus) { cloudStatus.textContent = "Connected ✅"; cloudStatus.style.color = "#4caf50"; }
+                    
+                    offlineMode = false;
+                    if (uiState.screen === 'queue') renderQueue();
+                    if (uiState.screen === 'admin') renderAdminList();
                 }
-            } catch(e) {
-                console.error(e);
-                if(document.getElementById('cloud-status')) {
-                    document.getElementById('cloud-status').textContent = "Offline ⚠️";
-                    document.getElementById('cloud-status').style.color = "red";
-                }
-                if(!silent) alert("連線失敗: " + e.message + "\n請檢查 GAS 部署設定 (Anyone)");
+            } catch (e) {
+                console.warn("Sync failed", e);
+                if(cloudStatus) { cloudStatus.textContent = "🔴 離線模式"; cloudStatus.style.color = "red"; }
+                offlineMode = true;
             } finally {
                 if (!silent) document.getElementById('loading-mask').style.display = 'none';
             }
         }
 
         async function sendAction(payload) {
+            if(offlineMode) { alert("目前為離線模式，操作已暫存於本機 (Mock Success)。"); return true; }
+
             document.getElementById('loading-mask').style.display = 'flex';
             payload.token = TOKEN;
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST', redirect: 'follow', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(payload)
                 });
-                const data = await res.json();
-                if(data.success) { await syncData(true); return true; }
+                const text = await res.text();
+                let data;
+                try { data = JSON.parse(text); } catch(e) { throw new Error("Server response invalid"); }
+
+                if (data.success) { await syncData(true); return true; }
                 else { alert("Server Error: " + data.message); return false; }
-            } catch(e) { alert("Network Error: " + e.message); return false; }
-            finally { document.getElementById('loading-mask').style.display = 'none'; }
+            } catch (e) {
+                console.error(e);
+                offlineMode = true;
+                alert("連線失敗，切換至離線模式。資料已暫存。");
+                document.getElementById('cloud-status').textContent = "🔴 離線模式";
+                return true; 
+            } finally {
+                document.getElementById('loading-mask').style.display = 'none';
+            }
+        }
+        
+        function testConnection() {
+             const win = window.open(GAS_URL, '_blank');
+             if(!win) alert("請允許彈出視窗");
         }
 
-        function saveStorage() { localStorage.setItem('mes_v5_data', JSON.stringify(appData)); }
+        // --- Storage ---
+        function loadStorage() {
+            try {
+                const raw = localStorage.getItem('mes_v6_data');
+                if (raw) appData = JSON.parse(raw);
+                if (!appData.templates) appData.templates = [];
+                if (Array.isArray(appData.activeJobs)) appData.activeJobs = {};
+            } catch(e) { console.error(e); }
+        }
+        function saveStorage() { localStorage.setItem('mes_v6_data', JSON.stringify(appData)); }
 
-        // --- Screens & Logic ---
+        // --- Nav ---
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(e => e.style.display = 'none');
             document.getElementById('screen-' + id).style.display = 'block';
             uiState.screen = id;
             const nav = document.querySelector('.nav-bar');
-            if(id === 'login') nav.style.display = 'none'; else nav.style.display = 'flex';
-            if(id === 'queue') { renderQueue(); syncData(true); }
-            if(id === 'admin') renderAdminCreate();
+            if (id === 'login') nav.style.display = 'none'; else nav.style.display = 'flex';
+            if (id === 'queue') { renderQueue(); syncData(true); }
+            if (id === 'admin') renderAdminCreate();
         }
 
+        function logout() { if(confirm("登出?")) { uiState.user = null; showScreen('login'); } }
+
+        // --- Login ---
         function handleLoginInput(k) {
-            if(k === 'C') uiState.pin = '';
-            else if(k === 'OK') {
-                if(uiState.pin === '9999') { uiState.user = {name:'Admin'}; showScreen('admin'); }
-                else if(['1234','5678'].includes(uiState.pin)) {
+            if (k === 'C') uiState.pin = '';
+            else if (k === 'OK') {
+                if (uiState.pin === '9999') { uiState.user = {name:'Admin'}; showScreen('admin'); }
+                else if (['1234','5678'].includes(uiState.pin)) {
                     uiState.user = {name:'主管', pin:uiState.pin};
                     document.getElementById('user-name').textContent = uiState.user.name;
                     showScreen('queue');
                 } else { alert("密碼錯誤"); uiState.pin = ''; }
-            } else if(uiState.pin.length < 4) uiState.pin += k;
+            } else if (uiState.pin.length < 4) uiState.pin += k;
             document.getElementById('pin-display').textContent = uiState.pin.length > 0 ? '●'.repeat(uiState.pin.length) : '_ _ _ _';
         }
 
+        // --- Queue ---
         function renderQueue() {
             const list = document.getElementById('queue-list');
             const activeList = document.getElementById('active-list');
             list.innerHTML = ''; activeList.innerHTML = '';
             let hasActive = false;
 
-            // Active
             Object.values(appData.activeJobs).forEach(job => {
                 const div = document.createElement('div');
                 div.className = 'queue-item active-job';
@@ -357,7 +399,6 @@
             });
             document.getElementById('active-section').style.display = hasActive ? 'block' : 'none';
 
-            // Queue
             appData.queue.forEach(job => {
                 const div = document.createElement('div');
                 div.className = 'queue-item';
@@ -367,47 +408,55 @@
             });
         }
 
+        // --- Work Flow ---
         function prepareJob(id) {
             uiState.targetWoId = id; uiState.isAdjusting = false; uiState.tempVal = '0';
             document.getElementById('manpower-display').textContent = '0';
             showScreen('manpower');
         }
-        
         function adjustManpower() {
             uiState.isAdjusting = true; uiState.tempVal = '0';
             document.getElementById('manpower-display').textContent = '0';
             showScreen('manpower');
         }
-
         function handleManpowerInput(k) {
             if(k === 'C') uiState.tempVal = '0';
             else if(k === 'OK') {
                 const val = parseInt(uiState.tempVal);
-                if(val > 0) {
-                    if(uiState.isAdjusting) doUpdateManpower(val); else doStartJob(val);
-                } else alert("> 0");
+                if(val > 0) { if(uiState.isAdjusting) doUpdateManpower(val); else doStartJob(val); }
+                else alert("> 0");
             } else uiState.tempVal = (uiState.tempVal === '0' ? k : uiState.tempVal + k);
             document.getElementById('manpower-display').textContent = uiState.tempVal;
         }
 
         async function doStartJob(mp) {
             const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
+            // 先寫入本地
+            const now = Date.now();
+            appData.activeJobs[uiState.targetWoId] = { 
+                wo_id: uiState.targetWoId, master: job.master, prod: job.prod_zh, op: job.op_zh,
+                manpower: mp, req_data: job.req_data, startISO: new Date(now).toISOString(), lastUpdate: now, accTime: 0 
+            };
+            saveStorage();
+            
             const ok = await sendAction({
                 action: 'START_JOB', wo_id: uiState.targetWoId, master: job.master, prod: job.prod_zh, op: job.op_zh,
                 pin: uiState.user.pin, manpower: mp, start_time: new Date().toISOString(), req_data: job.req_data
             });
-            if(ok) openWorkingScreen(uiState.targetWoId);
+            openWorkingScreen(uiState.targetWoId);
         }
 
         async function doUpdateManpower(mp) {
             const job = appData.activeJobs[uiState.targetWoId];
-            // 簡易計算累積
             const now = Date.now();
             const newAcc = (job.accTime||0) + ((now - (job.lastUpdate||Date.parse(job.startISO)))/3600000 * job.manpower);
+            job.manpower = mp; job.lastUpdate = now; job.accTime = newAcc;
+            saveStorage();
+
             const ok = await sendAction({
                 action: 'UPDATE_JOB', wo_id: uiState.targetWoId, manpower: mp, start_time: new Date().toISOString(), acc_time: newAcc
             });
-            if(ok) openWorkingScreen(uiState.targetWoId);
+            openWorkingScreen(uiState.targetWoId);
         }
 
         function openWorkingScreen(id) {
@@ -425,7 +474,7 @@
         function updateTimerDisplay() {
             const job = appData.activeJobs[uiState.targetWoId];
             if(!job) return;
-            const last = new Date(job.startISO).getTime(); // 簡化：顯示從開始到現在的時間
+            const last = new Date(job.startISO).getTime();
             const diff = Math.floor((Date.now() - last)/1000);
             const h = String(Math.floor(diff/3600)).padStart(2,'0');
             const m = String(Math.floor((diff%3600)/60)).padStart(2,'0');
@@ -436,10 +485,8 @@
         function endJob() {
             const job = appData.activeJobs[uiState.targetWoId];
             const qJob = appData.queue.find(q => q.wo_id === uiState.targetWoId);
-            // 判斷邏輯：分切 或 req_data
             const isSlicing = job.op.indexOf('分切') >= 0;
             const isReq = job.req_data || (qJob && qJob.req_data);
-            
             uiState.finishStep = (isSlicing || isReq) ? 1 : 99;
             uiState.finishCache = { good:0, reject:0, collar:0, tail:0 };
             uiState.tempVal = '0';
@@ -452,7 +499,6 @@
             const disp = document.getElementById('qty-display');
             const sum = document.getElementById('finish-summary');
             const kbd = document.getElementById('finish-keypad');
-            
             sum.style.display = 'none'; kbd.style.display = 'grid'; disp.style.display = 'block';
 
             if (s===1) instr.textContent = "❌ 損耗 (KG)";
@@ -473,15 +519,12 @@
                 const val = parseFloat(uiState.tempVal);
                 const s = uiState.finishStep;
                 if (s===99) { doFinish(); return; }
-
                 if (s===1) uiState.finishCache.reject = val;
                 if (s===2) uiState.finishCache.collar = val;
                 if (s===3) uiState.finishCache.tail = val;
                 if (s===4) uiState.finishCache.good = val;
-
                 uiState.tempVal = '0';
-                // 流程控制
-                if (s===1) uiState.finishStep = 2; // 這裡簡化邏輯，一律走完流程，非分切可填0
+                if (s===1) uiState.finishStep = 2;
                 else if (s===2) uiState.finishStep = 3;
                 else if (s===3) uiState.finishStep = 4;
                 else if (s===4) uiState.finishStep = 99;
@@ -496,45 +539,88 @@
             const totalMs = (job.accTime||0) + ((now - (job.lastUpdate||Date.parse(job.startISO))) * job.manpower);
             const totalHrs = totalMs / 3600000.0;
             
+            // 先本地更新
+            delete appData.activeJobs[uiState.targetWoId];
+            appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
+            saveStorage();
+
             await sendAction({
                 action: 'FINISH_JOB', wo_id: uiState.targetWoId, op: job.op, pin: job.pin, manpower: job.manpower,
                 total_hours: totalHrs.toFixed(3), 
                 qty_good: uiState.finishCache.good, qty_reject: uiState.finishCache.reject,
                 collar: uiState.finishCache.collar, tail: uiState.finishCache.tail
             });
-            delete appData.activeJobs[uiState.targetWoId];
-            appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
-            saveStorage(); showScreen('queue');
+            showScreen('queue');
         }
-
-        function cancelManpower() { showScreen('queue'); }
-        function logout() { if(confirm("登出?")) { uiState.user=null; showScreen('login'); } }
-        function backToQueue() { showScreen('queue'); }
 
         // --- Admin ---
         function renderAdminCreate() {
             if(!document.getElementById('admin-sub-items').innerHTML) addAdminRow();
-            renderAdminList();
+            updateTemplateDropdown(); renderAdminList();
         }
-        function addAdminRow() {
+        function updateTemplateDropdown() {
+            const sel = document.getElementById('admin-template');
+            sel.innerHTML = '<option value="">-- 載入範本 --</option>';
+            appData.templates.forEach((t, i) => { const opt = document.createElement('option'); opt.value = i; opt.textContent = t.name; sel.appendChild(opt); });
+        }
+        function addAdminRow(prod='', op='') {
             const div = document.createElement('div'); div.className='sub-item-row';
             div.innerHTML = `<input class="admin-input prod" placeholder="產品"><input class="admin-input op" placeholder="工序"><button class="btn-row-delete" onclick="this.parentElement.remove()">X</button>`;
             document.getElementById('admin-sub-items').appendChild(div);
         }
-        function adminReset() { if(confirm("Reset?")) { localStorage.clear(); location.reload(); } }
         function renderAdminList() {
-            document.getElementById('admin-list').innerHTML = appData.queue.map(q => `<div>${q.master} - ${q.op_zh}</div>`).join('');
+            document.getElementById('admin-list').innerHTML = appData.queue.map(q => `<div style="border-bottom:1px solid #333; padding:5px;">${q.master} - ${q.op_zh}</div>`).join('');
+        }
+        function adminReset() { if(confirm("Reset?")) { localStorage.clear(); location.reload(); } }
+        
+        function saveTemplate() {
+            const mwo = document.getElementById('admin-mwo').value;
+            if(!mwo) return alert("No ID");
+            const items = [];
+            document.querySelectorAll('.sub-item-row').forEach(r => {
+                const p=r.querySelector('.prod').value, o=r.querySelector('.op').value;
+                if(p&&o) items.push({prod:p, op:o});
+            });
+            if(items.length===0) return alert("Empty");
+            appData.templates.push({name:mwo, items:items});
+            saveStorage(); updateTemplateDropdown(); alert("Saved");
+        }
+        function loadTemplate() {
+            const idx = document.getElementById('admin-template').value;
+            if(idx==="") return;
+            const t = appData.templates[idx];
+            document.getElementById('admin-mwo').value = t.name;
+            document.getElementById('admin-sub-items').innerHTML = '';
+            t.items.forEach(i => addAdminRow(i.prod, i.op));
+        }
+        function deleteTemplate() {
+             const idx = document.getElementById('admin-template').value;
+             if(idx==="") return alert("Select first");
+             if(confirm("Delete?")) {
+                 appData.templates.splice(idx, 1); saveStorage(); updateTemplateDropdown();
+                 document.getElementById('admin-template').value = "";
+             }
         }
         function publishWorkOrders() {
             const mwo = document.getElementById('admin-mwo').value;
             if(!mwo) return alert("No ID");
             const jobs = [];
-            document.querySelectorAll('.sub-item-row').forEach((row, i) => {
-                const prod = row.querySelector('.prod').value; const op = row.querySelector('.op').value;
-                if(prod && op) jobs.push({ wo_id: `${mwo}-${i+1}`, master: mwo, prod_zh: prod, op_zh: op, rank: i+1, st: 1, req_data: document.getElementById('admin-req-data').checked });
+            const w = document.getElementById('admin-weight').value;
+            const req = document.getElementById('admin-req-data').checked;
+            document.querySelectorAll('.sub-item-row').forEach((r,i) => {
+                const p=r.querySelector('.prod').value, o=r.querySelector('.op').value;
+                if(p&&o) jobs.push({ wo_id:`${mwo}-${Date.now()}-${i}`, master:mwo, prod_zh:p, op_zh:o, rank:i+1, st:1, total_weight:w, req_data:req });
             });
+            // 本地先更新，達到即時效果
+            appData.queue = [...appData.queue, ...jobs];
+            saveStorage();
+            renderAdminList();
+            
             sendAction({ action: 'ADD_JOBS', jobs: jobs });
             alert("Sent");
+            document.getElementById('admin-mwo').value = '';
+            document.getElementById('admin-sub-items').innerHTML = '';
+            addAdminRow();
         }
 
         function renderATMKeypad(id, cb) {
