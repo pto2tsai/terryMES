@@ -3,222 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Lite V6.3 Config Fix</title>
+    <title>MES Lite V6.4 Connection Wizard</title>
     <style>
         /* ---------------------------------- */
-        /* CSS: V6.3 設定修復版 */
+        /* CSS: V6.4 連線精靈版 */
         /* ---------------------------------- */
         :root {
             --bg-dark: #121212;
             --bg-card: #1e1e1e;
             --text-main: #e0e0e0;
             --text-sub: #a0a0a0;
-            --primary: #2196f3; --accent: #00bcd4; --success: #4caf50; --warning: #ff9800; --danger: #f44336;
+            --primary: #2196f3; 
+            --accent: #00bcd4;  
+            --success: #4caf50; 
+            --warning: #ff9800; 
+            --danger: #f44336;  
             --nav-height: 60px;
         }
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+        /* 捲軸美化 */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #111; }
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
 
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: row; overflow: hidden; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0; padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex; flex-direction: row;
+            overflow: hidden;
+        }
+
+        /* --- 導航列 --- */
+        .nav-bar {
+            width: 80px;
+            height: 100vh;
+            background-color: #000;
+            display: flex; flex-direction: column; align-items: center;
+            padding-top: 20px; z-index: 1000;
+            border-right: 1px solid #333;
+            flex-shrink: 0;
+        }
         
-        .nav-bar { width: var(--nav-width); height: 100vh; background-color: #000; display: flex; flex-direction: column; align-items: center; padding-top: 20px; z-index: 1000; border-right: 1px solid #333; flex-shrink: 0; }
-        .nav-btn { background: none; border: none; cursor: pointer; padding: 15px 5px; margin-bottom: 20px; color: var(--text-sub); display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .nav-btn {
+            background: none; border: none; cursor: pointer; 
+            padding: 15px 5px; margin-bottom: 20px;
+            color: var(--text-sub); 
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            width: 100%;
+        }
+        
         .nav-btn svg { width: 32px; height: 32px; fill: currentColor; }
         .nav-btn span { font-size: 0.75rem; font-weight: bold; }
         .nav-btn:active { color: var(--accent); background: #222; }
+
         .version-tag { font-size: 0.6rem; color: #444; margin-top: auto; margin-bottom: 10px; writing-mode: vertical-lr; }
 
-        .container { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; position: relative; }
-        .screen { display: none; width: 100%; max-width: 600px; padding-bottom: 20px; }
+        /* --- 主容器 --- */
+        .container {
+            flex: 1; padding: 10px; 
+            overflow-y: auto;
+            display: flex; flex-direction: column; align-items: center;
+            position: relative;
+        }
         
-        .pin-display { font-size: 3rem; letter-spacing: 10px; color: var(--accent); margin-bottom: 20px; height: 60px; line-height: 60px; text-align: center; border-bottom: 2px solid #333; width: 100%; }
-        .circle-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 0 auto 20px auto; width: 100%; max-width: 350px; }
-        .circle-btn { width: 80px; height: 80px; border-radius: 50%; background-color: #2a2a2a; color: white; font-size: 2rem; font-weight: bold; border: 2px solid #444; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0 auto; }
-        .circle-btn:active { background-color: #555; border-color: #888; transform: translateY(2px); }
-        .circle-btn.ok { background-color: var(--success); color: #000; }
-        .circle-btn.clear { color: var(--danger); }
+        .screen { 
+            display: none; width: 100%; max-width: 600px; padding-bottom: 20px;
+        }
 
-        .large-btn { width: 100%; padding: 15px; margin: 8px 0; font-size: 1.3rem; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background-color: var(--bg-card); box-shadow: 0 4px 0 rgba(0,0,0,0.5); position: relative; }
+        /* --- 統一 ATM 圓形鍵盤 --- */
+        .pin-display {
+            font-size: 3rem; letter-spacing: 10px; color: var(--accent);
+            margin-bottom: 20px; height: 60px; line-height: 60px;
+            text-align: center; border-bottom: 2px solid #333; width: 100%;
+        }
+        
+        .circle-keypad {
+            display: grid; grid-template-columns: repeat(3, 1fr); 
+            gap: 15px; margin: 0 auto 20px auto; width: 100%; max-width: 350px;
+        }
+        .circle-btn {
+            width: 80px; height: 80px; border-radius: 50%;
+            background-color: #2a2a2a; color: white;
+            font-size: 2rem; font-weight: bold;
+            border: 2px solid #444;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none;
+            margin: 0 auto;
+        }
+        .circle-btn:active { background-color: #555; border-color: #888; transform: translateY(2px); }
+        .circle-btn.clear { color: var(--danger); border-color: var(--danger); font-size: 1.2rem; }
+        .circle-btn.ok { background-color: var(--success); color: #000; border-color: var(--success); font-size: 1.2rem; }
+
+        /* --- 一般按鈕 --- */
+        .large-btn {
+            width: 100%; padding: 15px; margin: 8px 0;
+            font-size: 1.3rem; font-weight: bold;
+            border-radius: 10px; border: none; cursor: pointer;
+            color: white; background-color: var(--bg-card);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+            position: relative;
+        }
         .large-btn:active { transform: translateY(4px); box-shadow: none; }
         .btn-confirm { background-color: var(--success); color: #000; }
         .btn-danger { background-color: var(--danger); }
         .btn-secondary { background-color: #424242; border: 1px solid #555; }
 
-        .queue-item { background: #1e1e1e; border: 1px solid #444; border-left: 6px solid #444; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .queue-item.active-job { background: #1b5e20; border-color: #66bb6a; border-left-color: #00e676; }
+        /* --- 排程列表 --- */
+        .queue-item {
+            background: #1e1e1e; border: 1px solid #444; border-left: 6px solid #444;
+            padding: 15px; border-radius: 10px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer;
+        }
+        .queue-item:active { background: #333; }
+        .queue-item.active-job { 
+            background: #1b5e20; border-color: #66bb6a; border-left-color: #00e676;
+        }
         .q-info h3 { margin: 0 0 5px 0; font-size: 1.3rem; color: white; }
         .q-info p { margin: 0; color: #bbb; font-size: 1rem; }
+        
+        /* --- 計時畫面 --- */
+        .timer-box {
+            text-align: center; margin: 20px 0; padding: 20px;
+            background: #000; border-radius: 15px; border: 1px solid #333;
+        }
+        .timer-val { font-size: 4rem; font-weight: bold; color: var(--accent); font-variant-numeric: tabular-nums; }
+        
+        .job-card-large {
+            background: #222; padding: 15px; border-radius: 15px;
+            text-align: center; border: 1px solid #444; margin-bottom: 10px;
+        }
 
+        /* --- 生管後台 --- */
         .admin-dashboard-layout { display: flex; flex-direction: column; gap: 20px; height: 100%; }
-        .admin-panel { background-color: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid #333; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        .admin-input { width: 100%; padding: 12px 15px; background: #2b2b2b; border: 1px solid #555; color: white; font-size: 1.1rem; border-radius: 6px; margin-bottom: 10px;}
-        .sub-items-wrapper { flex: 1; overflow-y: auto; margin: 15px 0; min-height: 150px; border: 1px dashed #444; padding: 10px; border-radius: 8px; }
-        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 50px; gap: 10px; margin-bottom: 8px; }
+        .admin-panel { 
+            background-color: var(--bg-card); padding: 20px; border-radius: 12px; 
+            border: 1px solid #333; flex: 1; display: flex; flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .admin-input { 
+            width: 100%; padding: 12px 15px; 
+            background: #2b2b2b; border: 1px solid #555; 
+            color: white; font-size: 1.1rem; border-radius: 6px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .admin-input:focus { border-color: var(--accent); background: #333; outline: none; }
+        
+        .sub-items-wrapper {
+            flex: 1; overflow-y: auto; margin: 15px 0; min-height: 150px;
+            border: 1px dashed #444; padding: 10px; border-radius: 8px;
+        }
+        .sub-item-row { display: grid; grid-template-columns: 1fr 1fr 50px; gap: 10px; margin-bottom: 8px; animation: fadeIn 0.2s ease; }
         .btn-row-delete { background: #333; border: 1px solid #555; color: #ff5252; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-row-delete:hover { background: #444; }
+
         .template-area { background: #151515; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; border-left: 4px solid var(--primary); }
         .template-select { flex: 1; }
+        
         .admin-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-top: auto; padding-top: 10px;}
 
-        /* Modal */
-        #config-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: none; flex-direction: column; justify-content: center; padding: 20px; }
-        .config-box { background: #222; padding: 20px; border-radius: 10px; border: 1px solid #555; max-width: 500px; margin: 0 auto; width: 100%; }
-        .config-input { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #555; color: #00e676; font-family: monospace; font-size: 0.9rem; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        .report-table th { background: #333; color: var(--primary); padding: 10px; text-align: left; }
+        .report-table td { border-bottom: 1px solid #444; padding: 10px; }
+        .report-total { font-weight: bold; color: var(--success); }
+        
+        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #2a2a2a; border-radius: 5px; border: 1px solid #444; cursor: pointer; }
+        .checkbox-wrapper input { width: 20px; height: 20px; accent-color: var(--success); cursor: pointer; }
 
-        /* Loading */
-        #loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; flex-direction: column; }
+        /* --- Config Modal --- */
+        #config-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 5000;
+            display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+        .config-box {
+            background: #222; padding: 20px; border-radius: 12px; border: 1px solid #555;
+            width: 100%; max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .config-input {
+            width: 100%; padding: 15px; margin: 10px 0 20px 0;
+            background: #111; border: 1px solid #555; color: #00e676;
+            font-family: monospace; font-size: 0.9rem; border-radius: 6px;
+            height: 100px; resize: none;
+        }
+
+        /* --- Loading --- */
+        #loading-mask {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 3000;
+            display: none; align-items: center; justify-content: center; flex-direction: column;
+        }
         .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s infinite linear; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* RWD 手機版 */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .nav-bar { 
+                width: 100%; height: 65px; flex-direction: row; padding: 0 10px; 
+                border-right: none; border-top: 1px solid #333; order: 2;
+            }
+            .container { order: 1; padding-bottom: 10px; }
+            .nav-btn { margin-bottom: 0; flex-direction: column; padding: 5px; }
+            .nav-icons { flex-direction: row; justify-content: space-around; width: 100%; gap: 0; }
+            .version-tag { display: none; }
+            .sub-item-row { grid-template-columns: 1fr; gap: 5px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+            .btn-row-delete { grid-column: 1 / -1; padding: 10px; margin-top: 5px; background: #422; border-color: #f44336; }
+            .admin-dashboard-layout { display: flex; flex-direction: column; }
+        }
+
+        /* RWD 電腦版 */
         @media (min-width: 769px) {
-            .container { max-width: 1200px; margin: 20px 0; height: 95vh; border-radius: 20px; padding-left: 80px; width: 100%; background-color: var(--bg-card); box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+            .container {
+                max-width: 1200px; background-color: var(--bg-color);
+                box-shadow: 0 0 30px rgba(0,0,0,0.8); margin: 20px 0;
+                height: 95vh;
+                border-radius: 20px;
+                overflow: hidden; padding-left: 80px; width: 100%;
+            }
             .nav-bar { position: absolute; left: 0; top: 0; height: 100%; width: 80px; border-radius: 20px 0 0 20px; }
-            .admin-dashboard-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; height: 100%; overflow: hidden; }
+            
+            .admin-dashboard-layout { 
+                display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; 
+                height: 100%; overflow: hidden; 
+            }
+            
+            .admin-panel { 
+                height: 100%; overflow-y: auto; display: flex; flex-direction: column;
+            }
+            
+            .admin-list-panel { 
+                height: 100%; overflow-y: auto; 
+                border-left: 1px solid #333; padding-left: 20px;
+            }
+            
             .login-box, #screen-queue, #screen-manpower, #screen-working, #screen-finish { max-width: 600px; margin: 0 auto; width: 100%; }
+            .keypad { max-width: 500px; gap: 15px; }
+            .key-btn { font-size: 2rem; padding: 25px 0; }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- Login -->
+        
+        <!-- 1. 登入 (ATM 風格) -->
         <div id="screen-login" class="screen" style="display: block;">
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
-                <h2 style="color:var(--accent); letter-spacing:2px;">MES LITE <span style="font-size:0.8rem; color:#555;">V6.3</span></h2>
+            <div class="login-wrapper">
+                <div class="login-title">MES LITE <span style="font-size:0.8rem; color:#555;">V6.4</span></div>
                 <div style="color:#888; margin-bottom: 10px;">請輸入識別碼 / ENTER PIN</div>
+                
                 <div id="pin-display" class="pin-display">_ _ _ _</div>
                 <div id="login-msg" style="color: var(--danger); height: 20px; margin-bottom:10px;"></div>
+
                 <div id="login-keypad"></div>
-                <div style="margin-top:20px; font-size:0.8rem; color:#444;">Status: <span id="cloud-status">Init...</span></div>
-                <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button onclick="testConnection()" style="background:none; border:1px solid #444; color:#888; border-radius:4px; padding:5px 10px; cursor:pointer;">☁️ 測試連線 (Open URL)</button>
-                    <button onclick="openConfig()" style="background:none; border:1px solid #444; color:var(--primary); border-radius:4px; padding:5px 10px; cursor:pointer;">⚙️ 設定網址</button>
+
+                <div style="margin-top:20px; font-size:0.8rem; color:#444;">
+                    Status: <span id="cloud-status">Connecting...</span>
                 </div>
+                <button onclick="openConfig()" style="margin-top:10px; background:none; border:1px solid #444; color:#888; border-radius:4px; padding:5px 10px; cursor:pointer;">⚙️ 設定連線 (Config)</button>
             </div>
         </div>
 
-        <!-- Config Modal -->
+        <!-- Config Modal (連線精靈) -->
         <div id="config-modal">
             <div class="config-box">
-                <h3>⚙️ 設定後端網址</h3>
-                <p style="font-size:0.8rem; color:#aaa;">請貼上 Google Apps Script 部署網址 (以 /exec 結尾)</p>
-                <textarea id="config-url-input" class="config-input" rows="3"></textarea>
+                <h3 style="color:var(--accent); margin-top:0;">⚙️ 連線設定精靈</h3>
+                <div style="color:#ccc; font-size:0.9rem; line-height:1.5; margin-bottom:10px;">
+                    請確認您的後端已完成以下步驟：<br>
+                    1. 部署為「新版本 (New Version)」<br>
+                    2. 權限設為「任何人 (Anyone)」<br>
+                    3. 複製結尾為 <code>/exec</code> 的網址
+                </div>
+                <textarea id="config-url-input" class="config-input" placeholder="在此貼上 GAS Web App URL..."></textarea>
                 <div style="display:flex; gap:10px;">
                     <button class="large-btn btn-secondary" onclick="closeConfig()">取消</button>
-                    <button class="large-btn btn-confirm" onclick="saveConfig()">💾 保存並測試</button>
+                    <button class="large-btn btn-confirm" onclick="saveConfig()">💾 保存並連線</button>
                 </div>
             </div>
         </div>
 
-        <!-- Queue -->
+        <!-- 2. 工單列表 (Queue) -->
         <div id="screen-queue" class="screen">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 style="margin:0; color:var(--primary);">📋 待辦工單</h2>
-                <div style="color:var(--accent); font-weight:bold;"><span id="user-name">User</span></div>
+                <div style="color: var(--accent); font-weight: bold;">
+                    <span id="user-name">User</span>
+                </div>
             </div>
             <div class="cloud-status" id="last-sync-time" style="color:#666; font-size:0.8rem; margin-bottom:5px;"></div>
-            <div id="active-section" style="margin-bottom:20px; display:none;">
-                <div style="font-size:0.9rem; color:var(--success); margin-bottom:5px; font-weight:bold;">🔥 進行中</div>
+
+            <div id="active-section" style="margin-bottom: 20px; display: none;">
+                <div style="font-size:0.9rem; color:var(--success); margin-bottom:5px; font-weight:bold;">🔥 進行中 (RUNNING)</div>
                 <div id="active-list"></div>
             </div>
+
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <div style="font-size:0.9rem; color:#888;">待辦事項</div>
-                <button onclick="syncData()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 同步</button>
+                <div style="font-size:0.9rem; color:#888;">待辦事項 (To Do)</div>
+                <button onclick="syncData()" style="background:none; border:1px solid #555; color:#888; border-radius:4px; padding:4px 8px; font-size:0.8rem;">🔄 雲端同步</button>
             </div>
             <div id="queue-list"></div>
         </div>
 
-        <!-- Manpower -->
+        <!-- 3. 人數輸入 -->
         <div id="screen-manpower" class="screen">
             <h2 id="manpower-title" style="text-align:center; color:var(--accent);">👥 開工設定</h2>
+            <p id="manpower-desc" style="text-align:center; color:#aaa;">本次投入多少人力？</p>
             <div id="manpower-display" class="pin-display">0</div>
             <div id="manpower-keypad"></div>
-            <button class="large-btn btn-secondary" onclick="showScreen('queue')">取消</button>
+            <button class="large-btn btn-secondary" onclick="cancelManpower()">取消 (Cancel)</button>
         </div>
 
-        <!-- Working -->
-        <div id="screen-working" class="screen" style="display:flex; flex-direction:column;">
-            <div style="background:#222; padding:15px; border-radius:15px; text-align:center; border:1px solid #444; margin-bottom:10px;">
+        <!-- 4. 計時畫面 -->
+        <div id="screen-working" class="screen" style="display: flex; flex-direction: column;">
+            <div class="job-card-large">
+                <div style="color:#4caf50; font-size:0.9rem; font-weight:bold; letter-spacing:1px;">● 正在執行 (CLOUD)</div>
                 <h2 id="work-prod" style="margin:10px 0; font-size:1.8rem; color:white;">Product</h2>
                 <div id="work-op" style="color:var(--accent); font-size:1.4rem; font-weight:bold;">Op</div>
                 <div id="work-id" style="color:#555; font-size:0.8rem; margin-top:10px;">ID</div>
+                <!-- 數據要求提示 -->
                 <div id="work-req-data" style="color:#ff9800; font-size:0.9rem; margin-top:5px; display:none;">⚠️ 結束時需輸入數據</div>
             </div>
-            <div style="text-align:center; margin:20px 0;">
-                <div id="timer" style="font-size:4rem; font-weight:bold; color:var(--accent);">00:00:00</div>
-                <div style="color:#888; margin-top:10px;">人數: <span id="work-man" style="color:white; font-weight:bold;">4</span></div>
+            <div class="timer-box">
+                <div class="timer-val" id="timer">00:00:00</div>
+                <div style="color:#888; margin-top:10px;">目前人數: <span id="work-man" style="color:white; font-weight:bold; font-size:1.2rem;">4</span></div>
             </div>
             <div style="margin-top:auto;">
-                <button class="large-btn btn-confirm" onclick="endJob()" style="height:80px; font-size:1.8rem;">🏁 完成</button>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
-                    <button class="large-btn btn-secondary" onclick="adjustManpower()">👥 調整</button>
+                <button class="large-btn btn-confirm" style="height: 80px; font-size: 1.8rem;" onclick="endJob()">🏁 完成 (Finish)</button>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                    <button class="large-btn btn-secondary" onclick="adjustManpower()">👥 調整人數</button>
                     <button class="large-btn btn-secondary" onclick="showScreen('queue')">⬅ 暫離</button>
                 </div>
             </div>
         </div>
 
-        <!-- Finish -->
+        <!-- 5. 數量輸入/確認 -->
         <div id="screen-finish" class="screen">
-            <div id="finish-instruction" style="font-size:1.5rem; text-align:center; margin-bottom:10px; color:var(--accent); font-weight:bold;"></div>
+            <div id="finish-instruction" style="font-size: 1.5rem; text-align: center; margin-bottom: 10px; color: var(--accent); font-weight: bold;"></div>
             <div id="qty-display" class="pin-display">0</div>
-            <div id="finish-summary" style="text-align:left; background:#222; padding:15px; border-radius:8px; margin-bottom:20px; display:none;"></div>
+            <div id="finish-summary" style="text-align: left; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;"></div>
             <div id="finish-keypad"></div>
         </div>
 
-        <!-- Admin -->
-        <div id="screen-admin" class="screen" style="width:100%; max-width:none; height:100%;">
-            <div class="admin-dashboard-layout">
-                <div class="admin-panel">
-                    <div class="template-area">
-                        <label style="color:#aaa; font-size:0.8rem;">📂 範本管理</label>
-                        <div style="display:flex; gap:10px; margin-top:5px;">
-                            <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()"><option value="">-- 載入範本 --</option></select>
-                            <button class="btn-row-delete" style="width:50px; background:var(--danger); border:none;" onclick="deleteTemplate()">🗑️</button>
+        <!-- 6. 生管後台 -->
+        <div id="screen-admin" class="screen" style="width: 100%; max-width: none; height: 100%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="margin:0;">🛠️ 生管控制台</h2>
+                <button onclick="logout()" style="background:#333; color:#ccc; border:none; padding:5px 10px; border-radius:4px;">退出</button>
+            </div>
+
+            <div class="admin-header">
+                <button class="admin-tab active" onclick="showAdminTab('create')">建立工單</button>
+                <button class="admin-tab" onclick="showAdminTab('history')">工時報表</button>
+            </div>
+            
+            <!-- 建立工單 Tab (雙欄佈局) -->
+            <div id="admin-tab-create" style="height: calc(100% - 60px);">
+                <div class="admin-dashboard-layout">
+                    
+                    <!-- 左欄：輸入與設定 (可捲動) -->
+                    <div class="admin-panel">
+                        <div class="template-area">
+                            <label style="color:#aaa; font-size:0.8rem;">📂 範本管理</label>
+                            <div style="display:flex; gap:10px; margin-top:5px;">
+                                <select id="admin-template" class="admin-input" style="margin:0; flex:1;" onchange="loadTemplate()">
+                                    <option value="">-- 載入範本 --</option>
+                                </select>
+                                <button class="btn-danger" style="padding:0 15px; border-radius:4px; border:none; cursor:pointer;" onclick="deleteTemplate()">🗑️</button>
+                            </div>
                         </div>
+                        <h3>新增工單 (Batch)</h3>
+                        
+                        <input id="admin-mwo" class="admin-input" placeholder="總工單號 (例: MWO-2025-A)">
+                        <input type="number" id="admin-weight" class="admin-input" placeholder="原料總重 (KG)">
+                        
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="admin-req-data">
+                            <label for="admin-req-data" style="color:#fff; font-size:0.9rem; cursor:pointer;">要求現場輸入生產數據 (Input Required)</label>
+                        </div>
+
+                        <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px; flex: 1; display: flex; flex-direction: column;">
+                            <label style="color:#888; font-size:0.9rem;">工序清單</label>
+                            <div id="admin-sub-items" class="sub-items-wrapper">
+                                <!-- JS 動態生成 -->
+                            </div>
+                            <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; border:1px dashed #555; color:#ccc; margin-top:10px; cursor:pointer;">+ 新增一行</button>
+                        </div>
+
+                        <div class="admin-actions">
+                            <button class="large-btn btn-secondary" style="font-size:1rem; margin:0;" onclick="saveTemplate()">💾 存為範本</button>
+                            <button class="large-btn btn-confirm" style="font-size:1.2rem; margin:0;" onclick="publishWorkOrders()">🚀 立即發布工單</button>
+                        </div>
+                        <button class="large-btn btn-danger" style="margin-top:20px; font-size:1rem; background:#300; border-color:#500;" onclick="adminReset()">⚠️ 重置所有資料</button>
                     </div>
-                    <h3>➕ 建立工單</h3>
-                    <input id="admin-mwo" class="admin-input" placeholder="總工單號">
-                    <input type="number" id="admin-weight" class="admin-input" placeholder="原料總重 (KG)">
-                    <div class="checkbox-wrapper"><input type="checkbox" id="admin-req-data"><label for="admin-req-data" style="color:#fff; font-size:0.9rem; cursor:pointer;">要求現場輸入生產數據</label></div>
-                    <div style="border-top:1px solid #333; margin:15px 0; padding-top:10px; flex:1; display:flex; flex-direction:column;">
-                        <label style="color:#888; font-size:0.9rem;">工序清單</label>
-                        <div id="admin-sub-items" class="sub-items-wrapper"></div>
-                        <button onclick="addAdminRow()" style="width:100%; padding:10px; background:#333; color:#ccc; border:1px dashed #555; margin-top:10px;">+ 新增</button>
+
+                    <!-- 右欄：目前排程列表 (可捲動) -->
+                    <div class="admin-list-panel">
+                        <h3 style="margin-top:0; color:#aaa; border-bottom:1px solid #333; padding-bottom:10px;">
+                            雲端排程預覽 (<span id="queue-count">0</span>)
+                        </h3>
+                        <div id="admin-list"></div>
                     </div>
-                    <div class="admin-actions">
-                        <button class="large-btn btn-secondary" onclick="saveTemplate()">💾 存範本</button>
-                        <button class="large-btn btn-confirm" onclick="publishWorkOrders()">🚀 發布</button>
-                    </div>
-                    <button class="large-btn btn-danger" style="margin-top:20px;" onclick="adminReset()">⚠️ 重置</button>
                 </div>
-                <div class="admin-panel" style="border-left:1px solid #333;">
-                    <h3>☁️ 雲端排程預覽 (<span id="queue-count">0</span>)</h3>
-                    <div id="admin-list"></div>
+            </div>
+
+            <!-- 匯出報表 Tab -->
+            <div id="admin-tab-history" style="display:none;">
+                <div class="admin-panel">
+                    <h3>📊 人工時數總計表</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="color:#888; font-size:0.8rem;">統計維度:</span>
+                        <select id="report-group-by" onchange="renderSummaryTable()" style="background:#222; color:white; border:1px solid #555; padding:5px; border-radius:4px;">
+                            <option value="by-op">依工序 (By Operation)</option>
+                            <option value="by-master">依總工單 (By Master WO)</option>
+                        </select>
+                    </div>
+                    <div id="summary-table-container" style="margin-top:15px;"></div>
+                    <button class="large-btn btn-secondary" style="margin-top:20px;" onclick="renderSummaryTable()">🔄 刷新統計</button>
+                </div>
+                <div style="margin-top:20px;">
+                    <h3>📜 詳細紀錄列表</h3>
+                    <div id="history-list" style="font-size:0.8rem; color:#aaa;"></div>
                 </div>
             </div>
         </div>
+
     </div>
 
+    <!-- 導航列 -->
     <div class="nav-bar">
-        <button class="nav-btn" onclick="showScreen('queue')"><svg viewBox="0 0 24 24"><path d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z"/></svg><span>工單</span></button>
-        <button class="nav-btn" onclick="logout()"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg><span>登出</span></button>
+        <div class="nav-icons">
+            <button class="nav-btn" onclick="showScreen('queue')">
+                <svg viewBox="0 0 24 24"><path d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z"/></svg>
+                <span>工單</span>
+            </button>
+            <button class="nav-btn" onclick="logout()">
+                <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                <span>登出</span>
+            </button>
+        </div>
+        <div class="version-tag">V6.4</div>
     </div>
 
     <div id="loading-mask"><div class="spinner"></div><div style="color:white; margin-top:10px;">雲端同步中...</div></div>
 
     <script>
-        // 預設 URL
+        // 預設值 (若 LocalStorage 為空)
         let GAS_URL = "YOUR_GAS_WEBHOOK_URL"; 
         const TOKEN = "MES_LITE_2025";
 
-        let appData = { queue: [], activeJobs: {}, templates: [] };
+        let appData = { queue: [], activeJobs: {}, templates: [] }; 
         let uiState = { screen: 'login', pin: '', user: null, targetWoId: null, tempVal: '0', finishStep: 0, finishCache: {}, isAdjusting: false };
         let syncTimer = null;
         let offlineMode = false;
 
         function init() {
-            // 1. 載入儲存的 URL
+            // 1. 優先讀取儲存的 URL
             const savedUrl = localStorage.getItem('mes_gas_url');
             if (savedUrl) GAS_URL = savedUrl;
             
@@ -227,18 +475,20 @@
             renderATMKeypad('manpower-keypad', handleManpowerInput);
             renderATMKeypad('finish-keypad', handleFinishInput);
             
+            // 狀態顯示
             const statusEl = document.getElementById('cloud-status');
             if (!savedUrl || GAS_URL.includes("YOUR")) {
-                statusEl.textContent = "URL 未設定";
+                statusEl.textContent = "未設定網址";
                 statusEl.style.color = "orange";
+                // 自動開啟設定視窗
+                setTimeout(openConfig, 500);
             } else {
                 statusEl.textContent = "Ready";
+                // 嘗試首次同步
+                syncData(true);
             }
             
             showScreen('login');
-            
-            // 嘗試首次同步
-            if (savedUrl && !GAS_URL.includes("YOUR")) syncData(true);
             
             syncTimer = setInterval(() => { if (uiState.user) syncData(true); }, 10000);
             setInterval(() => { if(uiState.screen === 'working') updateTimerDisplay(); }, 1000);
@@ -246,26 +496,28 @@
 
         // --- Config ---
         function openConfig() {
-            document.getElementById('config-url-input').value = GAS_URL;
+            document.getElementById('config-url-input').value = GAS_URL.includes("YOUR") ? "" : GAS_URL;
             document.getElementById('config-modal').style.display = 'flex';
         }
         function closeConfig() { document.getElementById('config-modal').style.display = 'none'; }
+        
         async function saveConfig() {
-            const newUrl = document.getElementById('config-url-input').value.trim();
-            if(!newUrl.startsWith("http")) return alert("網址格式錯誤");
+            let newUrl = document.getElementById('config-url-input').value.trim();
+            if(!newUrl.startsWith("http")) return alert("網址格式錯誤 (需為 https://...)");
             
+            // 自動修復：如果使用者貼了 /edit 結尾，幫他改成 /exec
+            if(newUrl.includes("/edit")) newUrl = newUrl.replace(/\/edit.*/, "/exec");
+            if(!newUrl.endsWith("/exec")) newUrl += "/exec"; // 嘗試補全
+
             GAS_URL = newUrl;
             localStorage.setItem('mes_gas_url', newUrl);
             closeConfig();
-            
-            const statusEl = document.getElementById('cloud-status');
-            statusEl.textContent = "Testing...";
             
             alert("設定已儲存，正在測試連線...");
             await syncData(false);
         }
 
-        // --- CORE SYNC ---
+        // --- CORE SYNC (V6.4: Diagnostic & Hardened) ---
         async function syncData(silent = false) {
             if(offlineMode && silent) return; 
             if(GAS_URL.includes("YOUR")) return;
@@ -278,7 +530,8 @@
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     redirect: 'follow',
-                    headers: { 'Content-Type': 'text/plain' }, 
+                    referrerPolicy: 'no-referrer', // 隱私保護，避免 Google 阻擋
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                     body: JSON.stringify({ action: 'GET_STATE', token: TOKEN })
                 });
                 
@@ -287,12 +540,16 @@
 
                 if (data.success) {
                     appData.queue = data.queue || [];
+                    // Merge Active
                     const cloudMap = {};
                     if (data.active) {
                         data.active.forEach(j => {
                             cloudMap[j.wo_id] = j;
                             if (!appData.activeJobs[j.wo_id]) {
                                 appData.activeJobs[j.wo_id] = { ...j, lastUpdate: Date.now(), accTime: j.accTime || 0 };
+                            } else {
+                                appData.activeJobs[j.wo_id].manpower = j.manpower;
+                                appData.activeJobs[j.wo_id].req_data = j.req_data;
                             }
                         });
                     }
@@ -300,49 +557,74 @@
 
                     saveStorage();
                     if(cloudStatus) { cloudStatus.textContent = "Connected ✅"; cloudStatus.style.color = "#4caf50"; }
+                    const lastSync = document.getElementById('last-sync-time');
+                    if(lastSync) lastSync.textContent = new Date().toLocaleTimeString();
                     
                     offlineMode = false;
                     if (uiState.screen === 'queue') renderQueue();
                     if (uiState.screen === 'admin') renderAdminList();
+                } else {
+                    throw new Error(data.message);
                 }
             } catch (e) {
-                console.warn("Sync failed", e);
-                if(cloudStatus) { cloudStatus.textContent = "🔴 離線模式"; cloudStatus.style.color = "red"; }
-                offlineMode = true;
+                console.error("Sync failed", e);
+                if(cloudStatus) { cloudStatus.textContent = "Offline ⚠️"; cloudStatus.style.color = "red"; }
+                
+                if (!silent) {
+                    // 偵測失敗原因，提供建議
+                    let hint = "";
+                    if(e.message.includes("Failed to fetch")) {
+                        hint = "無法連線至伺服器。\n可能原因：\n1. GAS 部署權限未設為 'Anyone'\n2. 網址錯誤\n3. 網路不通";
+                        // 自動開啟設定讓使用者檢查
+                        setTimeout(openConfig, 1000);
+                    }
+                    alert("連線失敗: " + e.message + "\n\n" + hint);
+                    offlineMode = true; // 進入離線模式，避免卡住
+                }
             } finally {
                 if (!silent) document.getElementById('loading-mask').style.display = 'none';
             }
         }
 
-        async function sendAction(payload) {
+        async function sendAction(payload, silent = false) {
             if(offlineMode) { alert("目前為離線模式，操作已暫存於本機 (Mock Success)。"); return true; }
 
-            document.getElementById('loading-mask').style.display = 'flex';
+            if(!silent) document.getElementById('loading-mask').style.display = 'flex';
             payload.token = TOKEN;
             try {
                 const res = await fetch(GAS_URL, {
-                    method: 'POST', redirect: 'follow', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(payload)
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
                 });
                 const text = await res.text();
                 let data;
-                try { data = JSON.parse(text); } catch(e) { throw new Error("Server response invalid"); }
+                try { data = JSON.parse(text); } 
+                catch(e) { throw new Error("Server response invalid (HTML?)"); }
 
-                if (data.success) { await syncData(true); return true; }
-                else { alert("Server Error: " + data.message); return false; }
+                if (data.success) {
+                    await syncData(true);
+                    return true;
+                } else {
+                    alert("Server Error: " + data.message);
+                    return false;
+                }
             } catch (e) {
                 console.error(e);
                 offlineMode = true;
-                alert("連線失敗，切換至離線模式。資料已暫存。");
-                document.getElementById('cloud-status').textContent = "🔴 離線模式";
+                alert("連線中斷，切換至離線模式。資料已暫存。");
+                document.getElementById('cloud-status').textContent = "Offline ⚠️";
                 return true; 
             } finally {
-                document.getElementById('loading-mask').style.display = 'none';
+                if(!silent) document.getElementById('loading-mask').style.display = 'none';
             }
         }
         
         function testConnection() {
-             const win = window.open(GAS_URL, '_blank');
-             if(!win) alert("請允許彈出視窗");
+             if(GAS_URL.includes("YOUR")) { alert("請先設定網址"); openConfig(); return; }
+             // 開啟新視窗測試 GET
+             window.open(GAS_URL, '_blank');
         }
 
         // --- Storage ---
@@ -373,13 +655,18 @@
         function handleLoginInput(k) {
             if (k === 'C') uiState.pin = '';
             else if (k === 'OK') {
-                if (uiState.pin === '9999') { uiState.user = {name:'Admin'}; showScreen('admin'); }
-                else if (['1234','5678'].includes(uiState.pin)) {
-                    uiState.user = {name:'主管', pin:uiState.pin};
+                if (uiState.pin === '9999') {
+                    uiState.user = { name: 'Admin', role: 'admin' }; showScreen('admin');
+                } else if (['1234', '5678'].includes(uiState.pin)) {
+                    uiState.user = { name: '主管', pin: uiState.pin };
                     document.getElementById('user-name').textContent = uiState.user.name;
                     showScreen('queue');
-                } else { alert("密碼錯誤"); uiState.pin = ''; }
-            } else if (uiState.pin.length < 4) uiState.pin += k;
+                } else {
+                    alert("密碼錯誤"); uiState.pin = '';
+                }
+            } else {
+                if (uiState.pin.length < 4) uiState.pin += k;
+            }
             document.getElementById('pin-display').textContent = uiState.pin.length > 0 ? '●'.repeat(uiState.pin.length) : '_ _ _ _';
         }
 
@@ -419,11 +706,12 @@
             document.getElementById('manpower-display').textContent = '0';
             showScreen('manpower');
         }
+        function cancelManpower() { if (uiState.isAdjusting) showScreen('working'); else showScreen('queue'); }
         function handleManpowerInput(k) {
-            if(k === 'C') uiState.tempVal = '0';
-            else if(k === 'OK') {
+            if (k === 'C') uiState.tempVal = '0';
+            else if (k === 'OK') {
                 const val = parseInt(uiState.tempVal);
-                if(val > 0) { if(uiState.isAdjusting) doUpdateManpower(val); else doStartJob(val); }
+                if (val > 0) { if (uiState.isAdjusting) doUpdateManpower(val); else doStartJob(val); }
                 else alert("> 0");
             } else uiState.tempVal = (uiState.tempVal === '0' ? k : uiState.tempVal + k);
             document.getElementById('manpower-display').textContent = uiState.tempVal;
@@ -431,7 +719,6 @@
 
         async function doStartJob(mp) {
             const job = appData.queue.find(j => j.wo_id === uiState.targetWoId);
-            // 先寫入本地
             const now = Date.now();
             appData.activeJobs[uiState.targetWoId] = { 
                 wo_id: uiState.targetWoId, master: job.master, prod: job.prod_zh, op: job.op_zh,
@@ -442,7 +729,7 @@
             const ok = await sendAction({
                 action: 'START_JOB', wo_id: uiState.targetWoId, master: job.master, prod: job.prod_zh, op: job.op_zh,
                 pin: uiState.user.pin, manpower: mp, start_time: new Date().toISOString(), req_data: job.req_data
-            });
+            }, true); // Silent send
             openWorkingScreen(uiState.targetWoId);
         }
 
@@ -455,7 +742,7 @@
 
             const ok = await sendAction({
                 action: 'UPDATE_JOB', wo_id: uiState.targetWoId, manpower: mp, start_time: new Date().toISOString(), acc_time: newAcc
-            });
+            }, true);
             openWorkingScreen(uiState.targetWoId);
         }
 
@@ -483,10 +770,10 @@
         }
 
         function endJob() {
-            const job = appData.activeJobs[uiState.targetWoId];
+            const session = appData.activeJobs[uiState.targetWoId];
             const qJob = appData.queue.find(q => q.wo_id === uiState.targetWoId);
-            const isSlicing = job.op.indexOf('分切') >= 0;
-            const isReq = job.req_data || (qJob && qJob.req_data);
+            const isSlicing = session.op.indexOf('分切') >= 0;
+            const isReq = session.req_data || (qJob && qJob.req_data);
             uiState.finishStep = (isSlicing || isReq) ? 1 : 99;
             uiState.finishCache = { good:0, reject:0, collar:0, tail:0 };
             uiState.tempVal = '0';
@@ -539,7 +826,7 @@
             const totalMs = (job.accTime||0) + ((now - (job.lastUpdate||Date.parse(job.startISO))) * job.manpower);
             const totalHrs = totalMs / 3600000.0;
             
-            // 先本地更新
+            // 本地先完成
             delete appData.activeJobs[uiState.targetWoId];
             appData.queue = appData.queue.filter(q => q.wo_id !== uiState.targetWoId);
             saveStorage();
@@ -611,13 +898,14 @@
                 const p=r.querySelector('.prod').value, o=r.querySelector('.op').value;
                 if(p&&o) jobs.push({ wo_id:`${mwo}-${Date.now()}-${i}`, master:mwo, prod_zh:p, op_zh:o, rank:i+1, st:1, total_weight:w, req_data:req });
             });
-            // 本地先更新，達到即時效果
+            
+            // 先更新本地以求即時感
             appData.queue = [...appData.queue, ...jobs];
             saveStorage();
             renderAdminList();
-            
+
             sendAction({ action: 'ADD_JOBS', jobs: jobs });
-            alert("Sent");
+            alert("Sent (Offline cached)");
             document.getElementById('admin-mwo').value = '';
             document.getElementById('admin-sub-items').innerHTML = '';
             addAdminRow();
